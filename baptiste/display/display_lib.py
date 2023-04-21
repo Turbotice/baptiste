@@ -96,6 +96,33 @@ def figurejolie(subplot = False, num_fig = None):
 
 
 def joliplot(xlabel, ylabel, xdata, ydata, color = False, fig = False, axes = [], title = False, subplot = False, legend = False, log = False, exp = True, image = False, zeros = False):
+    """
+    Plot un graph ou un subplot ou une image
+
+    Parameters
+    ----------
+    xlabel : 
+    ylabel : 
+    xdata : 
+    ydata : 
+    color : optional, 1 - 16
+
+    fig : optional, default is False.
+    axes : optional, default is [].
+    title : optional, default is False.
+    subplot : optional, default is False.
+    legend : optional, default is False.
+    log : optional, default is False.
+    exp : optional, default is True.
+    image : optional, default is False.
+    zeros : optional, default is False. Si on veut que le l'origine soit dans le graph
+
+    Returns
+    -------
+    axes : TYPE
+        DESCRIPTION.
+
+    """
     
     """Jolis graphs predefinis"""
     n = 16
@@ -195,10 +222,17 @@ def joliplot(xlabel, ylabel, xdata, ydata, color = False, fig = False, axes = []
             
         return axes
             
-                
-
-
-
+def plot_2D (x, y, data, lim = False) :
+    #fait un pcolormesh en moins de lignes
+    figurejolie()
+    plt.pcolormesh(x, y, np.rot90(data), shading = 'auto')
+    plt.axis('equal')
+    cbar = plt.colorbar()
+    plt.xlabel("Y (m)")
+    cbar.set_label("Champ u démodulé à Hz")
+    plt.ylabel("X (m)")
+    if lim != False :
+        plt.clim(vmin = lim[0], vmax = lim[1])
 
 
 
