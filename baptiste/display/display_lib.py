@@ -71,8 +71,8 @@ r'\sisetup{detect-all}', # force siunitx to use the fonts
 ]
 
 ## CHOIX DES COULEURS
-n = 10
-vcolors = plt.cm.viridis(np.linspace(0,1,n))
+
+vcolors = plt.cm.viridis(np.linspace(0,1,10))
 
 # def figurejolie(subplot = False, posplot = [1,1]):
 #     if subplot == False :
