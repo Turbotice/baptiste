@@ -71,8 +71,9 @@ r'\sisetup{detect-all}', # force siunitx to use the fonts
 ]
 
 ## CHOIX DES COULEURS
-
-vcolors = plt.cm.viridis(np.linspace(0,1,10))
+def vcolors(n) :
+    vcolor = plt.cm.viridis(np.linspace(0,1,10))
+    return vcolor[n]
 
 # def figurejolie(subplot = False, posplot = [1,1]):
 #     if subplot == False :
@@ -129,8 +130,8 @@ def joliplot(xlabel, ylabel, xdata, ydata, color = False, fig = False, axes = []
     markers = ['0','x','o','v','p','X','d','s','s','h','.','.','o','o','o','v','v']
     markeredgewidth = [1.5,1.8,1.5, 1.5, 2.5, 1.3, 1.3, 1.6,1.6,2,1.6,1.6,2,2,2,2,2]
     ms = [7,6.5,7, 7, 9.2, 8, 8, 8, 7,7, 7, 7,9,7,7,7,7]
-    mfc = ['None','#91A052','#990000',vcolors[5],'None','None','None','None','k','None','None','None','None','None','None','None','None']
-    colors = ['g','#91A052','#990000', vcolors[5], '#008B8B', vcolors[2], '#FF8000', vcolors[6], 'k',vcolors[1],'#01FA22',vcolors[3], vcolors[1],'#990000', vcolors[2],'#990000', vcolors[2] ]
+    mfc = ['None','#91A052','#990000',vcolors(5),'None','None','None','None','k','None','None','None','None','None','None','None','None']
+    colors = ['g','#91A052','#990000', vcolors(5), '#008B8B', vcolors(2), '#FF8000', vcolors(6), 'k',vcolors(1),'#01FA22',vcolors(3), vcolors(1),'#990000', vcolors(2),'#990000', vcolors(2) ]
     
     """Pour un simple plot"""
     if subplot == False:
