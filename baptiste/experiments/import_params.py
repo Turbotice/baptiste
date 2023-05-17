@@ -10,6 +10,10 @@ Toutes les fonctions qi permettent d'importer les parmaètres expérimentaux des
 import matplotlib.pyplot as plt
 import baptiste.files.file_management as fm
 import numpy as np
+import baptiste.files.dictionaries as dic
+
+
+
 
 def import_param (titre_exp,date, exp_type = "TT"):
     """
@@ -52,6 +56,7 @@ def import_param (titre_exp,date, exp_type = "TT"):
     if exp_type == "IND":
         h = float ( titre_exp[titre_exp.index("ha") + 2:titre_exp.index("ha") + 4])
         return h
+
 
 
 
@@ -218,8 +223,8 @@ def import_calibration(titre_exp, date):
 
 
                         
-        angle_cam_LAS = np.arccos(mmparpixely/mmparpixelz) * 180 / np.pi
-        return mmparpixelx, mmparpixely, mmparpixelz, angle_cam_LAS, mmparpixel
+        # angle_cam_LAS = np.arccos(mmparpixely/mmparpixelz) * 180 / np.pi
+        return mmparpixelx, mmparpixely, mmparpixelz, mmparpixel
 
     if "FSD" in titre_exp or "PIV" in titre_exp :
 
@@ -295,4 +300,15 @@ def import_calibration(titre_exp, date):
         
         
         return mmparpixely, mmparpixelz
-             
+        
+def initialisation(exp = False, titre_exp = '',date = '', exp_type = "TT", loc = '', nom_exp = ''):
+    dico = dic.open_dico()
+    params = {}
+    if exp :
+        params['facq, texp, Tmot, Vmot, Hw, Larg_ice, Long_ice, tacq, type_exp'] = import_param(titre_exp, date, exp_type)
+        params['mmparpixelx, mmparpixely, mmparpixelz, mmparpixel'] = import_angle(date, nom_exp, loc, display = False)
+        
+    return dico, params
+        
+
+

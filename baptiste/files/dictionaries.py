@@ -20,9 +20,10 @@ def open_dico():
     
     return dico
     
-def save_dico(dico):
+def save_dico(dico, path = "D:\Banquise\Baptiste\Resultats\\Dictionnaire.pkl"):
     
-    a_file = open("D:\Banquise\Baptiste\Resultats\\Dictionnaire.pkl", "wb")
+
+    a_file = open(path, "wb")
     
     pickle.dump(dico, a_file)
     

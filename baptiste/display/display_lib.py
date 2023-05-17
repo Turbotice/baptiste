@@ -2,6 +2,9 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import numpy as np
 
+import baptiste.files.save as sv
+import baptiste.tools.tools as tools
+
 ## TAILLE DES FIGURES
 
 def set_size(width, fraction=1, subplots=(1, 1)):
@@ -62,33 +65,33 @@ tex_fonts = {
 
 plt.rcParams.update(tex_fonts)
 mpl.rc('text', usetex=True)
-mpl.rcParams['text.latex.preamble'] = [
-r'\usepackage{lmodern}', #lmodern: lateX font; tgheros: helvetica font; helvet pour helvetica
-r'\usepackage{sansmath}', # math-font matching helvetica
-r'\sansmath' # actually tell tex to use it!
-r'\usepackage[scientific-notation=false]{siunitx}', # micro symbols
-r'\sisetup{detect-all}', # force siunitx to use the fonts
-]
+# mpl.rcParams['text.latex.preamble'] = [
+# r'\usepackage{lmodern}', #lmodern: lateX font; tgheros: helvetica font; helvet pour helvetica
+# r'\usepackage{sansmath}', # math-font matching helvetica
+# r'\sansmath' # actually tell tex to use it!
+# r'\usepackage[scientific-notation=false]{siunitx}', # micro symbols
+# r'\sisetup{detect-all}', # force siunitx to use the fonts
+# ]
 
 ## CHOIX DES COULEURS
 def vcolors(n) :
     vcolor = plt.cm.viridis(np.linspace(0,1,10))
     return vcolor[n]
 
-# def figurejolie(subplot = False, posplot = [1,1]):
-#     if subplot == False :
-#         plt.figure(figsize = set_size(width=350, fraction = 1, subplots = (1,1)))
-        
-#     else :
-#         fig = plt.subplots(subplot[0],subplot[1], figsize = set_size(width = 700, subplots=subplot))
-#         axes = []
-                           
-#         return fig, axes
+
     
-def figurejolie(subplot = False, num_fig = None):
+def figurejolie(params = False, num_fig = None, subplot = False):
     if subplot == False :
-        plt.figure(num = num_fig, figsize = set_size(width=500, fraction = 1, subplots = (1,1)))
-        
+        if type(params) != bool :
+            if 'num_fig' not in params.keys() :
+                params['num_fig'] = []
+            randnumfig = tools.datetimenow(date = False, time = False, micro_sec = True)
+            params['num_fig'].append(randnumfig)
+            num_fig = randnumfig
+            plt.figure(num = num_fig, figsize = set_size(width=500, fraction = 1, subplots = (1,1)))
+            return params
+        else :
+            plt.figure(num = num_fig, figsize = set_size(width=500, fraction = 1, subplots = (1,1)))
     else :
         fig = plt.figure(num = num_fig, figsize = set_size(width=1000, fraction = 1, subplots = subplot))
         axes = []
@@ -96,7 +99,7 @@ def figurejolie(subplot = False, num_fig = None):
         return fig, axes
 
 
-def joliplot(xlabel, ylabel, xdata, ydata, color = False, fig = False, axes = [], title = False, subplot = False, legend = False, log = False, exp = True, image = False, zeros = False):
+def joliplot(xlabel, ylabel, xdata, ydata, color = False, fig = False, axes = [], title = False, subplot = False, legend = False, log = False, exp = True, image = False, zeros = False, params = False, table = False, tcbar = ''):
     """
     Plot un graph ou un subplot ou une image
 
@@ -122,10 +125,14 @@ def joliplot(xlabel, ylabel, xdata, ydata, color = False, fig = False, axes = []
     -------
     axes : TYPE
         DESCRIPTION.
+    Si tableau ou image, mettre le contenue dans table ou image, et mettre les axes sur xdata et ydata.
 
     """
     
     """Jolis graphs predefinis"""
+    
+
+    
     n = 16
     markers = ['0','x','o','v','p','X','d','s','s','h','.','.','o','o','o','v','v']
     markeredgewidth = [1.5,1.8,1.5, 1.5, 2.5, 1.3, 1.3, 1.6,1.6,2,1.6,1.6,2,2,2,2,2]
@@ -146,6 +153,37 @@ def joliplot(xlabel, ylabel, xdata, ydata, color = False, fig = False, axes = []
             plt.grid('off')
             plt.axis('off')
             plt.tight_layout()
+            
+            if type(params) != bool :
+                return sv.data_to_dict([xlabel, ylabel], [xdata, ydata], image, params['num_fig'][-1])
+            
+        #pour un tableau 2 ou 3D (3D affiche juste le t0) (contenu dans table)
+        if type(table) != bool :
+            dim = len(table.shape)
+                
+            if dim == 1 :
+                
+                print("tableau 1D à faire en plot pas table")
+                
+            if dim == 2 :
+                plt.pcolormesh(xdata, ydata, np.flip(np.rot90(table),0), shading = 'auto')
+                cbar = plt.colorbar()
+                plt.xlabel(xlabel)
+                plt.ylabel(ylabel)
+                cbar.set_label(tcbar)
+                plt.grid('off')
+                
+            if dim == 3 :
+                print('Carefull : 3D tables are ploted 2D')
+                plt.pcolormesh(xdata, ydata, np.flip(np.rot90(table[:,:,0]),0), shading = 'auto')
+                cbar = plt.colorbar()
+                plt.xlabel(xlabel)
+                plt.ylabel(ylabel)
+                cbar.set_label(tcbar)
+                plt.grid('off')
+               
+            if type(params) != bool :
+                return sv.data_to_dict([xlabel, ylabel], [xdata, ydata], table, params['num_fig'][-1])
         
         #pour un graph
         else :
@@ -183,8 +221,14 @@ def joliplot(xlabel, ylabel, xdata, ydata, color = False, fig = False, axes = []
             if zeros :
                plt.xlim(left=0 )
                plt.ylim(bottom=0)
-                
-    
+               
+            if type(params) != bool :
+                x_range = np.linspace(np.min(xdata), np.max(xdata), len(xdata))
+                y_range = np.linspace(np.min(ydata), np.max(ydata), len(ydata))
+                return sv.data_to_dict([xlabel, ylabel], [x_range, y_range], [xdata, ydata], params['num_fig'][-1])
+            
+
+
     #pour un subplot
     else:
         if image != False :
