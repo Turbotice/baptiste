@@ -65,7 +65,7 @@ tex_fonts = {
 
 plt.rcParams.update(tex_fonts)
 plt.rcParams['text.usetex'] = True
-mpl.rc('text', usetex=True)
+# mpl.rc('text', usetex=True)
 # mpl.rcParams['text.latex.preamble'] = [
 #     r'\usepackage{lmodern}', #lmodern: lateX font; tgheros: helvetica font; helvet pour helvetica
 #     r'\usepackage{sansmath}', # math-font matching helvetica
@@ -73,18 +73,11 @@ mpl.rc('text', usetex=True)
 #     r'\usepackage[scientific-notation=false]{siunitx}', # micro symbols
 #     r'\sisetup{detect-all}', # force siunitx to use the fonts
 #     ]
-
-mpl.rcParams['text.latex.preamble'] = r'\usepackage{lmodern}'  + r'\usepackage{sansmath}' + r'\sansmath' + r'\usepackage[scientific-notation=false]{siunitx}' + r'\sisetup{detect-all}'
-
-# plt.rcParams["text.latex.preamble"].join([
-#         r"\usepackage{dashbox}",              
-#         r"\setmainfont{xcolor}",
-# ])
-# mpl.rcParams['text.latex.preamble'] = r'\usepackage{lmodern}' 
-# mpl.rcParams['text.latex.preamble'] = r'\usepackage{sansmath}'
-# mpl.rcParams['text.latex.preamble'] = r'\sansmath'
-# mpl.rcParams['text.latex.preamble'] = r'\usepackage[scientific-notation=false]{siunitx}'
-# mpl.rcParams['text.latex.preamble'] = r'\sisetup{detect-all}'
+mpl.rcParams['text.latex.preamble'] = r'\usepackage{lmodern}'
+mpl.rcParams['text.latex.preamble'] = r'\usepackage{sansmath}'
+mpl.rcParams['text.latex.preamble'] = r'\sansmath'
+mpl.rcParams['text.latex.preamble'] = r'\usepackage[scientific-notation=false]{siunitx}'
+mpl.rcParams['text.latex.preamble'] = r'\sisetup{detect-all}'
 
 
 ## CHOIX DES COULEURS
