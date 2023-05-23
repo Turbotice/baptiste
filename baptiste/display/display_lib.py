@@ -94,15 +94,25 @@ def vcolors(n) :
 
 
     
-def figurejolie(params = False, num_fig = None, subplot = False):
+def figurejolie(params = False, num_fig = None, subplot = False, nom_fig = False):
     if subplot == False :
+        
+        #si params renseigné
         if type(params) != bool :
+            #crée un nombre random qui sera le num de la figure, ce numero sera ajouté dans params[num_fig]
             if 'num_fig' not in params.keys() :
                 params['num_fig'] = []
             randnumfig = tools.datetimenow(date = False, time = False, micro_sec = True)
             params['num_fig'].append(randnumfig)
             num_fig = randnumfig
-            plt.figure(num = num_fig, figsize = set_size(width=600, fraction = 1, subplots = (1,1)))
+            plt.figure(num = num_fig, figsize = set_size(width=500, fraction = 1, subplots = (1,1)))
+            
+            #ajoute nom_fig dans les params
+            if type(nom_fig) != bool :
+                params[str(num_fig)] = {'nom_fig' : nom_fig}
+            else :
+                params[str(num_fig)] = {'nom_fig' : str(num_fig)}
+                
             return params
         else :
             plt.figure(num = num_fig, figsize = set_size(width=500, fraction = 1, subplots = (1,1)))
@@ -113,7 +123,8 @@ def figurejolie(params = False, num_fig = None, subplot = False):
         return fig, axes
 
 
-def joliplot(xlabel, ylabel, xdata, ydata, color = False, fig = False, axes = [], title = False, subplot = False, legend = False, log = False, exp = True, image = False, zeros = False, params = False, table = False, tcbar = ''):
+def joliplot(xlabel, ylabel, xdata, ydata, color = False, fig = False, axes = [], title = False, subplot = False, legend = False, 
+             log = False, exp = True, image = False, zeros = False, params = True, table = False, tcbar = ''):
     """
     Plot un graph ou un subplot ou une image
 
@@ -145,7 +156,6 @@ def joliplot(xlabel, ylabel, xdata, ydata, color = False, fig = False, axes = []
     
     """Jolis graphs predefinis"""
     
-
     
     n = 16
     markers = ['0','x','o','v','p','X','d','s','s','h','.','.','o','o','o','v','v']
@@ -168,8 +178,8 @@ def joliplot(xlabel, ylabel, xdata, ydata, color = False, fig = False, axes = []
             plt.axis('off')
             plt.tight_layout()
             
-            if type(params) != bool :
-                return sv.data_to_dict([xlabel, ylabel], [xdata, ydata], image, params['num_fig'][-1])
+            if params :
+                return sv.data_to_dict([xlabel, ylabel], [xdata, ydata], image)
             
         #pour un tableau 2 ou 3D (3D affiche juste le t0) (contenu dans table)
         if type(table) != bool :
@@ -198,8 +208,8 @@ def joliplot(xlabel, ylabel, xdata, ydata, color = False, fig = False, axes = []
                 plt.grid('off')
                 plt.axis('equal')
                 
-            if type(params) != bool :
-                return sv.data_to_dict([xlabel, ylabel], [xdata, ydata], table, params['num_fig'][-1])
+            if params :
+                return sv.data_to_dict([xlabel, ylabel], [xdata, ydata], table)
         
         #pour un graph
         else :
@@ -238,10 +248,10 @@ def joliplot(xlabel, ylabel, xdata, ydata, color = False, fig = False, axes = []
                plt.xlim(left=0 )
                plt.ylim(bottom=0)
                
-            if type(params) != bool :
+            if params :
                 x_range = np.linspace(np.min(xdata), np.max(xdata), len(xdata))
                 y_range = np.linspace(np.min(ydata), np.max(ydata), len(ydata))
-                return sv.data_to_dict([xlabel, ylabel], [x_range, y_range], [xdata, ydata], params['num_fig'][-1])
+                return sv.data_to_dict([xlabel, ylabel], [x_range, y_range], [xdata, ydata])
             
 
 

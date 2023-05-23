@@ -10,9 +10,9 @@ Fonctions pour le dico
 '''
 import pickle
 
-def open_dico():
+def open_dico(path = 'D:\Banquise\Baptiste\Resultats\\Dictionnaire.pkl'):
     
-    a_file = open("D:\Banquise\Baptiste\Resultats\\Dictionnaire.pkl", "rb")
+    a_file = open(path, "rb")
     
     dico = pickle.load(a_file)
     

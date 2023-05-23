@@ -109,7 +109,6 @@ def plot_fft(Y1, f1, f2 = False, f3 = False, log = False, xlabel = r'kx(m$^{-1})
     None.
 
     """
-    disp.figurejolie()
     dim = len(Y1.shape)
     if log :
         Y1 = np.log(np.abs(Y1))
