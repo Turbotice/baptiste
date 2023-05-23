@@ -80,12 +80,14 @@ def save_graph (path, nom_fig, params = False, num_fig = False, nc = False, pkl 
     if pkl :
         #save tout en .pkl
         if type(params) != bool :
-            dic.save_dico(params[num_fig]['data'], path + "data_" + nom_fig + "_" + num_fig + ".pkl")
+            
+            if 'data' in params[str(num_fig)].keys() :
+                dic.save_dico(params[num_fig]['data'], path + "data_" + nom_fig + "_" + num_fig + ".pkl")
             full_params = {}
             for i in params.keys() :
                 if not i.isdigit() :
                     full_params[i] = params[i]
-            
+                
             dic.save_dico(full_params, path + "params_" + nom_fig + "_" + num_fig + ".pkl")
         elif type(data) == dict :
             dic.save_dico(data, path + "data_" + nom_fig + "_" + num_fig + ".pkl")

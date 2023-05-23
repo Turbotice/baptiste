@@ -94,7 +94,7 @@ def vcolors(n) :
 
 
     
-def figurejolie(params = False, num_fig = None, subplot = False, nom_fig = False):
+def figurejolie(params = False, num_fig = False, subplot = False, nom_fig = False):
     if subplot == False :
         
         #si params renseigné
@@ -102,9 +102,13 @@ def figurejolie(params = False, num_fig = None, subplot = False, nom_fig = False
             #crée un nombre random qui sera le num de la figure, ce numero sera ajouté dans params[num_fig]
             if 'num_fig' not in params.keys() :
                 params['num_fig'] = []
-            randnumfig = tools.datetimenow(date = False, time = False, micro_sec = True)
-            params['num_fig'].append(randnumfig)
-            num_fig = randnumfig
+            if type(num_fig) != bool :
+                params['num_fig'].append(num_fig)
+            else :
+                randnumfig = tools.datetimenow(date = False, time = False, micro_sec = True)
+                params['num_fig'].append(randnumfig)
+                num_fig = randnumfig
+                
             plt.figure(num = num_fig, figsize = set_size(width=500, fraction = 1, subplots = (1,1)))
             
             #ajoute nom_fig dans les params
@@ -196,7 +200,6 @@ def joliplot(xlabel, ylabel, xdata, ydata, color = False, fig = False, axes = []
                 plt.ylabel(ylabel)
                 cbar.set_label(tcbar)
                 plt.grid('off')
-                plt.axis('equal')
                 
             if dim == 3 :
                 print('Carefull : 3D tables are ploted 2D')
