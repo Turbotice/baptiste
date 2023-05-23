@@ -109,9 +109,12 @@ def save_image(image):
     return image
 
 def save_mat(champ, path, title = 'data'):
+    data = dict(data = champ)
     
     mdic = {"data": champ, "label": "experiment"}
     savemat(path + title + ".mat", mdic)
+    savemat(path + title + '.mat', data)
+    
     
 def save_nc(path, data, coords, params) :
     """

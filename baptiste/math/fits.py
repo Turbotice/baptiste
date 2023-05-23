@@ -26,7 +26,6 @@ def fit_powerlaw(x,y, display = False, xlabel = '', ylabel = '', legend = ''):
     xscale = np.linspace(np.min(logx), np.max(logx), 200)
 
     if display :
-        disp.figurejolie()
         disp.joliplot(xlabel, ylabel, logx, logy, color= 13, exp = True, legend = legend, log = False)
         disp.joliplot(xlabel, ylabel, xscale, popt[0] * xscale  + popt[1], color = 5, exp = False, legend = 'fit, a = ' + str(round(popt[0], 3)), log = False)
     return popt
@@ -62,7 +61,6 @@ def fit(fct, x, y, display = True, err = False, nb_param = 1, p0 = [0], bounds =
     if zero :
         x_range = np.linspace(0, np.max(x), len(x))
     if display :
-        disp.figurejolie()
         if nb_param == 1 :
             disp.joliplot(xlabel, ylabel, x, y, color= 13, exp = True, legend = r'Experimental Data')
             disp.joliplot(xlabel, ylabel, x_range, fct(x_range, popt[0]), color= 5, exp = False, legend = r'fit : $\delta\rho * h$ = ' + str(round(popt[0],4)))
