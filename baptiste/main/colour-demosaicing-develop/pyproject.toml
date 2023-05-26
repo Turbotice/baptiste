@@ -1,0 +1,162 @@
+[tool.poetry]
+name = "colour-demosaicing"
+version = "0.2.3"
+description = "CFA (Colour Filter Array) Demosaicing Algorithms for Python"
+license = "BSD-3-Clause"
+authors = [ "Colour Developers <colour-developers@colour-science.org>" ]
+maintainers = [ "Colour Developers <colour-developers@colour-science.org>" ]
+readme = 'README.rst'
+repository = "https://github.com/colour-science/colour-demosaicing"
+homepage = "https://www.colour-science.org/"
+keywords = [
+    "cfa",
+    "bayer",
+    "color",
+    "color-science",
+    "color-space",
+    "color-spaces",
+    "colorspace",
+    "colorspaces",
+    "colour",
+    "colour-science",
+    "colour-space",
+    "colour-spaces",
+    "colourspace",
+    "colourspaces",
+    "de-mosaicing",
+    "debayering",
+    "demosaicing",
+    "demosaicking",
+    "python",
+    "raw"
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Software Development"
+]
+exclude = [
+    "colour_demosaicing/resources/colour-demosaicing-examples-datasets/bayer/*",
+    "colour_demosaicing/resources/colour-demosaicing-tests-datasets/colour_demosaicing/bayer/*"
+]
+
+[tool.poetry.dependencies]
+python = ">= 3.9, < 3.12"
+colour-science = ">= 0.4.2"
+imageio = ">= 2, < 3"
+numpy = ">= 1.20, < 2"
+scipy = ">= 1.7, < 2"
+typing-extensions = ">= 4, < 5"  # Convenience for Google Colab.
+
+matplotlib = { version = ">= 3.5, != 3.5.0, != 3.5.1", optional = true }
+
+biblib-simple = { version = "*", optional = true }  # Development dependency.
+black = { version = "*", optional = true }  # Development dependency.
+blackdoc = { version = "*", optional = true }  # Development dependency.
+coverage = { version = "!= 6.3", optional = true }  # Development dependency.
+coveralls = { version = "*", optional = true }  # Development dependency.
+flake8 = { version = "*", optional = true }  # Development dependency.
+flynt = { version = "*", optional = true }  # Development dependency.
+invoke = { version = "*", optional = true }  # Development dependency.
+jupyter = { version = "*", optional = true }  # Development dependency.
+mypy = { version = "*", optional = true }  # Development dependency.
+pre-commit = { version = "*", optional = true }  # Development dependency.
+pydata-sphinx-theme = { version = "*", optional = true }  # Development dependency.
+pydocstyle = { version = "*", optional = true }  # Development dependency.
+pytest = { version = "*", optional = true }  # Development dependency.
+pytest-cov = { version = "*", optional = true }  # Development dependency.
+pytest-xdist = { version = "*", optional = true} #Development dependency
+pyupgrade = { version = "*", optional = true }  # Development dependency.
+restructuredtext-lint = { version = "*", optional = true }  # Development dependency.
+sphinx = { version = ">= 4, < 5", optional = true }  # Development dependency.
+sphinxcontrib-bibtex = { version = "*", optional = true }  # Development dependency.
+toml = { version = "*", optional = true }  # Development dependency.
+twine = { version = "*", optional = true }  # Development dependency.
+
+[tool.poetry.dev-dependencies]
+biblib-simple = "*"
+black = "*"
+blackdoc = "*"
+coverage = "!= 6.3"
+coveralls = "*"
+flake8 = "*"
+flynt = "*"
+invoke = "*"
+jupyter = "*"
+mypy = "*"
+pre-commit = "*"
+pydata-sphinx-theme = "*"
+pydocstyle = "*"
+pytest = "*"
+pytest-cov = "*"
+pytest-xdist = "*"
+pyupgrade = "*"
+restructuredtext-lint = "*"
+sphinx = ">= 4, < 5"
+sphinxcontrib-bibtex = "*"
+toml = "*"
+twine = "*"
+
+[tool.poetry.extras]
+development = [
+    "biblib-simple",
+    "black",
+    "blackdoc",
+    "coverage",
+    "coveralls",
+    "flake8",
+    "flynt",
+    "invoke",
+    "jupyter",
+    "mypy",
+    "pre-commit",
+    "pydata-sphinx-theme",
+    "pydocstyle",
+    "pytest",
+    "pytest-cov",
+    "pytest-xdist",
+    "pyupgrade",
+    "restructuredtext-lint",
+    "sphinx",
+    "sphinxcontrib-bibtex",
+    "toml",
+    "twine",
+]
+plotting = [ "matplotlib" ]
+read-the-docs = [ "matplotlib", "pydata-sphinx-theme", "sphinxcontrib-bibtex" ]
+
+[tool.black]
+line-length = 79
+exclude = '''
+/(
+    \.git
+  | \.mypy_cache
+  | build
+  | dist
+)/
+'''
+
+[tool.flynt]
+line_length=999
+
+[tool.mypy]
+plugins = "numpy.typing.mypy_plugin"
+ignore_missing_imports = true
+
+[tool.pydocstyle]
+convention = "numpy"
+add-ignore = "D104,D200,D202,D205,D301,D400"
+
+[tool.pytest.ini_options]
+addopts = "-n auto --dist=loadscope --durations=5"
+
+[build-system]
+requires = [ "poetry_core>=1.0.0" ]
+build-backend = "poetry.core.masonry.api"

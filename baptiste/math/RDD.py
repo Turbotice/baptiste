@@ -23,3 +23,6 @@ def RDD_flexion (k, Dsurrho) :
 def RDD_capillaire_flexion (k,gammasurrho, Dsurrho) :
     return np.sqrt(9.81 * k + gammasurrho * k**3 + Dsurrho * k **5)
 
+def RDD_pesante_flexion_depth(k,drhoh, Dsurrho):
+    return np.sqrt((9.81 * k + Dsurrho * k **5) * (( (np.tanh(2 * k))**(-1) + drhoh * k)**(-1)))
+
