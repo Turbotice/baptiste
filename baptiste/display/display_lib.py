@@ -119,7 +119,10 @@ def figurejolie(params = False, num_fig = False, subplot = False, nom_fig = Fals
                 
             return params
         else :
-            plt.figure(num = num_fig, figsize = set_size(width=500, fraction = 1, subplots = (1,1)))
+            if type(num_fig) != bool :
+                plt.figure(num = num_fig, figsize = set_size(width=500, fraction = 1, subplots = (1,1)))
+            else :
+                plt.figure(figsize = set_size(width=500, fraction = 1, subplots = (1,1)))
     else :
         fig = plt.figure(num = num_fig, figsize = set_size(width=1000, fraction = 1, subplots = subplot))
         axes = []
