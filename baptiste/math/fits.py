@@ -31,7 +31,7 @@ def fit_powerlaw(x,y, display = False, xlabel = '', ylabel = '', legend = ''):
     return popt
 
 
-def fit_ransac (x, y, thresh = 0.1, display = True, xlabel = '', ylabel = '', newfig = True) :
+def fit_ransac (x, y, thresh = 0.1, display = True, xlabel = '', ylabel = '', newfig = False) :
     data = np.stack((x,y), axis = -1)
     model_robust, inliers = ransac(data, LineModelND, min_samples=2, residual_threshold=thresh, max_trials=2000)
     outliers = (inliers == False)
