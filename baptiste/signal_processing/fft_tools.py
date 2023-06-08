@@ -39,7 +39,7 @@ def fft_bapt(data, df1, df2 = False, df3 = False, og_shape = False, abso = True)
         P1 = P2 
         
         
-        f = np.linspace(0, df1/2, n1)
+        f = np.linspace(0, df1, n1)
         
         if abso :
             return P1, f  
