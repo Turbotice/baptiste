@@ -23,6 +23,7 @@ from PIL import Image
 %run display_lib_gld.py
 
 
+
 #Va chercher les images et stock leur chemin dasn liste images
 
 path_images, liste_images, titre_exp = import_images(loc, nom_exp, "LAS")
@@ -36,7 +37,7 @@ mmparpixelx, mmparpixely, mmparpixelz, angle_cam_LAS, mmparpixel = import_calibr
               
 # Creates a file txt with all the parameters of the experience and of the analysis
     
-param_complets = ["Paramètres d'adimensionnement :",  "lambda_vague = " + str(lambda_vague) , "Ampvague = " + str(Ampvague) ,  "Paramètres d'analyse : ", "debut = " + str(debut) ,"kernel_size = " + str(kernel_size), "kernel_iteration = " + str(kernel_iteration) ,"nbframe = " + str(nbframe) ,"maxsize = " + str(maxsize) , "minsize = " + str(minsize) , "threshold = " + str(threshold) , "sepwb = " + str(sepwb) , "size_crop = " + str(size_crop) , "bordersize = " + str(bordersize), "mmparpixel = " + str(mmparpixel), "Paramètres experimentaux : ", "facq = " + str(facq) , "texp = " + str(texp) , "Tmot = " + str(Tmot) , "Vmot = " + str(Vmot), "Hw = " + str(Hw), "Larg_ice = " + str(Larg_ice), "Long_ice = " + str(Long_ice), "tacq = " + str(tacq), "type_exp = " + str(type_exp)]
+param_complets = ["Paramètres d'adimensionnement :",  "lambda_vague = " + str(lambda_vague) , "Ampvague = " + str(Ampvague) ,  "Paramètres d'analyse : ", "debut = " + str(debut) ,"kernel_size = " + str(kernel_size), "kernel_iteration = " + str(kernel_iteration) ,"nbframe = " + str(nbframe) ,"maxsize = " + str(maxsize) , "minsize = " + str(minsize) , "sepwb = " + str(sepwb) , "size_crop = " + str(size_crop) , "bordersize = " + str(bordersize), "mmparpixel = " + str(mmparpixel), "Paramètres experimentaux : ", "facq = " + str(facq) , "texp = " + str(texp) , "Tmot = " + str(Tmot) , "Vmot = " + str(Vmot), "Hw = " + str(Hw), "Larg_ice = " + str(Larg_ice), "Long_ice = " + str(Long_ice), "tacq = " + str(tacq), "type_exp = " + str(type_exp)]
 
 #%%
 
@@ -56,6 +57,8 @@ save = False
 saveplot = False
 
 size_subplot = 3
+
+
 
 
 #%%
@@ -86,7 +89,7 @@ fconv = fconv - np.mean(fconv)
 # ax2.plot(x,y)
 # plt.tight_layout()
 
-for i in range (debut, len (liste_images), int(len(liste_images)/ nbframe + 1)) :
+for i in range (debut, debut + nbframe, 1) : #int(len(liste_images)/ nbframe + 1)) :
     
     #Ouverture image et choix du canal Rouge
     
@@ -97,7 +100,7 @@ for i in range (debut, len (liste_images), int(len(liste_images)/ nbframe + 1)) 
     im2 = np.array(im)
     im_red = im2[:,:,2]
       
-    if True : #display and not display_result_only :
+    if display : #display and not display_result_only :
         figurejolie()
         joliplot('', '', (), (), image = im_red, title = "Image rouge")
     
@@ -118,20 +121,24 @@ for i in range (debut, len (liste_images), int(len(liste_images)/ nbframe + 1)) 
         dy = ndimage.sobel(edges_image, 1)
         edges_image = np.hypot(dx, dy)
         # affichage
-        figurejolie()
-        plt.imshow(edges_image, cmap = 'Greys_r')
-        plt.show()
+        if False :
+            figurejolie()
+            plt.imshow(edges_image, cmap = 'Greys_r')
+            plt.show()
         
         dst = cv2.fastNlMeansDenoising(im_red,None,30,30,21)
-        figurejolie()
-        joliplot('', '', (), (), image = dst, title = "image denoise" )
+        
+        if False :
+            figurejolie()
+            joliplot('', '', (), (), image = dst, title = "image denoise" )
         
         image_binaire = dst < 20
         
         image_binaire = (image_binaire * scale).astype(np.uint8)
         
-        figurejolie()
-        joliplot('', '', (), (), image = image_binaire, title = "image binaire" )
+        if False :
+            figurejolie()
+            joliplot('', '', (), (), image = image_binaire, title = "image binaire" )
         
         
         
@@ -145,13 +152,14 @@ for i in range (debut, len (liste_images), int(len(liste_images)/ nbframe + 1)) 
         dy = ndimage.sobel(edges_image, 1)
         edges_image = np.hypot(dx, dy)
         # affichage
-        figurejolie()
-        plt.imshow(edges_image, cmap = 'Greys_r')
-        plt.show()
+        if False :
+            figurejolie()
+            plt.imshow(edges_image, cmap = 'Greys_r')
+            plt.show()
         
         # im_red_traitee = medfilt2d(im_red, med_size)
         
-        if display : #display and not display_result_only:
+        if False : #display and not display_result_only:
             figurejolie()
             joliplot('', '', (), (), image = im_red_traitee, title = "Image filtre médian " + str (med_size) )
             

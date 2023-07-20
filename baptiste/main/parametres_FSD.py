@@ -9,8 +9,8 @@ import numpy as np
 import os
 
 # PARAMETRES EXPERIENCE
-date = "221124"
-nom_exp = "NBFT1" #nom de l'experience en 5 lettres qui la caractérise
+date = "230720"
+nom_exp = "MPVB5" #nom de l'experience en 5 lettres qui la caractérise
 loc = "D:\Banquise\Baptiste\Resultats_video\d" + date + "\\"
 loc_resultats = "D:\Banquise\Baptiste\Resultats"
 
@@ -27,8 +27,8 @@ path_results = 'D:\Banquise\Baptiste\Résultats\\' + 'FSD\\' + nom_exp
 PARAMETRES TRAITEMENT IMAGE
 '''
 
-debut = 30000
-nbframe = 1      #nb de frame que l'on veut regarder à intervalle de temps régulier
+debut = 2000
+nbframe = 10      #nb de frame que l'on veut regarder à intervalle de temps régulier
 nbplot = 3           #le nombre de plot complet qu'on veur
 
 
@@ -66,7 +66,7 @@ med_size = 1
 k_size = 5
 k_iteration = 3
 sigma = 150         #nb pr la fct de convolution (largeur environ, 30 de large pour sigma = 150)
-
+scale = 255
 
 
 
@@ -95,7 +95,6 @@ def import_param (titre_exp,date, exp_type = "TT"):
     if exp_type == "IND":
         h = float ( titre_exp[titre_exp.index("ha") + 2:titre_exp.index("ha") + 4])
         return h
-
 
 
 

@@ -39,7 +39,7 @@ mmparpixelx, mmparpixely, mmparpixelz, angle_cam_LAS, mmparpixel = import_calibr
               
 # Creates a file txt with all the parameters of the experience and of the analysis
     
-param_complets = ["Paramètres d'adimensionnement :",  "lambda_vague = " + str(lambda_vague) , "Ampvague = " + str(Ampvague) ,  "Paramètres d'analyse : ", "debut = " + str(debut) ,"kernel_size = " + str(k_size_crack), "kernel_iteration = " + str(k_iteration_crack) ,"nbframe = " + str(nbframe) , "minsize_crack = " + str(crack_lenght_min) , "sepwb = " + str(sepwb_cracks) , "size_crop = " + str(size_crop), "mmparpixely = " + str(mmparpixely), "Paramètres experimentaux : ", "facq = " + str(facq) , "texp = " + str(texp) , "Tmot = " + str(Tmot) , "Vmot = " + str(Vmot), "Hw = " + str(Hw), "Larg_ice = " + str(Larg_ice), "Long_ice = " + str(Long_ice), "tacq = " + str(tacq), "type_exp = " + str(type_exp), "nom_exp = " + str(nom_exp)]
+param_complets = ["Paramètres d'adimensionnement :",  "lambda_vague = " + str(lambda_vague) , "Ampvague = " + str(Ampvague) ,  "Paramètres d'analyse : ", "debut = " + str(debut)  ,"nbframe = " + str(nbframe)  , "size_crop = " + str(size_crop), "mmparpixely = " + str(mmparpixely), "Paramètres experimentaux : ", "facq = " + str(facq) , "texp = " + str(texp) , "Tmot = " + str(Tmot) , "Vmot = " + str(Vmot), "Hw = " + str(Hw), "Larg_ice = " + str(Larg_ice), "Long_ice = " + str(Long_ice), "tacq = " + str(tacq), "type_exp = " + str(type_exp), "nom_exp = " + str(nom_exp)]
 
 
 
@@ -75,10 +75,10 @@ debut_las = 1
 fin_las = np.shape(data_originale)[0] - 1
 
 
-t0 = 1
-tf = np.shape(data_originale)[1] - 1
+t0 = 2001
+tf = 2100#np.shape(data_originale)[1] - 1
 
-if False:
+if True:
     figurejolie()
     [y,x] = np.histogram((data_originale[debut_las:fin_las,t0:tf]),10000)
     xc= (x[1:]+x[:-1]) / 2
@@ -145,15 +145,15 @@ if display:
     plt.ylabel("X (m)")
     cbar = plt.colorbar()
     cbar.set_label('Amplitude (m)')
-    plt.clim(-100,100)
+    # plt.clim(-100,100)
 
 data_tot = data  
 #%%AFFICHAGE FFT2
 
 debut_las = 0
-fin_las = 1920 - 130
-t0 = 2486
-tf = 4500
+fin_las = 1000
+t0 = 0
+tf =99
 
 
 
@@ -190,7 +190,7 @@ if display:
 
 save = False
 # param_complets = param_complets.tolist()
-f_exc = 5
+f_exc = 20
 ecart_fq = int(f_exc/10)
 ecart_fexc = 1 #int(ecart_fq / facq * nt)#en points pas fréquence (1 pt = facq/nt Hz) (0.02Hz pr nt = 8000 facq = 175Hz)
 amp_demod = []
@@ -303,7 +303,7 @@ plt.pcolormesh(np.real(demod_sensmoinsx), shading ='auto')
 
 data = np.real(demod_sensmoinsx)
 
-nb_img_film = 300
+nb_img_film = 80
 h_film = 300 #hauteur de l'image en pixel
 pourcent_img = 1.2
 multiplicateur =  h_film / (np.max(data) - np.min(data)) / pourcent_img # pour que le laser bouge sur 1/pourcent_img de l'image
@@ -321,7 +321,7 @@ for i in range (nb_img_film) :
 data_1 = np.real(demod_sensmoinsx)
 data_2 = np.real(demod_sensx)
 
-nb_img_film = 300
+nb_img_film = 80
 h_film = 300 #hauteur de l'image en pixel
 pourcent_img = 1.1
 multiplicateur =  h_film / (np.max((data_1,data_2)) - np.min((data_1,data_2)) ) / pourcent_img # pour que le laser bouge sur 1/pourcent_img de l'image
@@ -341,7 +341,7 @@ data_1 = np.real(demod_sensmoinsx)
 data_2 = np.real(demod_sensx)
 data_3 = data_m
 
-nb_img_film = 300
+nb_img_film = 80
 h_film = 300 #hauteur de l'image en pixel
 pourcent_img = 1.1
 multiplicateur =  h_film / (np.max((data_1,data_2,data_3)) - np.min((data_1,data_2,data_3)) ) / pourcent_img # pour que le laser bouge sur 1/pourcent_img de l'image

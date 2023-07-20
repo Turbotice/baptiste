@@ -59,7 +59,7 @@ mmparpixelx, mmparpixely, mmparpixelz, angle_cam_LAS, mmparpixel = import_calibr
               
 # Creates a file txt with all the parameters of the experience and of the analysis
     
-param_complets = ["Paramètres d'adimensionnement :",  "lambda_vague = " + str(lambda_vague) , "Ampvague = " + str(Ampvague) ,  "Paramètres d'analyse : ", "debut = " + str(debut) ,"kernel_size = " + str(k_size_crack), "kernel_iteration = " + str(k_iteration_crack) ,"nbframe = " + str(nbframe) , "minsize_crack = " + str(crack_lenght_min) , "sepwb = " + str(sepwb_cracks) , "size_crop = " + str(size_crop), "mmparpixely = " + str(mmparpixely), "Paramètres experimentaux : ", "facq = " + str(facq) , "texp = " + str(texp) , "Tmot = " + str(Tmot) , "Vmot = " + str(Vmot), "Hw = " + str(Hw), "Larg_ice = " + str(Larg_ice), "Long_ice = " + str(Long_ice), "tacq = " + str(tacq), "type_exp = " + str(type_exp), "nom_exp = " + str(nom_exp)]
+param_complets = ["Paramètres d'adimensionnement :",  "lambda_vague = " + str(lambda_vague) , "Ampvague = " + str(Ampvague) ,  "Paramètres d'analyse : ", "debut = " + str(debut)  ,"nbframe = " + str(nbframe) , "size_crop = " + str(size_crop), "mmparpixely = " + str(mmparpixely), "Paramètres experimentaux : ", "facq = " + str(facq) , "texp = " + str(texp) , "Tmot = " + str(Tmot) , "Vmot = " + str(Vmot), "Hw = " + str(Hw), "Larg_ice = " + str(Larg_ice), "Long_ice = " + str(Long_ice), "tacq = " + str(tacq), "type_exp = " + str(type_exp), "nom_exp = " + str(nom_exp)]
 
 openn_dico = True
 if openn_dico :
@@ -83,7 +83,7 @@ display = True
 f_exc = round(Tmot)
 
 if cam_dessus :
-    grossissement = dico[date][nom_exp]["grossissement"]#CCCS2 5.63#CCCS1 5.63 #TRB 5.63#DAP 5.7978508834100255 #import_angle(date, nom_exp, loc,display = True)[0]
+    grossissement = 2#dico[date][nom_exp]["grossissement"]#CCCS2 5.63#CCCS1 5.63 #TRB 5.63#DAP 5.7978508834100255 #import_angle(date, nom_exp, loc,display = True)[0]
 else :
     grossissement = 1 #car data à m'échelle est multiplié par mmparpixely qui est deja l'échelle verticale
     mmparpixel = mmparpixelz #horizontal
@@ -109,14 +109,17 @@ else :
     data_originale = data_originale_X
 
 debut_las = 100
-fin_las = np.shape(data_originale)[0] - 200
+fin_las = np.shape(data_originale)[0] - 100
+
+
+data_originale = data_originale - np.mean(data_originale, axis = 0)
 #100 / 400 Pour DAP
 #650 / 300 Pour CCCS1
 
 #1 / 200 pr CCCS2
 
-t0 = 1
-tf = np.shape(data_originale)[1] - 1
+t0 = 2000
+tf = 2200#np.shape(data_originale)[1] - 1
 
 if display:
     figurejolie()
@@ -186,7 +189,7 @@ if display:
     plt.ylabel("X (pixel)")
     cbar = plt.colorbar()
     cbar.set_label('Amplitude (m)')
-    plt.clim(-0.008,0.008)
+    # plt.clim(-0.008,0.008)
 
     
 #%% Analyse d'un signal temporel
@@ -326,11 +329,11 @@ plt.clim(-1,1)
 #%%AMPLITUDE AVCE LE TEMPS
 
 #Moyenne temporelle amp aux moments interessants, et avec le temps
-longueur_donde = int(dico[date][nom_exp]['lambda'] / mmparpixel * 1000 / 2)
-temps = 6400
+longueur_donde = 100#int(dico[date][nom_exp]['lambda'] / mmparpixel * 1000 / 2)
+temps = 150
 posx = 420
 plage_x = longueur_donde
-fexc = dico[date][nom_exp]['fexc']
+fexc = 40#dico[date][nom_exp]['fexc']
 strobo = int(facq/fexc) + 1
 
 figurejolie()
@@ -339,7 +342,7 @@ for i in range (20):
 
 amp_1periode = []
 t_amp = []
-periodes = 5 #nb de periodes par pt de mesure
+periodes = 2 #nb de periodes par pt de mesure
 img_par_periode = (int((facq/fexc) * periodes) + 1)
 nb_periode = int(nt/img_par_periode) #nb de pts où on moyenne l'amplitude
 for j in range (nb_periode):
