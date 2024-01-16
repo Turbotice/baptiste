@@ -7,7 +7,7 @@ import baptiste.tools.tools as tools
 
 ## TAILLE DES FIGURES
 
-def set_size(width, fraction=1, subplots=(1, 1)):
+def set_size(width = 15, fraction=1, subplots=(1, 1)):
     """Set figure dimensions to avoid scaling in LaTeX.
 
     Parameters
@@ -23,27 +23,32 @@ def set_size(width, fraction=1, subplots=(1, 1)):
     fig_dim: tuple
             Dimensions of figure in inches
     """
-    if width == 'thesis':
-        width_pt = 426.79135
-    elif width == 'beamer':
-        width_pt = 307.28987
-    else:
-        width_pt = width
+    # if width == 'thesis':
+    #     width_cm = 12
+    # elif width == 'beamer':
+    #     width_cm = 10
+    # else:
+    width_cm = width #en cm
 
     # Width of figure (in pts)
-    fig_width_pt = width_pt * fraction
+    
+    cm_to_pt = 1/0.0351459804
+    golden_ratio = .9
+    fig_width_pt = int(width_cm * fraction * cm_to_pt)
+    
     # Convert from pt to inches
+    
     inches_per_pt = 1 / 72.27
 
-    # Golden ratio to set aesthetic figure height
-    # https://disq.us/p/2940ij3
-    #golden_ratio = (5**.5 - 1) / 2
-    golden_ratio = .9
-    # Figure width in inches
+    # # Golden ratio to set aesthetic figure height
+    # # https://disq.us/p/2940ij3
+    # #golden_ratio = (5**.5 - 1) / 2
+    # golden_ratio = .9
+    # # Figure width in inches
     fig_width_in = fig_width_pt * inches_per_pt
-    # Figure height in inches
+    # # Figure height in inches
     fig_height_in = fig_width_in * golden_ratio * (subplots[0] / subplots[1])
-    #fig_height_in = fig_width_in * .9 * (subplots[0] / subplots[1])
+    # #fig_height_in = fig_width_in * .9 * (subplots[0] / subplots[1])
 
     return (fig_width_in, fig_height_in)
 
@@ -55,12 +60,12 @@ tex_fonts = {
     "text.usetex": True,
     "font.family": "serif",
     # Use 10pt font in plots, to match 10pt font in document
-    "axes.labelsize": 18,
-    "font.size": 18,
+    "axes.labelsize": 12,
+    "font.size": 12,
     # Make the legend/label fonts a little smaller
-    "legend.fontsize":14,
-    "xtick.labelsize": 12,
-    "ytick.labelsize": 12
+    "legend.fontsize":10,
+    "xtick.labelsize": 10,
+    "ytick.labelsize": 10
 }
 
 plt.rcParams.update(tex_fonts)
@@ -94,7 +99,7 @@ def vcolors(n) :
 
 
     
-def figurejolie(params = False, num_fig = False, subplot = False, nom_fig = False):
+def figurejolie(params = False, num_fig = False, subplot = False, nom_fig = False, width = 20):
     if subplot == False :
         
         #si params renseigné
@@ -109,7 +114,7 @@ def figurejolie(params = False, num_fig = False, subplot = False, nom_fig = Fals
                 params['num_fig'].append(randnumfig)
                 num_fig = randnumfig
                 
-            plt.figure(num = num_fig, figsize = set_size(width=500, fraction = 1, subplots = (1,1)))
+            plt.figure(num = num_fig, figsize = set_size(width = width, fraction = 1, subplots = (1,1)))
             
             #ajoute nom_fig dans les params
             if type(nom_fig) != bool :
@@ -120,11 +125,11 @@ def figurejolie(params = False, num_fig = False, subplot = False, nom_fig = Fals
             return params
         else :
             if type(num_fig) != bool :
-                plt.figure(num = num_fig, figsize = set_size(width=500, fraction = 1, subplots = (1,1)))
+                plt.figure(num = num_fig, figsize = set_size(fraction = 1, subplots = (1,1)))
             else :
-                plt.figure(figsize = set_size(width=500, fraction = 1, subplots = (1,1)))
+                plt.figure(figsize = set_size(fraction = 1, subplots = (1,1)))
     else :
-        fig = plt.figure(num = num_fig, figsize = set_size(width=500, fraction = 1, subplots = subplot))
+        fig = plt.figure(num = num_fig, figsize = set_size(fraction = 1, subplots = subplot))
         axes = []
                            
         return fig, axes
@@ -229,6 +234,10 @@ def joliplot(xlabel, ylabel, xdata, ydata, color = False, fig = False, axes = []
             
             else :
                 marker = '-'
+                if color == 8 :
+                    marker = '--'
+                if color == 2 :
+                    marker = '-.'
     
             
             

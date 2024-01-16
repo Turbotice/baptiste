@@ -33,9 +33,10 @@ from PIL import Image
 
 #Va chercher les images et stock leur chemin dasn liste images
 
-path_images, liste_images, titre_exp = import_images(loc,nom_exp,"LAS")
+path_images, liste_images, titre_exp = import_images(loc,nom_exp,"PIV")
 
 #Importe les paramètres de l'experience
+
 
 facq, texp, Tmot, Vmot, Hw, Larg_ice, Long_ice, tacq, type_exp = import_param (titre_exp,date)   
 
@@ -45,7 +46,7 @@ mmparpixelx, mmparpixely, mmparpixelz, angle_cam_LAS, mmparpixel = import_calibr
     
 param_complets = ["Paramètres d'adimensionnement :",  "lambda_vague = " + str(lambda_vague) , "Ampvague = " + str(Ampvague) ,  "Paramètres d'analyse : ", "debut = " + str(debut) ,"kernel_size = " + str(k_size_crack), "kernel_iteration = " + str(k_iteration_crack) ,"nbframe = " + str(nbframe) , "minsize_crack = " + str(crack_lenght_min) , "sepwb = " + str(sepwb_cracks) , "size_crop = " + str(size_crop), "mmparpixely = " + str(mmparpixely), "Paramètres experimentaux : ", "facq = " + str(facq) , "texp = " + str(texp) , "Tmot = " + str(Tmot) , "Vmot = " + str(Vmot), "Hw = " + str(Hw), "Larg_ice = " + str(Larg_ice), "Long_ice = " + str(Long_ice), "tacq = " + str(tacq), "type_exp = " + str(type_exp)]
 
-#%%points expérimentaux
+#%%points expérimentaux, RDDA (221024)
 
 RDDA_YYY = True
 g = 9.81

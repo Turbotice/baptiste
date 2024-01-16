@@ -22,6 +22,24 @@ from skimage.morphology import skeletonize
 Fonctions de démarrage
 '''
 
+def get_files(path,field,filetype):
+    '''
+    path: Path to the main folder
+    field: keys = something in the name of the file that you're looking for
+    filetype: the type of file, csv, tiff, txt, etc
+    returns: fnames = list with the files
+    '''
+    fnames = ([os.path.join(root,file) for root, dirs, files in os.walk(path)
+    for file in files
+        if file.endswith(filetype) #or file.endswith('.png') or file.endswith('.pdf')
+        if field in file
+        ])
+    return fnames
+ 
+
+
+
+
 def import_images(loc, nom_exp, exp_type, nom_fich = "\image_sequence\\"):
     fichiers = []                             
     liste_images = []
@@ -33,10 +51,14 @@ def import_images(loc, nom_exp, exp_type, nom_fich = "\image_sequence\\"):
             if exp_type in fichiers[j]:
                 titre_exp = fichiers[j]
                 path_images = str(loc + fichiers [j] + nom_fich)
-
+    
+    
     liste_images = os.listdir(path_images)
 
-    print (path_images)
+    
+    
+    if len(liste_images) > 10000 :
+        print('ATTENTION PLUS DE 10 000 IMAGES') 
       
     #Créé un répertoire pour les résultats
          

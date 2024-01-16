@@ -40,7 +40,7 @@ from PIL import Image
 
 #Va chercher les images et stock leur chemin dasn liste images
 
-path_images, liste_images, titre_exp = import_images(loc,nom_exp,"LAS")
+path_images, liste_images, titre_exp = import_images(loc,nom_exp,"PIV")
 
 #Importe les paramètres de l'experience
 

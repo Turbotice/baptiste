@@ -25,9 +25,14 @@ from scipy import stats
 import scipy.fft as fft
 import os
 from PIL import Image
-%run Functions_FSD.py
-%run parametres_FSD.py
-%run display_lib_gld.py
+
+
+import baptiste.display.display_lib as disp
+import baptiste.experiments.import_params as ip
+import baptiste.files.file_management as fm
+import baptiste.image_processing.image_processing
+import baptiste.files.dictionaries as dic
+import baptiste.tools.tools as tools
 
 
 
@@ -35,15 +40,14 @@ save = False
 openn = True
 redo = False
     
-dico = {}
 if openn :
-    dico = open_dico()
+    dico = dic.open_dico()
 
 loc = "D:\Banquise\Baptiste\Resultats_video\\"
 
-date_min = 220411 #AVANT C'EST NUL
-# date_min = 221005
-date_max = 230120 #AJD ?
+date_min = 231116#220411 #AVANT C'EST NUL
+
+date_max = 231200 #AJD ?
 
 #%%Ajout de termes depuis un fichier txt ou csv
 path_complement = 'D:\Banquise\Baptiste\Resultats\\complements_dictionnaires.txt'
@@ -71,30 +75,112 @@ if save :
 #%% Print de qlq aparametres
 
 for date in dico :
+    if date.isdigit() :
 
-    if float(date) > date_min and int(date) != 221011 :
-        print(date)
-
-        for nom_exp in dico[np.str(date)] :
-            
-            if 'amp_fracs_fft' in dico[date][nom_exp] :
-                # if "non" in dico[date][nom_exp]['casse'] :
-                print(nom_exp)
+        if float(date) > date_min and int(date) != 221011 :
+            print(date)
+    
+            for nom_exp in dico[np.str(date)] :
+                
+                if 'amp_fracs_fft' in dico[date][nom_exp] :
+                    # if "non" in dico[date][nom_exp]['casse'] :
+                    print(nom_exp)
 
 #%% Ajout de CM si CM par remesuré
 
 for date in dico :
-    if float(date) > date_min :
-        print(date)
-        for nom_exp in dico[np.str(date)] :
-            nom_exp = str(nom_exp)
-            if 'CM' in dico[date][nom_exp] :
-                if float(dico[date][nom_exp]['CM']) < 0.0001 :
-                    dico = add_dico(dico,date,nom_exp,'CM',dico['variables_globales']['CM']['CM'])
-                    dico = add_dico(dico,date,nom_exp,'err_CM',dico['variables_globales']['CM']['err_CM'])
-            dico = add_dico(dico, date,nom_exp, 'rho_utilise', 900)
+    if date.isdigit() :
+        if float(date) > date_min :
+            print(date)
+            for nom_exp in dico[np.str(date)] :
+                nom_exp = str(nom_exp)
+                print(nom_exp)
+                if 'CM' in dico[date][nom_exp] :
+                    pass
+                else : 
+                    dico[date][nom_exp]['CM'] = 0.0
+                    if float(dico[date][nom_exp]['CM']) < 0.0001 :
+                        dico = dic.add_dico(dico,date,nom_exp,'CM',dico['variables_globales']['CM']['CM'])
+                        dico = dic.add_dico(dico,date,nom_exp,'err_CM',dico['variables_globales']['CM']['err_CM'])
+                dico = dic.add_dico(dico, date,nom_exp, 'rho_utilise', 900)
                 
                 
+#%%
+
+
+data = pandas.read_csv('E:\Baptiste\\Resultats_exp\\Traitement_fracture.csv', sep = ';')
+
+
+data = np.asarray(data)
+loc = 'D:\\Banquise\\Baptiste\\Resultats_video\\'
+exp_type = 'LAS'
+nom_fich = '\\resultats'
+
+for i in range (1,86):
+    nom_exp = data[i,1]
+    date =  data[i,0][8:10]+ data[i,0][3:5] + data[i,0][0:2]
+    f = data[i,2]
+    loc = 'D:\\Banquise\\Baptiste\\Resultats_video\\d' + date + '\\'
+    
+    print(date)
+    print(nom_exp)
+    
+    
+    pds_vernis = data[i,5]
+    long_onde = data[i,6]
+    
+    fichiers = os.listdir(loc)        
+    amp = False    
+    
+    
+    if data[i,7] == 'oui' :
+        for j in range (len (fichiers)):
+            if nom_exp == fichiers[j][8:13] :
+                if exp_type in fichiers[j]:
+                    titre_exp = fichiers[j]
+                    uuu = os.listdir(str(loc + fichiers [j] + nom_fich))
+                    for k in uuu :
+                        if 'params_amp' in k :
+                            params_amp = dic.open_dico(str(loc + fichiers [j] + nom_fich) + '\\' + k)
+                            amp = True   
+        
+        
+    if amp :
+        dico[date][nom_exp]['Amp_moy'] = params_amp['Amp_t']['Amp_moy']/2
+        dico[date][nom_exp]['Amp_max'] = params_amp['Amp_t']['Amp_max']/2
+        print('Amp_moy', params_amp['Amp_t']['Amp_moy'])
+        print('Amp_max', params_amp['Amp_t']['Amp_max'])
+        
+        
+    if long_onde != 'x' :
+        dico[date][nom_exp]['lambda'] = long_onde
+        print('lambda', long_onde)
+        
+    dico[date][nom_exp]['poids_vernis'] = pds_vernis
+    dico[date][nom_exp]['h'] = pds_vernis/(dico[date][nom_exp]['Larg_ice'] / 100 * dico[date][nom_exp]['Long_ice'] / 100 * dico[date][nom_exp]['rho_utilise'] * dico[date][nom_exp]['CM'] )
+    
+    h = pds_vernis/(dico[date][nom_exp]['Larg_ice'] / 100 * dico[date][nom_exp]['Long_ice'] / 100 * dico[date][nom_exp]['rho_utilise'] * dico[date][nom_exp]['CM'] )
+    print('pds_vernis', pds_vernis)   
+    print('h', h)
+            
+#%% Ajout l_cracks
+
+for date in dico :
+    if date.isdigit() :
+        if float(date) > date_min :
+            print(date)
+            u = 0
+            loc = 'D:\\Banquise\\Baptiste\\Resultats_video\\d' + date + '\\'
+
+            cracks = pandas.read_csv(loc + date + "_l_cracks.txt", sep = ' ', header = None)
+            cracks = np.asarray(cracks)
+            # cracks = cracks[np.where(np.nan != cracks)]
+            for j in range (cracks.shape[0]) : 
+                print(cracks[j,0])
+                print(cracks[j,1:])
+                dico[date][cracks[j,0]]['l_cracks'] = cracks[j,1:]
+
+     
                 
 #%% Ajout de h
 
@@ -104,7 +190,7 @@ for date in dico :
         print(date)
         
         for nom_exp in dico[np.str(date)] :
-            dico = add_dico(dico, date,nom_exp, 'rho_utilise', 900)
+            dico = dic.add_dico(dico, date,nom_exp, 'rho_utilise', 900)
             if 'poids_initial' in dico[date][nom_exp] :
                 if float(dico[date][nom_exp]['poids_initial']) > 0.0001 :
                     nom_exp = str(nom_exp)
@@ -116,8 +202,8 @@ for date in dico :
                     if "err_CM" in dico[date][nom_exp] :
                         err_CM = float(dico[date][nom_exp]['err_CM'])
                         err_h = err_CM/CM * h
-                        dico = add_dico(dico,date,nom_exp,'err_h',err_h )
-                    dico = add_dico(dico, date, nom_exp, 'h', h)
+                        dico = dic.add_dico(dico,date,nom_exp,'err_h',err_h )
+                    dico = dic.add_dico(dico, date, nom_exp, 'h', h)
 
 
 

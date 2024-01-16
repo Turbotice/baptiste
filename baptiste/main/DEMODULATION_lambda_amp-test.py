@@ -36,58 +36,29 @@ import scipy.fft as fft
 import pickle 
 import os
 from PIL import Image
-%run Functions_FSD.py
-%run parametres_FSD.py
-%run display_lib_gld.py
 
 
-#Va chercher les images et stock leur chemin dasn liste images
-
-path_images, liste_images, titre_exp = import_images(loc,nom_exp, "LAS")
-
-#Importe les paramètres de l'experience
-
-facq, texp, Tmot, Vmot, Hw, Larg_ice, Long_ice, tacq, type_exp = import_param (titre_exp, date)   
-
-#Pour traiteer les expériences où la caméra était sur le coté (pendant le stage) et celle où la caméra était au dessus (Thèse)
-if float(date) >= 221006 :
-    cam_dessus = True     
-else :
-    cam_dessus = False    
-
-mmparpixelx, mmparpixely, mmparpixelz, angle_cam_LAS, mmparpixel = import_calibration(titre_exp,date) 
-              
-# Creates a file txt with all the parameters of the experience and of the analysis
-    
-param_complets = ["Paramètres d'adimensionnement :",  "lambda_vague = " + str(lambda_vague) , "Ampvague = " + str(Ampvague) ,  "Paramètres d'analyse : ", "debut = " + str(debut)  ,"nbframe = " + str(nbframe) , "size_crop = " + str(size_crop), "mmparpixely = " + str(mmparpixely), "Paramètres experimentaux : ", "facq = " + str(facq) , "texp = " + str(texp) , "Tmot = " + str(Tmot) , "Vmot = " + str(Vmot), "Hw = " + str(Hw), "Larg_ice = " + str(Larg_ice), "Long_ice = " + str(Long_ice), "tacq = " + str(tacq), "type_exp = " + str(type_exp), "nom_exp = " + str(nom_exp)]
-
-openn_dico = True
-if openn_dico :
-    dico = open_dico()
-    
+import baptiste.display.display_lib as disp
+import baptiste.experiments.import_params as ip
+import baptiste.files.file_management as fm
+import baptiste.image_processing.image_processing
+import baptiste.files.dictionaries as dic
+import baptiste.tools.tools as tools
 
 
-# import_angle (date, nom_exp, loc, display = True)
+date = '231130'
+nom_exp = 'DMLO0'
+exp = True
+exp_type = 'LAS'
 
 
+dico, params, loc = ip.initialisation(date, nom_exp, exp = True, display = False)
+  
 
 #%%Paramètre de traitement
 
-
-
 save = False
 display = True
-
-
-
-f_exc = round(Tmot)
-
-if cam_dessus :
-    grossissement = 2#dico[date][nom_exp]["grossissement"]#CCCS2 5.63#CCCS1 5.63 #TRB 5.63#DAP 5.7978508834100255 #import_angle(date, nom_exp, loc,display = True)[0]
-else :
-    grossissement = 1 #car data à m'échelle est multiplié par mmparpixely qui est deja l'échelle verticale
-    mmparpixel = mmparpixelz #horizontal
-
 
 
 #%%Charge les données (data) et en fait l'histogramme
@@ -95,37 +66,40 @@ else :
 
 
 
-folder_results = path_images[:-15] + "resultats"
+folder_results = params['path_images'][:-15] + "resultats"
 name_file = "positionLAS.npy"
 data_originale = np.load(folder_results + "\\" + name_file)
 
 if True : #cam_dessus :
     data_originale = np.rot90(data_originale)
+    data_originale = np.flip(data_originale, 0)
+   
+
     
-else :
-    data_originale_X = np.zeros(data_originale.shape)
-    for i in range (data_originale.shape[0]):
-        data_originale_X[i,:] = data_originale[-i,:]
-    data_originale = data_originale_X
-
-debut_las = 100
-fin_las = np.shape(data_originale)[0] - 100
+data_originale = data_originale - np.mean(data_originale, axis = 0)    
 
 
-data_originale = data_originale - np.mean(data_originale, axis = 0)
+params['debut_las'] = 100
+params['fin_las'] = np.shape(data_originale)[0] - 700
+
 #100 / 400 Pour DAP
 #650 / 300 Pour CCCS1
-
 #1 / 200 pr CCCS2
 
-t0 = 2000
-tf = 2200#np.shape(data_originale)[1] - 1
+params['t0'] = 100
+params['tf'] = np.shape(data_originale)[1] - 1
+
+
+[nx,nt] = data_originale[params['debut_las']:params['fin_las'],params['t0']:params['tf']].shape
+
+
+data = data_originale[params['debut_las']:params['fin_las'],params['t0']:params['tf']]
 
 if display:
-    figurejolie()
-    [y,x] = np.histogram((data_originale[debut_las:fin_las,t0:tf]),10000)
+    disp.figurejolie()
+    [y,x] = np.histogram(data,1000)
     xc= (x[1:]+x[:-1]) / 2
-    joliplot("y (pixel)", "Position du laser (pixel)", xc,y, exp = False)
+    disp.joliplot("y (pixel)", "Position du laser (pixel)", xc,y, exp = False)
     plt.yscale('log')
 
 #%%TRAITEMENT DU SIGNAL
@@ -133,70 +107,68 @@ if display:
 # dim1=position (en pixel), dim2=temps (en frame) et valeur=position
 # verticale du laser en pixel.50#%% Pre-traitement
 
-savgol = True
-im_ref = False
-minus_mean = True
+params['savgol'] = True
+params['im_ref'] = False
 
-ordre_savgol = 2
-taille_savgol = 11
-size_medfilt = 51
+params['minus_mean'] = True
 
-[nx,nt] = data_originale[debut_las:fin_las,t0:tf].shape
+params['ordre_savgol'] = 2
+params['taille_savgol'] = 11
+params['size_medfilt'] = 51
 
 
-data = data_originale[debut_las:fin_las,t0:tf]
 
 
 #enlever moyenne pr chaque pixel
 
-if im_ref :
+if params['im_ref'] :
     mean_pixel = np.mean(data,axis = 1) #liste avec moyenne en temps de chaque pixel 
     for i in range (0,nt):
-        data[:,i] = data[:,i] - mean_pixel #pour chaque temps, on enleve la moyenne temporelle de chaque pixel
+        data[:,i] = data[:,i] - mean_pixel #pour chaque pixel, on enleve la moyenne temporelle de chaque pixel
 
-if minus_mean :
+if params['minus_mean'] :
     data = data - np.mean(data)
 #mise à l'échelle en m
-data_m = data *  mmparpixely / 1000
+data_m = data *  params['mmparpixely'] / 1000
 
-data_m = data_m / grossissement
+data_m = data_m / params['grossissement']
 
 
-t = np.arange(0,nt)/facq
-x = np.arange(0,nx)*mmparpixelz / 1000
+t = np.arange(0,nt)/params['facq']
+x = np.arange(0,nx)*params['mmparpixelz'] / 1000
 
 signalsv = np.zeros(data.shape)
 
 #filtre savgol
 
 for i in range(0,nt):  
-    signalsv[:,i] = savgol_filter(data_m[:,i], taille_savgol,ordre_savgol, mode = 'nearest')
+    signalsv[:,i] = savgol_filter(data_m[:,i], params['taille_savgol'],params['ordre_savgol'], mode = 'nearest')
     if np.mod(i,1000)==0:
         print('On processe l image numero: ' + str(i) + ' sur ' + str(nt))
 print('Done !')
 
 
-if savgol :
+if params['savgol'] :
     data = signalsv.copy()
 else :
     data = data_m.copy()
     
 if display:
-    figurejolie()
+    disp.figurejolie()
     # plt.pcolormesh(t, x, data,shading='auto')
     plt.pcolormesh(data,shading='auto')
     plt.xlabel("Temps (frames)")
     plt.ylabel("X (pixel)")
     cbar = plt.colorbar()
     cbar.set_label('Amplitude (m)')
-    # plt.clim(-0.008,0.008)
+    # plt.clim(-0.01,0.01)
 
     
 #%% Analyse d'un signal temporel
 if True:
     
     #On prend un point qcq en x, et on regarde le signal au cours du temps.
-    figurejolie()
+    disp.figurejolie()
     i = 200
     
     # On va regarder la periode sur signal.
@@ -208,12 +180,14 @@ if True:
     P1[2:-1] = 2*P1[2:-1]
     
     
-    f = facq * np.arange(0,int(nt/2)) / nt 
-    joliplot('f (Hz)', '|P1(f)|', f, P1, title = 'Single-Sided Amplitude Spectrum of X(t)', exp = False)
+    f = params['facq'] * np.arange(0,int(nt/2)) / nt 
+    disp.joliplot('f (Hz)', '|P1(f)|', f, P1, title = 'Single-Sided Amplitude Spectrum of X(t)', exp = False)
+    
+    print('f = ', f[np.where(np.abs(P1) == np.max(np.abs(P1)))][0], 'Hz')
     
 
 
-#%% Analyse avec les harmoniques
+#%% Analyse avec les harmoniques (A ADAPTER)
 if True:
     longueure_tps = 1000 #temps pour découper la FFT temporelle
     
@@ -311,12 +285,11 @@ if True:
 
 #%%AFFICHAGE FFT2
 
-[nx,nt] = data_originale[debut_las:fin_las,t0:tf].shape
 
-k_x = np.linspace(-1 / mmparpixel * 1000 / 2,1 / mmparpixel * 1000 / 2, nx)
-f = np.linspace(-facq/2, facq/2, nt)
+k_x = np.linspace(-1 / params['mmparpixel'] * 1000 / 2,1 / params['mmparpixel'] * 1000 / 2, nx)
+f = np.linspace(-params['facq']/2, params['facq']/2, nt)
 
-figurejolie()
+disp.figurejolie()
 Y_fft2 = fft.fft2(data)
 Y_fft2_shift = fft.fftshift(Y_fft2)
 plt.pcolormesh(f, k_x, np.abs(Y_fft2_shift),shading='auto')
@@ -325,55 +298,194 @@ cbar.set_label('Amplitude (mm)')
 plt.xlabel('f (Hz)')
 plt.ylabel(r'k $(m^{-1})$')
 plt.clim(-1,1)
+#%%
+
+"""
+
+
+
+
+                                                                               PARTIE AMPLITUDE
+
+
+
+"""
+
 
 #%%AMPLITUDE AVCE LE TEMPS
-
+savefig = False
+save = False
 #Moyenne temporelle amp aux moments interessants, et avec le temps
-longueur_donde = 100#int(dico[date][nom_exp]['lambda'] / mmparpixel * 1000 / 2)
-temps = 150
-posx = 420
-plage_x = longueur_donde
-fexc = 40#dico[date][nom_exp]['fexc']
-strobo = int(facq/fexc) + 1
+longueur_donde = int(dico[date][nom_exp]['lambda'] / params['mmparpixel'] * 1000 / 2) * 2
 
-figurejolie()
-for i in range (20):
-    joliplot("X","A",x, data[:,temps + i * strobo * 5], exp = False, title = "A(t), t = " + str(round(temps)) + " frame, 10 périodes")
+params['t0_A'] = 0
+params['x0_A'] = 400
+params['plage_x'] = longueur_donde
+fexc = params['fexc']
+strobo = int(params['facq']/fexc) + 1
+
+# disp.figurejolie()
+# for i in range (20):
+#     disp.joliplot("X","A",x, data[:,params['t0_A'] + i * strobo * 5], exp = False, title = "A(t), t = " + str(round(400)) + " frame, 10 périodes")
 
 amp_1periode = []
 t_amp = []
-periodes = 2 #nb de periodes par pt de mesure
-img_par_periode = (int((facq/fexc) * periodes) + 1)
-nb_periode = int(nt/img_par_periode) #nb de pts où on moyenne l'amplitude
+periodes = 1 #nb de periodes par pt de mesure
+img_par_periode = (int((params['facq']/fexc) * periodes) + 1)
+nb_periode = int((nt - params['t0_A'])/img_par_periode) #nb de pts où on moyenne l'amplitude
 for j in range (nb_periode):
     t_amp.append(j * img_par_periode)
-    amp_1periode.append(np.mean(np.amax(data[posx:posx + plage_x, j * img_par_periode:(j+1) * img_par_periode], axis = 1) - np.amin(data[posx:posx + plage_x, j * img_par_periode:(j+1) * img_par_periode], axis = 1)))
-figurejolie()
-Amp_t = amp_1periode
-joliplot('t (frame)','Amplitude (m)',t_amp,Amp_t,exp = False , color = 3, legend = "Amp(t) entre " + str(posx) + " et " + str(posx + plage_x))
+    amp_1periode.append(np.max(np.amax(data[params['x0_A']:params['x0_A'] + params['plage_x'], params['t0_A'] + j * img_par_periode:params['t0_A'] +(j+1) * img_par_periode], axis = 0) - np.amin(data[params['x0_A']:params['x0_A'] + params['plage_x'], params['t0_A'] + j * img_par_periode:params['t0_A'] +(j+1) * img_par_periode], axis = 0)))
+disp.figurejolie()
+Amp_t = np.asarray(amp_1periode)
+t_amp = np.asarray(t_amp)
+disp.joliplot('t (frame)','Amplitude (m)',t_amp,Amp_t,exp = False , color = 3, legend = "Amp(t) entre x = " + str(params['x0_A']) + " et " + str(params['x0_A'] + params['plage_x']) + ' t0 = ' + str(params['t0_A']))
+
+if savefig :
+    plt.savefig(params['path_images'][:-15] + "resultats" + "/" + "Amp_t_" + nom_exp + '.pdf', dpi = 1)
+    dic.save_dico(params, params['path_images'][:-15] + "resultats//params_amp.pkl" )
+  
+amp = np.mean(Amp_t)/2
+print('amp = ', amp, 'm')
+
+if save : 
+    dico = dic.add_dico(dico,date,nom_exp,'amp',amp)
+    dico = dic.add_dico(dico,date,nom_exp,'amp_t',Amp_t/2)
+    dico = dic.add_dico(dico,date,nom_exp,'t_amp',t_amp + params['t0_A'] + params['t0'])
+    dic.save_dico(dico)
+save = False
+
+#%% AMPLITUDE V2
+
+params['t0_A'] = 0
+params['x0_A'] = 200
+params['larg_fit_a'] = 2
+
+display_all = False
+display = True
+
+Amp_t = {}
+Amp_t['Amp'] = {}
+Amp_t['peaks_max'] = {}
+Amp_t['peaks_min'] = {}
+Amp_max = np.zeros(nx - params['x0_A'])
+T_max = np.zeros(nx - params['x0_A'], dtype = int)
+Amp_moy = np.zeros(nx - params['x0_A'])
+
+t_pix = np.linspace(params['t0_A'], nt, nt-params['t0_A'])
+x_pix = np.linspace(params['x0_A'], nx, nx - params['x0_A'])
+
+distance = int(params['facq']/ params['fexc']) - 4
+
+for i in range(params['x0_A'], nx,1) : #pour chaque pixel
+    pix = data[i, params['t0_A']:]
+    
+    if display_all and i == params['x0_A'] :
+        disp.figurejolie()
+        disp.joliplot("t (frames)", "z (m)", t_pix, pix, exp = False) #mvt du pixel en fct du tps
+    
+    peaks_max_0 = find_peaks(pix, distance = distance)
+    
+    peaks_max = np.zeros(len(peaks_max_0[0]))
+    vals_max = np.zeros(len(peaks_max_0[0]))
+    
+    for v in range (len(peaks_max_0[0])) : #fit polynomial du max
+        val_max, pos_max = tools.max_fit2(pix, peaks_max_0[0][v], a = params['larg_fit_a'])
+        peaks_max[v] = pos_max
+        vals_max[v] = val_max
+    
+    peaks_max = peaks_max + params['t0_A']
+    
+    if display_all and i == params['x0_A'] :
+        disp.joliplot("t (frames)", "z (m)", peaks_max, vals_max, exp = True)
+    
+    peaks_min_0 = find_peaks(-pix, distance = distance)
+    
+    peaks_min = np.zeros(len(peaks_min_0[0]))
+    vals_min = np.zeros(len(peaks_min_0[0]))
+    
+    for w in range (len(peaks_min_0[0])) : #fit polynomial du min
+        val_min, pos_min = tools.max_fit2(pix, peaks_min_0[0][w], a = params['larg_fit_a'])
+        peaks_min[w] = pos_min
+        vals_min[w] = val_min
+    
+    peaks_min = peaks_min + params['t0_A']
+    
+    if display_all and i == params['x0_A'] :
+        disp.joliplot("t (frames)", "z (m)", peaks_min, vals_min, exp = True)
+    
+    nb_peaks = np.min( (len(peaks_max), len(peaks_min)) )
+    Amp_t_x = np.zeros(nb_peaks)
+    
+    for j in range (nb_peaks):
+        Amp_t_x[j] = vals_max[j] - vals_min[j]
+    
+    Amp_t["Amp"][str(i)] = Amp_t_x
+    Amp_t["peaks_min"][str(i)] = peaks_min
+    Amp_t["peaks_max"][str(i)] = peaks_max
+
+    if display_all and i == params['x0_A']:  
+        disp.figurejolie()
+        disp.joliplot("t", "Amp", peaks_max[:len(Amp_t_x)], Amp_t_x)
+    
+    Amp_max[i - params['x0_A']] = np.max(Amp_t_x)
+    T_max[i - params['x0_A']] = int(np.where(np.max(Amp_t_x) == Amp_t_x)[0][0])
+    Amp_moy[i - params['x0_A']] = np.mean(Amp_t_x[T_max[i - params['x0_A']]:])
+    
+Amp_t['Amp_max_x'] = Amp_max
+Amp_t['Tmax'] = T_max
+Amp_t['Amp_moy_x'] = Amp_moy
+
+Amp_t['Amp_max'] = np.quantile(Amp_max, 0.95)
+Amp_t['Amp_moy'] = np.quantile(Amp_moy, 0.95)
+
+
+print('amp max =', Amp_t['Amp_max'], 'm')
+print('amp moy =', Amp_t['Amp_moy'], 'm')
+
+if display :
+    disp.figurejolie()
+    disp.joliplot('x', 'Amp', x_pix, savgol_filter(Amp_t['Amp_max_x'], params['taille_savgol'],params['ordre_savgol'], mode = 'nearest'), exp = False, color = 1, legend = 'Amp max')
+    disp.joliplot('x', 'Amp', x_pix, savgol_filter(Amp_t['Amp_moy_x'], params['taille_savgol'],params['ordre_savgol'], mode = 'nearest'), exp = False, color = 5, legend = 'Amp moy')
+    # disp.joliplot('x', 'Amp', np.mean(Amp_t['Tmax']), Amp_t['Amp_moy'], color = 8)
+    # disp.joliplot('x', 'Amp', np.mean(Amp_t['Tmax']), Amp_t['Amp_max'], color = 8)
+#%% Save Amplitude
+
+save = True
+
+
+
+if save :
+    plt.savefig(params['path_images'][:-15] + "resultats/Amp_t_" + str(tools.datetimenow()) + '_' + nom_exp  + '.pdf', dpi = 1)
+    params['Amp_t'] = Amp_t
+    dic.save_dico(params, params['path_images'][:-15] +'\\resultats\\params_amp_' + str(tools.datetimenow()) + '.pkl')
+    
+    print("Amplitude sauvegardée")
+    print("Expérience :", params['nom_exp'])
+    
 
 #%%Amp(t) avec un pixel
-pixel = 526
-tps_0 = 0
-plage_tps = 10000
+pixel = 300
+tps_0 = 400
+plage_tps = nt - tps_0
 t_pixel = np.linspace(tps_0, tps_0 + plage_tps, plage_tps)
-figurejolie()
-joliplot("T",'Y',t_pixel, data[pixel, tps_0:tps_0 + plage_tps], exp = False, color = 3, legend = "Y(t) au temps " + str(tps_0) + " et x = " + str(pixel))
+disp.figurejolie()
+disp.joliplot("T",'Y',t_pixel, data[pixel, tps_0:tps_0 + plage_tps], exp = False, color = 3, legend = "Y(t) au temps " + str(tps_0) + " et x = " + str(pixel))
 amp_pixel = (np.max(data[pixel, tps_0:tps_0 + plage_tps]) - np.min(data[pixel, tps_0:tps_0 + plage_tps]))/2
 
 
 #%%Amp signal stationnaire
-fexc = dico[date][nom_exp]['fexc']
-x_0sta = 1000
-x_fsta = 1200
-t_0sta = 6000
-t_fsta = 6100
+# fexc = dico[date][nom_exp]['fexc']
+x_0sta = 200
+x_fsta = 600
+t_0sta = 350
+t_fsta = 1570
 amp_moy_x = np.mean(np.max(data[x_0sta:x_fsta, t_0sta:t_fsta], axis = 1) - np.min(data[x_0sta:x_fsta, t_0sta:t_fsta], axis = 1))/2
 amp_moy_t = np.mean(np.max(data[x_0sta:x_fsta, t_0sta:t_fsta], axis = 0) - np.min(data[x_0sta:x_fsta, t_0sta:t_fsta], axis = 0))/2
 uiui = np.where(np.max(data[x_0sta:x_fsta, t_0sta:t_fsta]) == data)
 x_amp_max = uiui[0][0]
 t_amp_max = uiui[1][0]
-minimum_amp_autour_max = np.min(data[x_amp_max,t_amp_max-int(facq/fexc+1):t_amp_max+int(facq/fexc+1)])
+minimum_amp_autour_max = np.min(data[x_amp_max,t_amp_max-int(params['facq']/params['fexc']+1):t_amp_max+int(params['facq']/params['fexc']+1)])
 x_amp_min = np.where(data == minimum_amp_autour_max)[0][0]
 t_amp_min = np.where(data == minimum_amp_autour_max)[1][0]
 amp_max_amp = (data[x_amp_max, t_amp_max] - data[x_amp_min, t_amp_min])/2
@@ -384,10 +496,10 @@ print("amplitude max calée = ", amp_max_amp)
 print('amplitude max = ', amp_moy_tot)
 
 if display :
-    figurejolie()
-    joliplot('x','amp',np.arange(x_0sta,x_fsta,1), (np.max(data[x_0sta:x_fsta, t_0sta:t_fsta], axis = 1) - np.min(data[x_0sta:x_fsta, t_0sta:t_fsta], axis = 1))/2, exp = False, legend = 'amp(x)')
-    figurejolie()
-    joliplot('t','amp',np.arange(t_0sta,t_fsta,1), (np.max(data[x_0sta:x_fsta, t_0sta:t_fsta], axis = 0) - np.min(data[x_0sta:x_fsta, t_0sta:t_fsta], axis = 0))/2, exp = False, legend = "amp(t)")
+    disp.figurejolie()
+    disp.joliplot('x','amp',np.arange(x_0sta,x_fsta,1), (np.max(data[x_0sta:x_fsta, t_0sta:t_fsta], axis = 1) - np.min(data[x_0sta:x_fsta, t_0sta:t_fsta], axis = 1))/2, exp = False, legend = 'amp(x)')
+    disp.figurejolie()
+    disp.joliplot('t','amp',np.arange(t_0sta,t_fsta,1), (np.max(data[x_0sta:x_fsta, t_0sta:t_fsta], axis = 0) - np.min(data[x_0sta:x_fsta, t_0sta:t_fsta], axis = 0))/2, exp = False, legend = "amp(t)")
 
 
 if False : 
@@ -579,7 +691,7 @@ liste_frac = [0,1,2,3,4,5]
 
 fexc = dico[date][nom_exp]['fexc'] # Hz
 facq = dico[date][nom_exp]['facq'] # Hz
-longueur_donde = int(dico[date][nom_exp]['lambda'] / mmparpixel * 1000 / 2) # pixel
+longueur_donde = int(dico[date][nom_exp]['lambda'] / params['mmparpixel'] * 1000 / 2) # pixel
 t_nperiodes = (int(facq/fexc) + 1) * n_periodes #durée regardée
 
 amp_fracs_complet = np.zeros((n_fracs,2,longueur_donde,2 ), dtype = np.ndarray)
@@ -600,7 +712,7 @@ for j in range(n_fracs) :#fracs.shape[0]) :
     
     amp_fracs_complet = np.zeros((2,x_f_frac - x_0_frac,2 ), dtype = np.ndarray)
     
-    figurejolie()
+    disp.figurejolie()
     sum_real = []
     sum_FFT = []
     
@@ -738,11 +850,29 @@ if save :
     param_complets = np.asarray(param_complets)
     np.savetxt(path_images[:-15] + "resultats" + "/Paramètres_FFT_globaux_amplitude" + name_fig_FFT + ".txt", param_complets, "%s")
 
+
+#%%
+
+
+"""
+
+
+
+                                                                               PARTIE RDD
+                                                                    
+                                                                    
+                                                                               A ADAPTER
+                                                                    
+"""
+
+
+
+
 #%% Demodulation et amplitude
 
-f_0 = fexc
+f_0 =params['fexc']
 u = 1
-t = np.arange(0,nt)/facq
+t = np.arange(0,nt)/params['facq']
 
 save = False
 # param_complets = param_complets.tolist()
@@ -755,7 +885,7 @@ if f_0 * u > 120 :
     cut_las = 700
     
 nx = nx - cut_las
-X = np.linspace(0, nx * mmparpixel/10, nx) #echelle des x en cm
+X = np.linspace(0, nx * params['mmparpixel']/10, nx) #echelle des x en cm
 
 #demodulation
 for i in range (nx):
@@ -763,16 +893,16 @@ for i in range (nx):
     amp_demod.append(np.sum(a * np.exp(2*np.pi*1j*f_exc*t))*2/nx)
     
 if False : #display : 
-    figurejolie()
-    joliplot("temps(s)", "Amplitude (m)", t,a, exp = False)
+    disp.figurejolie()
+    disp.joliplot("temps(s)", "Amplitude (m)", t,a, exp = False)
  
 
 amp_demod = np.asarray(amp_demod)
 I = (np.abs(amp_demod))**2 #tableau intensite (avec amp en m)
  
 if True : #display :
-    figurejolie()
-    joliplot(r"x (cm)",r"amplitude (m)", X, np.abs(amp_demod), exp = False, log = False, legend = r"f = " + str(int(f_exc) ) + " Hz")
+    disp.figurejolie()
+    disp.joliplot(r"x (cm)",r"amplitude (m)", X, np.abs(amp_demod), exp = False, log = False, legend = r"f = " + str(int(f_exc) ) + " Hz")
 
 Y_FFT = fft.fft(amp_demod)
 
@@ -799,9 +929,9 @@ else :
 y_new_moinsx[ax:bx] = Y_FFT[ax:bx]
 
 if True :
-    figurejolie()
+    disp.figurejolie()
     plt.plot(np.abs(y_new_x))
-    figurejolie()
+    disp.figurejolie()
     plt.plot(np.abs(y_new_moinsx))
 
 
@@ -810,11 +940,11 @@ demod_stat_x = fft.ifft(y_new_x)
 demod_stat_moinsx = fft.ifft(y_new_moinsx)
 
 if True :
-    figurejolie()
+    disp.figurejolie()
     plt.plot(X, np.abs(demod_stat_x))
     plt.title("FFT inverse sens de propagation")
     
-    figurejolie()
+    disp.figurejolie()
     plt.plot(X, np.abs(demod_stat_moinsx))
     plt.title("FFT inverse onde réflechie")    
 
@@ -832,9 +962,9 @@ attenuationA = curve_fit (exppp, X, np.abs(amp_demod), p0 = [1,0.02])
 attenuation_x = curve_fit (exppp, X, I_x, p0 = [1,0])
 # attenuation_moinsx = curve_fit (exppp, X, I_moinsx, p0 = [0,0.02])
 
-figurejolie()
-joliplot(r"x (cm)", r"I x", X, I_x, color = 3, exp = False, log = True, legend = r"f = " + str(int(f_exc) ) + " Hz")
-joliplot(r"x (cm)", r"I x", X, exppp(X, attenuation_x[0][0], attenuation_x[0][1]), color = 5, exp = False, log = True, legend = r"fit, on trouve $\kappa = $" + str(round(attenuation_x[0][1],4)))
+disp.figurejolie()
+disp.joliplot(r"x (cm)", r"I x", X, I_x, color = 3, exp = False, log = True, legend = r"f = " + str(int(f_exc) ) + " Hz")
+disp.joliplot(r"x (cm)", r"I x", X, exppp(X, attenuation_x[0][0], attenuation_x[0][1]), color = 5, exp = False, log = True, legend = r"fit, on trouve $\kappa = $" + str(round(attenuation_x[0][1],4)))
 plt.xscale('linear')
 plt.yscale('log')
 
@@ -845,13 +975,13 @@ plt.yscale('log')
 # plt.yscale('log')
 
 if display :
-    figurejolie()
-    joliplot(r"x (cm)", r"I", X, I, color = 3, exp = False, log = True, legend = r"f = " + str(int(f_exc) ) + " Hz")
-    joliplot(r"x (cm)", r"I", X, exppp(X, attenuation[0][0], attenuation[0][1]), color = 5, exp = False, log = True, legend = r"fit, on trouve $\kappa = $" + str(round(attenuation[0][1],4)))
+    disp.figurejolie()
+    disp.joliplot(r"x (cm)", r"I", X, I, color = 3, exp = False, log = True, legend = r"f = " + str(int(f_exc) ) + " Hz")
+    disp.joliplot(r"x (cm)", r"I", X, exppp(X, attenuation[0][0], attenuation[0][1]), color = 5, exp = False, log = True, legend = r"fit, on trouve $\kappa = $" + str(round(attenuation[0][1],4)))
     plt.xscale('linear')
     plt.yscale('log')
     if save :
-        plt.savefig(path_images[:-15] + "resultats" + "/" + "I(x)_fitkappa_" + str(round(f_exc)) + "Hz" + ".pdf", dpi = 1)
+        plt.savefig(params['path_images'][:-15] + "resultats" + "/" + "I(x)_fitkappa_" + str(round(f_exc)) + "Hz" + ".pdf", dpi = 1)
 if save :  
     param_complets.extend(["Resultats attenuation :","f_exc = " + str(f_exc) ,"attenuation = " + str(attenuation[0][1])])
 
@@ -864,11 +994,11 @@ padding = 12
 ampfoispente = np.append( amp_demod * np.exp(attenuationA[0][1] * X), np.zeros(2**padding - nx))
 ampfoispente_0 = np.append( (amp_demod) , np.zeros(2**padding - nx))
 
-figurejolie()
-joliplot("X (cm)", "Signal", X, np.real(ampfoispente[:nx]),color =2, legend = r'Signal démodulé * atténuation (m)', exp = False)
-joliplot("X (cm)", "Signal", X, np.real(ampfoispente_0[:nx]),color = 10, legend = r'Signal démodulé', exp = False)
+disp.figurejolie()
+disp.joliplot("X (cm)", "Signal", X, np.real(ampfoispente[:nx]),color =2, legend = r'Signal démodulé * atténuation (m)', exp = False)
+disp.joliplot("X (cm)", "Signal", X, np.real(ampfoispente_0[:nx]),color = 10, legend = r'Signal démodulé', exp = False)
 if save :
-    plt.savefig(path_images[:-15] + "resultats" + "/" + "Partie réelle_Signal_démodulé_" + str(round(f_exc)) + "Hz" + ".pdf", dpi = 1)
+    plt.savefig(params['path_images'][:-15] + "resultats" + "/" + "Partie réelle_Signal_démodulé_" + str(round(f_exc)) + "Hz" + ".pdf", dpi = 1)
     
 
 
@@ -882,19 +1012,19 @@ FFT_demod = fft.fft((ampfoispente_0[:nx])-np.mean((ampfoispente_0[:nx])))
 k_padding = np.linspace(0, nx ,2**padding) 
 k = np.linspace(0,nx,nx)
 
-figurejolie()
-joliplot(r'k ($mm^{-1}$)', r'|P1(k)|',k, np.abs(FFT_demod), exp = False, title = "FFT")
+disp.figurejolie()
+disp.joliplot(r'k ($mm^{-1}$)', r'|P1(k)|',k, np.abs(FFT_demod), exp = False, title = "FFT")
 
-figurejolie()
-joliplot(r'k ($mm^{-1}$)', r'|P1(k)|',k_padding, np.abs(FFT_demod_padding),color = 5, exp = False, legend = "FFT zero padding 2**" + str(padding))
-joliplot(r'k ($mm^{-1}$)', r'|P1(k)|',k_padding, np.abs(FFT_demod_padding_0),color = 7, exp = False, legend = "FFT zero padding 2**" + str(padding) + " sans atténuation corrigée")
+disp.figurejolie()
+disp.joliplot(r'k ($mm^{-1}$)', r'|P1(k)|',k_padding, np.abs(FFT_demod_padding),color = 5, exp = False, legend = "FFT zero padding 2**" + str(padding))
+disp.joliplot(r'k ($mm^{-1}$)', r'|P1(k)|',k_padding, np.abs(FFT_demod_padding_0),color = 7, exp = False, legend = "FFT zero padding 2**" + str(padding) + " sans atténuation corrigée")
 if save :
-    plt.savefig(path_images[:-15] + "resultats" + "/" + "FFT_spatiale_0padding_" + str(round(f_0 * u)) + "Hz" + ".pdf", dpi = 1)
+    plt.savefig(params['path_images'][:-15] + "resultats" + "/" + "FFT_spatiale_0padding_" + str(round(f_0 * u)) + "Hz" + ".pdf", dpi = 1)
     
 
 #%%find_peaks
 
-D_environ = 0.4E-5
+D_environ = 0.05E-5
 tension_surface = 0.05
 g = 9.81
 rho = 900
@@ -924,7 +1054,7 @@ k_theorique = np.interp(f_exc*2*np.pi,x,y)
 if padding_0 :
     if f_exc != f_0 * u :
         k_theorique = np.interp((facq - f_exc)*2*np.pi,x,y)
-    peaks_theorique =  k_theorique * 2**padding * mmparpixel / (2*np.pi*1000)
+    peaks_theorique =  k_theorique * 2**padding * params['mmparpixel'] / (2*np.pi*1000)
     
     if f_exc != f_0 * u :
         peaks_theorique = 2**padding - peaks_theorique
@@ -933,7 +1063,7 @@ if padding_0 :
 else :
     if f_exc != f_0 * u :
         k_theorique = np.interp((facq - f_exc)*2*np.pi,x,y)
-    peaks_theorique =  k_theorique * nx * mmparpixel / (2*np.pi*1000)
+    peaks_theorique =  k_theorique * nx * params['mmparpixel'] / (2*np.pi*1000)
     
     if f_exc != f_0 * u :
         peaks_theorique = nx - peaks_theorique
@@ -971,7 +1101,7 @@ peaks1, _ = find_peaks(abs(mean_fft), prominence = [prominence/qtt_pics,None], d
 
 pics_lala = []
         
-tolerance_k = 1/4
+tolerance_k = 1/2
 # if f_0*u > 80 :
 #     tolerance_k = 1/7
 # if f_0*u >140:
@@ -1034,7 +1164,7 @@ plt.legend()
     # plt.xlim((2**padding-100, 2**padding))
 
 if save :
-    plt.savefig(path_images[:-15] + "resultats" + "/" + "FFT_spatiale_0padding_" + str(round(f_exc)) + "Hz" + ".pdf", dpi = 1)
+    plt.savefig(params['path_images'][:-15] + "resultats" + "/" + "FFT_spatiale_0padding_" + str(round(f_exc)) + "Hz" + ".pdf", dpi = 1)
      
     
 
@@ -1063,21 +1193,21 @@ for maxs in peaks :
 indice = np.mean(indice_tot)
 
 if padding_0 :
-    longueur_donde = 2**padding * mmparpixel / (indice) / 1000
+    longueur_donde = 2**padding * params['mmparpixel'] / (indice) / 1000
 
     if f_exc != f_0 * u :
-        longueur_donde = 2**padding * mmparpixel / (2**padding - indice) / 1000
+        longueur_donde = 2**padding * params['mmparpixel'] / (2**padding - indice) / 1000
 else :
-    longueur_donde = nx * mmparpixel / (indice) / 1000
+    longueur_donde = nx * params['mmparpixel'] / (indice) / 1000
 
     if f_exc != f_0 * u :
-        longueur_donde = nx * mmparpixel / (nx - indice) / 1000
+        longueur_donde = nx * params['mmparpixel'] / (nx - indice) / 1000
     
 
 if len(peaks) > 1 :
-    error_lambda = (np.max(2**padding * mmparpixel / np.asarray(indice_tot) / 1000) - np.min(2**padding * mmparpixel / np.asarray(indice_tot) / 1000))/2
+    error_lambda = (np.max(2**padding * params['mmparpixel'] / np.asarray(indice_tot) / 1000) - np.min(2**padding * params['mmparpixel'] / np.asarray(indice_tot) / 1000))/2
     if f_exc != f_0 * u :
-        error_lambda = (np.max(2**padding * mmparpixel / (2**padding -np.asarray(indice_tot)) / 1000) - np.min(2**padding * mmparpixel / (2**padding -np.asarray(indice_tot)) / 1000))/2  
+        error_lambda = (np.max(2**padding * params['mmparpixel'] / (2**padding -np.asarray(indice_tot)) / 1000) - np.min(2**padding * params['mmparpixel'] / (2**padding -np.asarray(indice_tot)) / 1000))/2  
     
 else : 
     error_lambda = 0
@@ -1085,10 +1215,9 @@ else :
 print("indice_tot = ", indice_tot)
 print("lambda = ", longueur_donde)
     
-if save :
-    param_complets.extend(["Resultats lambda :","f_exc = " + str(f_exc),"padding = " + str(padding) ,"lambda (m) = " + str(longueur_donde),"error_lambda (m) = " + str(error_lambda)])
 
-dico = add_dico(dico,date,nom_exp,'lambda',longueur_donde)
+dico = dic.add_dico(dico,date,nom_exp,'lambda',longueur_donde)
+dic.save_dico(dico)
 
 #%%PLOT longueure d'onde avec le signal
 
@@ -1097,7 +1226,7 @@ ecart_indice = 5
 
 save = False
 # param_complets = param_complets.tolist()
-f_exc = 5
+f_exc = 10
 amp_demod = []
 cut_las = 0
 
@@ -1107,24 +1236,24 @@ if f_0 * u > 120 :
     cut_las = 700
     
 nx = nx - cut_las
-X = np.linspace(0, nx * mmparpixel/10, nx) #echelle des x en cm
+X = np.linspace(0, nx * params['mmparpixel']/10, nx) #echelle des x en cm
 
 #demodulation
 for i in range (nx):
     a = data[i,:]
     amp_demod.append(np.sum(a * np.exp(2*np.pi*1j*f_exc*t))*2/nx)
     
-if False : #display : 
-    figurejolie()
-    joliplot("temps(s)", "Amplitude (m)", t,a, exp = False)
+if display : 
+    disp.figurejolie()
+    disp.joliplot("temps(s)", "Amplitude (m)", t,a, exp = False)
  
 
 amp_demod = np.asarray(amp_demod)
 I = (np.abs(amp_demod))**2 #tableau intensite (avec amp en m)
  
-if False : #display :
-    figurejolie()
-    joliplot(r"x (cm)",r"amplitude (m)", X, np.abs(amp_demod), exp = False, log = False, legend = r"f = " + str(int(f_exc) ) + " Hz")
+if display :
+    disp.figurejolie()
+    disp.joliplot(r"x (cm)",r"amplitude (m)", X, np.abs(amp_demod), exp = False, log = False, legend = r"f = " + str(int(f_exc) ) + " Hz")
 
 
 Y_FFT = fft.fft(amp_demod)
@@ -1156,9 +1285,9 @@ else :
 y_new_moinsx[ax:bx] = Y_FFT[ax:bx]
 
 if False :
-    figurejolie()
+    disp.figurejolie()
     plt.plot(np.abs(y_new_x))
-    figurejolie()
+    disp.figurejolie()
     plt.plot(np.abs(y_new_moinsx))
 
 
@@ -1167,11 +1296,11 @@ demod_stat_x = fft.ifft(y_new_x)
 demod_stat_moinsx = fft.ifft(y_new_moinsx)
 
 if False :
-    figurejolie()
+    disp.figurejolie()
     plt.plot(X, np.abs(demod_stat_x))
     plt.title("FFT inverse sens de propagation")
     
-    figurejolie()
+    disp.figurejolie()
     plt.plot(X, np.abs(demod_stat_moinsx))
     
     plt.title("FFT inverse onde réflechie")    
@@ -1190,22 +1319,22 @@ attenuationA = curve_fit (exppp, X, np.abs(amp_demod), p0 = [1,0])
 attenuation_x = curve_fit (exppp, X, I_x, p0 = [1,0])
 # attenuation_moinsx = curve_fit (exppp, X, I_moinsx, p0 = [1,0])
 
-figurejolie()
-joliplot(r"x (cm)", r"I x", X, I_x, color = 3, exp = False, log = True, legend = r"f = " + str(int(f_exc) ) + " Hz")
-joliplot(r"x (cm)", r"I x", X, exppp(X, attenuation_x[0][0], attenuation_x[0][1]), color = 5, exp = False, log = True, legend = r"fit, on trouve $\kappa = $" + str(round(attenuation_x[0][1],4)))
+disp.figurejolie()
+disp.joliplot(r"x (cm)", r"I x", X, I_x, color = 3, exp = False, log = True, legend = r"f = " + str(int(f_exc) ) + " Hz")
+disp.joliplot(r"x (cm)", r"I x", X, exppp(X, attenuation_x[0][0], attenuation_x[0][1]), color = 5, exp = False, log = True, legend = r"fit, on trouve $\kappa = $" + str(round(attenuation_x[0][1],4)))
 plt.xscale('linear')
 plt.yscale('log')
 
-# figurejolie()
-# joliplot(r"x (cm)", r"I moins x", X, I_moinsx, color = 3, exp = False, log = True, legend = r"f = " + str(int(f_exc) ) + " Hz")
-# joliplot(r"x (cm)", r"I moins x", X, exppp(X, attenuation_moinsx[0][0], attenuation_moinsx[0][1]), color = 5, exp = False, log = True, legend = r"fit, on trouve $\kappa = $" + str(round(attenuation_moinsx[0][1],4)))
+# disp.figurejolie()
+# disp.joliplot(r"x (cm)", r"I moins x", X, I_moinsx, color = 3, exp = False, log = True, legend = r"f = " + str(int(f_exc) ) + " Hz")
+# disp.joliplot(r"x (cm)", r"I moins x", X, exppp(X, attenuation_moinsx[0][0], attenuation_moinsx[0][1]), color = 5, exp = False, log = True, legend = r"fit, on trouve $\kappa = $" + str(round(attenuation_moinsx[0][1],4)))
 # plt.xscale('linear')
 # plt.yscale('log')
 
 if display :
-    figurejolie()
-    joliplot(r"x (cm)", r"I", X, I, color = 3, exp = False, log = True, legend = r"f = " + str(int(f_exc) ) + " Hz")
-    joliplot(r"x (cm)", r"I", X, exppp(X, attenuation[0][0], attenuation[0][1]), color = 5, exp = False, log = True, legend = r"fit, on trouve $\kappa = $" + str(round(attenuation[0][1],4)))
+    disp.figurejolie()
+    disp.joliplot(r"x (cm)", r"I", X, I, color = 3, exp = False, log = True, legend = r"f = " + str(int(f_exc) ) + " Hz")
+    disp.joliplot(r"x (cm)", r"I", X, exppp(X, attenuation[0][0], attenuation[0][1]), color = 5, exp = False, log = True, legend = r"fit, on trouve $\kappa = $" + str(round(attenuation[0][1],4)))
     plt.xscale('linear')
     plt.yscale('log')
     if save :
@@ -1220,11 +1349,11 @@ FFT_double_demod = np.zeros(np.shape(Y_FFT), dtype = 'complex128')
 FFT_double_demod[indice-ecart_indice:indice+ecart_indice] = Y_FFT[indice-ecart_indice:indice+ecart_indice]
 double_demod = fft.ifft(FFT_double_demod)
 if False :
-    figurejolie()
-    # joliplot("X (cm)", "Amplitude (m)", X, (max(np.abs(ampfoispente_0[:nx])) - min(np.abs(ampfoispente[:nx])) ) * np.cos(2 * np.pi * X / longueur_donde ) / 2, exp = False, legend = "Cosinus fait avec la longueure d'onde mesurée", color = 2)
-    joliplot("X (cm)", "Amplitude (m)", X, np.abs(amp_demod), exp = False, legend = 'Signal démodulé en temps', color = 9)
+    disp.figurejolie()
+    # disp.joliplot("X (cm)", "Amplitude (m)", X, (max(np.abs(ampfoispente_0[:nx])) - min(np.abs(ampfoispente[:nx])) ) * np.cos(2 * np.pi * X / longueur_donde ) / 2, exp = False, legend = "Cosinus fait avec la longueure d'onde mesurée", color = 2)
+    disp.joliplot("X (cm)", "Amplitude (m)", X, np.abs(amp_demod), exp = False, legend = 'Signal démodulé en temps', color = 9)
     
-    joliplot("X (cm)", "Amplitude (m)", X, np.abs(double_demod), exp = False, legend = 'Signal démodulé en temps et espace', color = 1)
+    disp.joliplot("X (cm)", "Amplitude (m)", X, np.abs(double_demod), exp = False, legend = 'Signal démodulé en temps et espace', color = 1)
 
 """RECHERCHE DE LA MEILLEURE ZONE LINEAIRE Signal total"""
 
@@ -1232,7 +1361,7 @@ range_taille_1 = 3
 pas_taille_1 = 50
 p, max_r, best_taille_1, best_pos_1 = find_best_lin(np.log(I), X = X, range_taille = range_taille_1, pas_taille = pas_taille_1)
 X_top = X[int(nx/ pas_taille_1 * best_pos_1) : int(nx *  (1/best_taille_1 + best_pos_1/pas_taille_1) ) ]
-figurejolie()
+disp.figurejolie()
 plt.plot(X, np.log(I), label = 'log(I)')
 plt.plot(X_top, p[0] * X_top + p[1], label = "Meilleure zone linéaire, kappa = " + str(round(p[0], 3)))
 print("attenuation I :", p[0])
@@ -1254,11 +1383,11 @@ I_cut = (np.abs(amp_demod[int(nx*cm_debut/X[-1]):int(nx*cm_fin/X[-1])]))**2
 
 """FIT EXP SUR ZONE D'INTERET AUTOUR DE LAMBDA"""
 
-figurejolie()
+disp.figurejolie()
 attenuation_demod = curve_fit (exppp, X_cut, I_demod, p0 = [1,0])
-joliplot("X (cm)", "I (m)", X_cut, I_demod, exp = False, legend = 'I démodulé en temps et espace', color = 1)
+disp.joliplot("X (cm)", "I (m)", X_cut, I_demod, exp = False, legend = 'I démodulé en temps et espace', color = 1)
 # joliplot(r"x (cm)", r"I", X_cut, I_cut, color = 3, exp = False, log = True, legend = r"f = " + str(int(f_exc) ) + " Hz")
-joliplot(r"x (cm)", r"I", X_cut, exppp(X_cut, attenuation_demod[0][0], attenuation_demod[0][1]), color = 5, exp = False, log = True, legend = r"fit, on trouve $\kappa = $" + str(round(attenuation_demod[0][1],4)))
+disp.joliplot(r"x (cm)", r"I", X_cut, exppp(X_cut, attenuation_demod[0][0], attenuation_demod[0][1]), color = 5, exp = False, log = True, legend = r"fit, on trouve $\kappa = $" + str(round(attenuation_demod[0][1],4)))
 plt.xscale('linear')
 plt.yscale('log')
 
@@ -1268,7 +1397,7 @@ nb_pics_voulus = 4
 peaks_demod, _ = find_peaks(abs(I_demod), prominence = 1E-15, distance = 10, width=(5,50))
 peaks_demod, _ = find_peaks(abs(I_demod), distance = len(I_demod)/(nb_pics_voulus+1) )
 # peaks_demod = np.asarray([ 38, 209, 358, 500])
-figurejolie()
+disp.figurejolie()
 plt.plot(X_cut[peaks_demod], np.log(I_demod[peaks_demod]), label = 'PICS')
 plt.plot(X_cut, np.log(I_demod), label = 'I démodulé tps et x')
 attenuation_demod_pics = np.polyfit( X_cut[peaks_demod], np.log(I_demod[peaks_demod]), 1)
@@ -1282,7 +1411,7 @@ range_taille = 1
 pas_taille = 20
 p, max_r, best_taille, best_pos = find_best_lin(np.log(I_demod), X = X_cut, range_taille = range_taille, pas_taille = pas_taille)
 # taille_X_cut = nx
-figurejolie()
+disp.figurejolie()
 plt.plot(X_cut, np.log(I_demod), label = 'log(I demod)')
 plt.plot(X_cut[int(taille_X_cut/ pas_taille * best_pos) : int(taille_X_cut *  (1/best_taille + best_pos/pas_taille) ) ], p[0] * X_cut[int(taille_X_cut/ pas_taille * best_pos) : int(taille_X_cut *  (1/best_taille + best_pos/pas_taille) ) ] + p[1], label = "Meilleure zone linéaire, kappa = " + str(round(p[0], 3)))
 print("attenuation I demod :", p[0])
@@ -1299,7 +1428,7 @@ range_taille = 1
 pas_taille = 20
 p, max_r, best_taille, best_pos = find_best_lin(np.log(I_demod_top), X = X_top, range_taille = range_taille, pas_taille = pas_taille)
 X_top = np.linspace(X_top[0],X_top[-1], len(I_demod_top))
-figurejolie()
+disp.figurejolie()
 plt.plot(X_top, np.log(I_demod_top), label = 'log(I demod)')
 plt.plot(X_top, p[0] * X_top + p[1], label = r"Fit lineaire demodule temps espace zone d'interet, $\kappa$ = " + str(round(p[0], 3)))
 print("attenuation I demod zone dinteret :", p[0])

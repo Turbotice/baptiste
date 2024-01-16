@@ -9,8 +9,8 @@ import numpy as np
 import os
 
 # PARAMETRES EXPERIENCE
-date = "230720"
-nom_exp = "MPVB5" #nom de l'experience en 5 lettres qui la caractérise
+date = "221103"
+nom_exp = "PIVA4" #nom de l'experience en 5 lettres qui la caractérise
 loc = "D:\Banquise\Baptiste\Resultats_video\d" + date + "\\"
 loc_resultats = "D:\Banquise\Baptiste\Resultats"
 

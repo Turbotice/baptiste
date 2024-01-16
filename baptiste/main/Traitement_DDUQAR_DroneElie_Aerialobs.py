@@ -27,11 +27,12 @@ import baptiste.files.save as sv
 date = '230516'
 nom_exp = 'UQARG'
 
-dico, params = ip.initialisation(exp = False)
+dico, params, loc = ip.initialisation(date)
 
 loc_h = 'D:\Banquise\Baptiste\Resultats_video\d221104\d221104_PIVA6_PIV_44sur026_facq151Hz_texp5000us_Tmot010_Vmot410_Hw12cm_tacq020s/'
 loc_h = 'W:\Banquise\\Data_DD_UQAR\\'
-loc_h = 'W:\\Banquise\\Baptiste\\baie_HAHA_drone\\'
+# loc_h = 'W:\\Banquise\\Baptiste\\baie_HAHA_drone\\'
+# loc_h = 'D:\\Banquise\\Baptiste\\Drone\\Traitements\\'
 
 params['special_folder'] = 'Traitement_baieHaha_drone'
 
@@ -49,20 +50,21 @@ path = loc_h
 
 #%% DONNEES PIVLAB
 
-# params['PIV_file'] = 'PIVlab_6m30_7m10_3couches_64_32_16_traitement230412'            #GSL BQ
-params['PIV_file'] = 'PIVlab_64_32_16_pasfragments_HQ_230515'                           #GSL HQ banquise continue
+params['PIV_file'] = 'PIVlab_6m30_7m10_3couches_64_32_16_traitement230412'            #GSL BQ
+# params['PIV_file'] = 'PIVlab_64_32_16_pasfragments_HQ_230515'                           #GSL HQ banquise continue
 # params['PIV_file'] = 'PIVlab_64_32_16_GSL_full_HQ_230516'                             #GSL HQ full
 # params['PIV_file'] = 'PIVlab_BB_HQ_1700_3200_8'                                       #BB HQ
 # data_brut = io.loadmat(loc_h + 'PIVlab_3000.mat')
 
-params['PIV_file_u'] = 'matlab_u_og_baiehahadrone'
-params['PIV_file_v'] = 'matlab_v_og_baiehahadrone'
+# params['PIV_file_u'] = 'matlab_u_og_baiehahadrone'
+# params['PIV_file_v'] = 'matlab_v_og_baiehahadrone'
 
+# params['PIV_file'] = 'PIVlab_7_10_23_32_16_100frames_file11'
 
-# data_brut = io.loadmat(loc_h + params['PIV_file']) 
+data_brut = io.loadmat(loc_h + params['PIV_file']) 
 
-data_brut_u = io.loadmat(loc_h + params['PIV_file_u']) 
-data_brut_v = io.loadmat(loc_h + params['PIV_file_v']) 
+# data_brut_u = io.loadmat(loc_h + params['PIV_file_u']) 
+# data_brut_v = io.loadmat(loc_h + params['PIV_file_v']) 
 
 
 #%%PARAMETRES
@@ -70,9 +72,9 @@ data_brut_v = io.loadmat(loc_h + params['PIV_file_v'])
 display = True
 save = False
   
-params['facq'] = 29.97 #151
+params['facq'] =29.97 #29.97 #151
 params['ratio_PIV'] = 16
-params['mparpixel'] = 0.030 * params['ratio_PIV'] # *3 si BQ # +- 0.0005 pour GSL (dapres Elie), #0.07988 1ere mesure BQ #0.0300 2 eme mesure HQ #0.031 Elie
+params['mparpixel'] = 0.03 * 3 * params['ratio_PIV'] # *3 si BQ # +- 0.0005 pour GSL (dapres Elie), #0.07988 1ere mesure BQ #0.0300 2 eme mesure HQ #0.031 Elie
 # params['mparpixel'] = 0.03538 * params['ratio_PIV'] * 3 #3.538 +/- 0.0507 cm/px pour BB
 kacqx = 2 * np.pi / params['mparpixel']
 kacqy = 2 * np.pi / params['mparpixel']
@@ -81,22 +83,22 @@ kacqy = 2 * np.pi / params['mparpixel']
 
 #%%MISE EN FORME
 
-# champ_u = data_brut["u_original"]
-# champ_v = data_brut["v_original"]
+champ_u = data_brut["u_original"]
+champ_v = data_brut["v_original"]
 
-champ_u = data_brut_u["u_original"]
-champ_v = data_brut_v["v_original"]
+# champ_u = data_brut_u["u_original"]
+# champ_v = data_brut_v["v_original"]
 
 data_u = []
 data_v = []
 
 
 for i in range (np.shape(champ_u)[0] -10):
-    data_u.append(champ_u[i][0]- np.nanmean(champ_u[i][0]))
+    data_u.append(champ_u[i][0])#- np.nanmean(champ_u[i][0]))
 data_u = np.asarray(data_u)
 
 for i in range (np.shape(champ_v)[0]-10):
-    data_v.append(champ_v[i][0]- np.nanmean(champ_v[i][0]))
+    data_v.append(champ_v[i][0])#- np.nanmean(champ_v[i][0]))
 data_v = np.asarray(data_v)
 
 
@@ -115,7 +117,7 @@ params['x0'] = 0        #en pixels
 params['xf'] = nx
 params['y0'] = 0
 params['yf'] = ny
-params['t0'] = 8.6 * params['facq']        #en secondes
+params['t0'] = 0 * params['facq']        #en secondes
 params['tf'] = nt
 
 data = data[int(params['x0']):int(params['xf']),int(params['y0']):int(params['yf']),int(params['t0']):int(params['tf'])]
@@ -128,7 +130,7 @@ t = np.linspace(0, nt /params['facq'], nt)
 
 
 #On enleve la moyenne temporelle pour chaque pixel
-data = imp.substract_mean(data, space = True, temp = False)
+# data = imp.substract_mean(data, space = True, temp = False)
 
 #%%
 champ_u = data_brut_u["u_original"]
@@ -183,12 +185,12 @@ display_video = False
 if display_video :
     disp.figurejolie()
     plt.pcolormesh(y, x, data[:,:,0], shading='auto')
-    plt.xlabel("Y (cm)")
-    plt.ylabel("X (cm)")
+    plt.xlabel("Y (m)")
+    plt.ylabel("X (m)")
     cbar = plt.colorbar()
     cbar.set_label("Champ u")
     plt.axis("equal")
-    for mmm in range (1100,1120):
+    for mmm in range (1,20):
         # disp.figurejolie()
         plt.pcolormesh(y, x, data[:,:,mmm], shading='auto')
         plt.pause(0.1)
@@ -246,7 +248,7 @@ if save :
 #%%DEMODULATION
 
 
-params["f_exc"] =0.28
+params["f_exc"] =0.4
 #[0.02931119 0.24914509 0.48363459] 3 fréquences fondamentales pour videos complete
 
 demod = ft.demodulation(t,data,params["f_exc"])
@@ -260,10 +262,10 @@ if display :
 
 #%%FFT 2D 
 
-padpad = True
+padpad = False
 
 if padpad :
-    padding = [8,9,10]
+    padding = [9,9,7]
     data_pad = ft.add_padding(data, padding)
     YY, kkx, kky, ff = ft.fft_bapt(data_pad, kacqx, kacqy, params['facq'], og_shape = [nx,ny,nt])
 
@@ -311,8 +313,8 @@ print(f_fonda[:3])
 save_demod = False
 
 fmin = 0.1 #2/nt * params['facq'] #fréquence minimale résolue pour avoir au moins 2 périodes par fréquence
-fmax = 10
-nb_f = 200
+fmax = 1
+nb_f = 20
 padding = [9,9]    #puissance de 2 pour le 0 padding
 k_xx = []
 k_yy = []

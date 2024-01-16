@@ -9,6 +9,48 @@ outils utiles
 import numpy as np
 from datetime import datetime
 
+
+def max_fit2(x, xmax, a = 5):
+    
+    nx = len(x)
+    indice = xmax
+    
+    imin = max(1,indice-a)
+    imax = min(nx,indice+a)
+      
+    z = x[imin:imax]
+    zone_max = [ u for u in range (imin-indice,imax-indice)]
+        
+    p = np.polyfit(zone_max,z,2)  #on peut utiliser fminsearch pour fitter par une fonction quelconque
+        
+    imax = -p[1]/(2*p[0])
+    pos_max = indice + imax
+    
+    val_max = p[1]*imax + p[2] + imax**2*p[0]
+    
+    return val_max, pos_max
+
+def min_fit2(x, xmin, a = 5):
+    
+    nx = len(x)
+    indice = xmin
+    
+    imin = max(1,indice-a)
+    imax = min(nx,indice+a)
+      
+    z = x[imin:imax]
+    zone_min = [ u for u in range (imin-indice,imax-indice)]
+        
+    p = np.polyfit(zone_min,z,2)  #on peut utiliser fminsearch pour fitter par une fonction quelconque
+        
+    imax = -p[1]/(2*p[0])
+    pos_min = indice + imax
+    
+    val_min = p[1]*imax + p[2] + imax**2*p[0]
+    
+    return val_min, pos_min
+
+
 def sort_listes(a,b, reverse=False) :
     """
     Trie deux listes dans l'ordre en fonction de la première'
