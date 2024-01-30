@@ -27,13 +27,13 @@ import baptiste.files.dictionaries as dic
 import baptiste.tools.tools as tools
 
 
-date = '240109'
-nom_exp = 'QSC01'
+date = '240116'
+nom_exp = 'CCM22'
 exp = True
 exp_type = 'LAS'
 
 
-dico, params, loc = ip.initialisation(date, nom_exp, exp = True, display = True)
+dico, params, loc = ip.initialisation(date, nom_exp, exp = True, display = False)
 
 
 
@@ -46,17 +46,17 @@ dico, params, loc = ip.initialisation(date, nom_exp, exp = True, display = True)
 
 
 #%%PARAMETRES
-22.583 11.97
+
 
 MODE = "go"
 # MODE = "go"
 params['nbframe'] = 20000
 params['med_size'] = 20
 params['debut'] = 0
-params['bas_LAS'] = 250#500 CCCS2#570 # 380#180 RBT01
-params['haut_LAS'] = 750#700 CCCS2#820 #RCSC1 780 CCCS1#260 RBT01
-params['x_0'] = 0
-params['x_f'] = 1450 #crop
+params['bas_LAS'] = 300#500 CCCS2#570 # 380#180 RBT01
+params['haut_LAS'] = 650#700 CCCS2#820 #RCSC1 780 CCCS1#260 RBT01
+params['x_0'] = 30
+params['x_f'] = 380 #crop
 
 display = True
 display_result_only = True
@@ -77,7 +77,7 @@ saveplot = False
 if MODE == "test" :
     display = True
     save = False
-    params['nbframe'] = 5
+    params['nbframe'] = 3
     
 if MODE == "go" :
     display = False
@@ -88,6 +88,7 @@ if MODE == "go" :
 if params['nbframe'] > len(params['liste_images']):
     params['nbframe'] = len (params['liste_images'])
     
+
 
 
 
@@ -103,10 +104,10 @@ if convconv :
 
 
 
-size_conv = 15
-precision_conv = 40
+size_conv = 30
+precision_conv = 50
 xf = np.linspace(-size_conv,size_conv,precision_conv)
-sigma = 70
+sigma = 20
 fconv = np.exp(-xf**2/(2*sigma))
 # fconv = (1-xf**2/sigma)*np.exp(-xf**2/(2*sigma))
 fconv = fconv - np.mean(fconv)
@@ -120,6 +121,8 @@ if False :
 im = cv2.imread(params['path_images'] + params['liste_images'][0])
 im_2 = im[params['bas_LAS']:params['haut_LAS'],:,2]
 y = np.zeros((len(params['liste_images']),(np.shape(im_2)[1])))
+
+
 
 
 #%%TRAITEMENT PRINCIPAL

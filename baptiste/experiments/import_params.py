@@ -328,6 +328,8 @@ def initialisation(date, nom_exp = '', exp = False, exp_type = "LAS", display = 
             loc = "E:\Baptiste\Resultats_video\d" + date + "\\"
         else :    
             loc = "D:\Banquise\Baptiste\Resultats_video\d" + date + "\\"
+            
+    # loc = 'W:\\Banquise\\Baptiste\\Resultats_video\\d' + date + "\\"
     
     if dico == 'f' :
         dico = dic.open_dico()
