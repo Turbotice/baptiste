@@ -7,6 +7,8 @@ import baptiste.tools.tools as tools
 
 ## TAILLE DES FIGURES
 
+
+
 def set_size(width, fraction=1, subplots=(1, 1)):
     """Set figure dimensions to avoid scaling in LaTeX.
 
