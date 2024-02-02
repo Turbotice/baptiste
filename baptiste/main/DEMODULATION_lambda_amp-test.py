@@ -46,8 +46,8 @@ import baptiste.files.dictionaries as dic
 import baptiste.tools.tools as tools
 
 
-date = '231130'
-nom_exp = 'DMLO0'
+date = '240116'
+nom_exp = 'CCM01'
 exp = True
 exp_type = 'LAS'
 
@@ -59,6 +59,7 @@ dico, params, loc = ip.initialisation(date, nom_exp, exp = True, display = False
 
 save = False
 display = True
+
 
 
 #%%Charge les données (data) et en fait l'histogramme
@@ -76,17 +77,17 @@ if True : #cam_dessus :
    
 
     
-data_originale = data_originale - np.mean(data_originale, axis = 0)    
+data_originale = data_originale - np.nanmean(data_originale, axis = 0)    
 
 
-params['debut_las'] = 100
-params['fin_las'] = np.shape(data_originale)[0] - 700
+params['debut_las'] = 50
+params['fin_las'] = np.shape(data_originale)[0] - 1570
 
 #100 / 400 Pour DAP
 #650 / 300 Pour CCCS1
 #1 / 200 pr CCCS2
 
-params['t0'] = 100
+params['t0'] = 500
 params['tf'] = np.shape(data_originale)[1] - 1
 
 
@@ -95,7 +96,7 @@ params['tf'] = np.shape(data_originale)[1] - 1
 
 data = data_originale[params['debut_las']:params['fin_las'],params['t0']:params['tf']]
 
-if display:
+if False:
     disp.figurejolie()
     [y,x] = np.histogram(data,1000)
     xc= (x[1:]+x[:-1]) / 2
@@ -122,12 +123,12 @@ params['size_medfilt'] = 51
 #enlever moyenne pr chaque pixel
 
 if params['im_ref'] :
-    mean_pixel = np.mean(data,axis = 1) #liste avec moyenne en temps de chaque pixel 
+    mean_pixel = np.nanmean(data,axis = 1) #liste avec moyenne en temps de chaque pixel 
     for i in range (0,nt):
         data[:,i] = data[:,i] - mean_pixel #pour chaque pixel, on enleve la moyenne temporelle de chaque pixel
 
 if params['minus_mean'] :
-    data = data - np.mean(data)
+    data = data - np.nanmean(data)
 #mise à l'échelle en m
 data_m = data *  params['mmparpixely'] / 1000
 
@@ -161,7 +162,7 @@ if display:
     plt.ylabel("X (pixel)")
     cbar = plt.colorbar()
     cbar.set_label('Amplitude (m)')
-    # plt.clim(-0.01,0.01)
+    plt.clim(-0.01,0.01)
 
     
 #%% Analyse d'un signal temporel
@@ -357,11 +358,11 @@ save = False
 
 #%% AMPLITUDE V2
 
-params['t0_A'] = 0
-params['x0_A'] = 200
+params['t0_A'] = 100
+params['x0_A'] = 0
 params['larg_fit_a'] = 2
 
-display_all = False
+display_all = True
 display = True
 
 Amp_t = {}
@@ -424,7 +425,7 @@ for i in range(params['x0_A'], nx,1) : #pour chaque pixel
     Amp_t["peaks_min"][str(i)] = peaks_min
     Amp_t["peaks_max"][str(i)] = peaks_max
 
-    if display_all and i == params['x0_A']:  
+    if display_all and i == 300:  
         disp.figurejolie()
         disp.joliplot("t", "Amp", peaks_max[:len(Amp_t_x)], Amp_t_x)
     
@@ -437,7 +438,7 @@ Amp_t['Tmax'] = T_max
 Amp_t['Amp_moy_x'] = Amp_moy
 
 Amp_t['Amp_max'] = np.quantile(Amp_max, 0.95)
-Amp_t['Amp_moy'] = np.quantile(Amp_moy, 0.95)
+Amp_t['Amp_moy'] = np.quantile(Amp_moy, 0.99)
 
 
 print('amp max =', Amp_t['Amp_max'], 'm')
@@ -452,8 +453,6 @@ if display :
 #%% Save Amplitude
 
 save = True
-
-
 
 if save :
     plt.savefig(params['path_images'][:-15] + "resultats/Amp_t_" + str(tools.datetimenow()) + '_' + nom_exp  + '.pdf', dpi = 1)

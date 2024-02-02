@@ -44,11 +44,11 @@ if openn :
     dico = dic.open_dico()
 
 loc = "D:\Banquise\Baptiste\Resultats_video\\"
+loc = "E:\\Baptiste\\Resultats_video\\"
 
-date_min = 231116#220411 #AVANT C'EST NUL
+date_min = 240101#220411 #AVANT C'EST NUL
 
-date_max = 231200 #AJD ?
-
+date_max = 240120 #AJD ?
 #%%Ajout de termes depuis un fichier txt ou csv
 path_complement = 'D:\Banquise\Baptiste\Resultats\\complements_dictionnaires.txt'
 # path_complement = 'D:\Banquise\Baptiste\Resultats\\complements_dico.csv'
@@ -105,7 +105,7 @@ for date in dico :
                 dico = dic.add_dico(dico, date,nom_exp, 'rho_utilise', 900)
                 
                 
-#%%
+#%% Ajout de AMP depuis params
 
 
 data = pandas.read_csv('E:\Baptiste\\Resultats_exp\\Traitement_fracture.csv', sep = ';')
@@ -113,14 +113,15 @@ data = pandas.read_csv('E:\Baptiste\\Resultats_exp\\Traitement_fracture.csv', se
 
 data = np.asarray(data)
 loc = 'D:\\Banquise\\Baptiste\\Resultats_video\\'
+loc = "E:\\Baptiste\\Resultats_video\\"
 exp_type = 'LAS'
 nom_fich = '\\resultats'
 
-for i in range (1,86):
+for i in range (86,175):
     nom_exp = data[i,1]
     date =  data[i,0][8:10]+ data[i,0][3:5] + data[i,0][0:2]
     f = data[i,2]
-    loc = 'D:\\Banquise\\Baptiste\\Resultats_video\\d' + date + '\\'
+    loc = 'E:\\Baptiste\\Resultats_video\\d' + date + '\\'
     
     print(date)
     print(nom_exp)
@@ -157,20 +158,21 @@ for i in range (1,86):
         print('lambda', long_onde)
         
     dico[date][nom_exp]['poids_vernis'] = pds_vernis
+    dico[date][nom_exp]['rho_utilise'] = 900
     dico[date][nom_exp]['h'] = pds_vernis/(dico[date][nom_exp]['Larg_ice'] / 100 * dico[date][nom_exp]['Long_ice'] / 100 * dico[date][nom_exp]['rho_utilise'] * dico[date][nom_exp]['CM'] )
     
     h = pds_vernis/(dico[date][nom_exp]['Larg_ice'] / 100 * dico[date][nom_exp]['Long_ice'] / 100 * dico[date][nom_exp]['rho_utilise'] * dico[date][nom_exp]['CM'] )
     print('pds_vernis', pds_vernis)   
     print('h', h)
             
-#%% Ajout l_cracks
+#%% Ajout l_cracks depuis txt ds date
 
 for date in dico :
     if date.isdigit() :
         if float(date) > date_min :
             print(date)
             u = 0
-            loc = 'D:\\Banquise\\Baptiste\\Resultats_video\\d' + date + '\\'
+            loc = "E:\\Baptiste\\Resultats_video\\d" + date + '\\'
 
             cracks = pandas.read_csv(loc + date + "_l_cracks.txt", sep = ' ', header = None)
             cracks = np.asarray(cracks)
