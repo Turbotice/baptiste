@@ -32,11 +32,15 @@ import baptiste.image_processing.image_processing as imp
 import baptiste.math.fits as fits
 import baptiste.math.RDD as rdd
 import baptiste.files.save as sv
+import baptiste.files.dictionaries as dic
+import baptiste.tools.tools as tools
 
 
 
 dico = dic.open_dico()
 
+
+#%% plot var1 (var2) depuis le dico
 date_min = 230103
 date_max = 230120 #AJD ?
 
@@ -294,7 +298,7 @@ y_3 = x**2 * 0.1
 # plt.plot(x,y_4, label = 'Modèle x3/2')
 plt.grid()
 plt.legend()
-#%%
+#%% RDD theorique
 
 disp.figurejolie()
 
@@ -307,7 +311,7 @@ disp.joliplot(r'$\omega$', r'k',k, RDD_full(k,0.001,1,10000,100, 10), exp = Fals
 
 plt.axis('equal')
 
-#%%
+#%% RDD theorique
 
 disp.figurejolie()
 
@@ -353,7 +357,101 @@ disp.joliplot(r'k $(m^{-1})$',r'$\omega$ (Hz)',x2, x2**(2.5), exp = False, color
 # plt.axis('equal')
 
 #%% Coeff magique
+#%% D et h : tableau 2
 
+save = False
+save_path = 'E:\\Baptiste\\Resultats_exp\\All_RDD\\Resultats\\'
+
+tableau_2 = pandas.read_csv('E:\\Baptiste\\Resultats_exp\\Tableau_params\\Tableau2_Params_220101_240116\\tableau_2_v2.txt', sep = '\t', header = 1)
+tableau_2 = np.asarray(tableau_2)
+
+D = np.array(tableau_2[:,2][np.where(tableau_2[:,2] != 0)], dtype = float)
+h = np.array(tableau_2[:,4][np.where(tableau_2[:,2] != 0)], dtype = float)
+dates = np.array(tableau_2[:,1][np.where(tableau_2[:,2] != 0)], dtype = int)
+
+disp.figurejolie()
+disp.joliplot('date', 'All D', tableau_2[:,1], tableau_2[:,2])
+if save : 
+    plt.savefig(save_path + "D_date" + tools.datetimenow() + ".pdf", dpi = 1)
+
+
+disp.figurejolie()
+disp.joliplot('date', 'All h', tableau_2[:,1], tableau_2[:,4])
+if save : 
+    plt.savefig(save_path + "h_date" + tools.datetimenow() + ".pdf", dpi = 1)
+
+
+disp.figurejolie()
+disp.joliplot('D', 'h', D, h, log = False)
+for i in range (len(dates)): 
+    plt.annotate(dates[i], (D[i], h[i]))
+if save : 
+    plt.savefig(save_path + "h_D" + tools.datetimenow() + ".pdf", dpi = 1)
+
+
+model_robust, inliers, outliers = fits.fit_powerlaw(D, h, xlabel = 'D (Nm)', ylabel = 'h (m)', display = True, fit = 'ransac')    
+for i in range (len(dates)): 
+    plt.annotate(dates[i], (np.log(D)[i], np.log(h)[i]))
+if save : 
+    plt.savefig(save_path + "h_D_plus_fit" + tools.datetimenow() + ".pdf", dpi = 1)
+    
+    
+model_robust, inliers, outliers = fits.fit_powerlaw(D, h, fit = 'ransac')    
+for i in range (len(dates)): 
+    plt.annotate(dates[i], (D[i], h[i]))
+if save : 
+    plt.savefig(save_path + "h_D_plus_fit" + tools.datetimenow() + ".pdf", dpi = 1)
+
+
+E = D / h**3 * 10
+disp.figurejolie()
+disp.joliplot('date', 'E', dates, E)
+# for i in range (len(D)): 
+#     plt.annotate(dates[i], (D[i], E[i]))
+if save : 
+    plt.savefig(save_path + "E_date" + tools.datetimenow() + ".pdf", dpi = 1)
+    
+    
+    
+def lineaire_3(x, a):
+    return x ** (1/3) * a
+
+popt, pcov = fits.fit(lineaire_3, D, h, display = False)
+
+D_scale = np.linspace(np.min(D), np.max(D), 200)
+
+disp.figurejolie()
+disp.joliplot('D (Nm)', 'h (m)', D_scale, lineaire_3(D_scale, popt[0]),color = 2, exp = False, log = True, legend = 'E = ' + str(round(10 / popt[0]**3 / 1e6)) + ' MPa')
+disp.joliplot('D (Nm)', 'h (m)', D, h,color = 4, exp = True, log = True)
+
+
+plt.savefig(save_path + "D_h_fit_E_hpuissance3" + tools.datetimenow() + ".pdf", dpi = 1)
+
+
+#%% D et h : tableau 1
+
+save = True
+save_path = 'E:\\Baptiste\\Resultats_exp\\All_RDD\\Resultats\\'
+
+tableau_1 = pandas.read_csv('E:\\Baptiste\\Resultats_exp\\Tableau_params\\Tableau1_Params_231117_240116\\tableau_1.txt', sep = '\t', header = None)
+tableau_1 = np.asarray(tableau_1)
+
+
+
+
+
+#%% plot tanh(kh) des exps
+
+lam = np.linspace(0.062, 0.541, 1000)
+k = 2 * np.pi / lam
+H = np.linspace(1,100,1000)
+
+disp.figurejolie()
+disp.joliplot(r'$\lambda$', r'tanh(kH)', lam, np.tanh(k * 0.11), exp = False, color = 5)
+
+
+
+#%% Coeff magique
 disp.figurejolie()
 data_coeff = np.loadtxt("D:\Banquise\Baptiste\\Resultats\\Coeff_magique\\coeff_magique.txt", skiprows= 1)
 

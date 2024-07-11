@@ -22,12 +22,22 @@ def open_dico(path = 'D:\Banquise\Baptiste\Resultats\\Dictionnaire.pkl'):
     
 def save_dico(dico, path = "D:\Banquise\Baptiste\Resultats\\Dictionnaire.pkl"):
     
+    if path == "D:\Banquise\Baptiste\Resultats\\Dictionnaire.pkl" :
+        a = bool (input('Sure to erase old one?'))
+        if a != True :
+            print('Mission aborted')
+        else :
+            a_file = open(path, "wb")
+            pickle.dump(dico, a_file)
+            
+            a_file.close()
 
-    a_file = open(path, "wb")
-    
-    pickle.dump(dico, a_file)
-    
-    a_file.close()
+            
+    else :
+        a_file = open(path, "wb")
+        pickle.dump(dico, a_file)
+        
+        a_file.close()
     
 
 def add_dico(dico, date, nom_exp, name, value):

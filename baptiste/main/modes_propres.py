@@ -14,8 +14,8 @@ import baptiste.display.display_lib as disp
 import baptiste.math.RDD as rdd
 
 g = 9.81
-l_cuve = 0.05 #en m
-larg_cuve = 0.26
+l_cuve = 0.6 #en m
+larg_cuve = 0.38
 n_min = 1
 n_max = 8
 liste_tot = [] #liste avec n, lambda, f

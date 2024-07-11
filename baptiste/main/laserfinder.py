@@ -27,8 +27,8 @@ import baptiste.files.dictionaries as dic
 import baptiste.tools.tools as tools
 
 
-date = '240116'
-nom_exp = 'CCM22'
+date = '231130'
+nom_exp = 'DMLOR'
 exp = True
 exp_type = 'LAS'
 
@@ -53,10 +53,10 @@ MODE = "go"
 params['nbframe'] = 20000
 params['med_size'] = 20
 params['debut'] = 0
-params['bas_LAS'] = 300#500 CCCS2#570 # 380#180 RBT01
-params['haut_LAS'] = 650#700 CCCS2#820 #RCSC1 780 CCCS1#260 RBT01
-params['x_0'] = 30
-params['x_f'] = 380 #crop
+params['bas_LAS'] = 0#500 CCCS2#570 # 380#180 RBT01
+params['haut_LAS'] = 600#700 CCCS2#820 #RCSC1 780 CCCS1#260 RBT01
+params['x_0'] = 170
+params['x_f'] = 1200 #crop
 
 display = True
 display_result_only = True
@@ -88,6 +88,7 @@ if MODE == "go" :
 if params['nbframe'] > len(params['liste_images']):
     params['nbframe'] = len (params['liste_images'])
     
+
 
 
 

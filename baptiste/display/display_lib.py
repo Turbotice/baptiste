@@ -58,14 +58,14 @@ def set_size(width = 15, fraction=1, subplots=(1, 1)):
 tex_fonts = {
     # Use LaTeX to write all text
     "text.usetex": True,
-    "font.family": "serif",
+    "font.family": "Comic Sans MS",
     # Use 10pt font in plots, to match 10pt font in document
-    "axes.labelsize": 12,
-    "font.size": 12,
+    "axes.labelsize": 16,
+    "font.size": 16,
     # Make the legend/label fonts a little smaller
-    "legend.fontsize":10,
-    "xtick.labelsize": 10,
-    "ytick.labelsize": 10
+    "legend.fontsize":14,
+    "xtick.labelsize": 14,
+    "ytick.labelsize": 14
 }
 
 plt.rcParams.update(tex_fonts)
@@ -169,12 +169,12 @@ def joliplot(xlabel, ylabel, xdata, ydata, color = False, fig = False, axes = []
     """Jolis graphs predefinis"""
     
     
-    n = 17
-    markers = ['0','x','o','v','p','X','d','s','s','h','.','.','o','o','o','v','v','o']
-    markeredgewidth = [1.5,1.8,1.5, 1.5, 2.5, 1.3, 1.3, 1.6,1.6,2,1.6,1.6,2,2,2,2,2,2.2]
-    ms = [7,6.5,7, 7, 9.2, 8, 8, 8, 7,7, 7, 7,9,7,7,7,7,7]
-    mfc = ['None','#91A052','#990000',vcolors(5),'None','None','None','None','k','None','None','None','None','None','None','None','None', vcolors(4)]
-    colors = ['g','#91A052','#990000', vcolors(5), '#008B8B', vcolors(2), '#FF8000', vcolors(6), 'k',vcolors(1),'#01FA22',vcolors(3), vcolors(1),'#990000', vcolors(2),'#990000', vcolors(2), vcolors(4) ]
+    n = 18
+    markers = ['0','x','o','v','p','X','d','s','s','h','.','.','o','o','o','v','v','o', 'd']
+    markeredgewidth = [1.5,1.8,1.5, 1.5, 2.5, 1.3, 1.3, 1.6,1.6,2,1.6,1.6,2,2,2,2,2,2.5, 2.5]
+    ms = [7,6.5,7, 7, 9.2, 8, 8, 8, 7,7, 7, 7,9,7,7,7,7,9, 9]
+    mfc = ['None','#91A052','#990000',vcolors(5),'None','None','None','None','k','None','None','None','None','None','None','None','None', vcolors(4), vcolors(3)]
+    colors = ['g','#91A052','#990000', vcolors(5), '#008B8B', vcolors(2), '#FF8000', vcolors(6), 'k',vcolors(1),'#01FA22',vcolors(3), vcolors(1),'#990000', vcolors(2),'#990000', vcolors(2), vcolors(4), vcolors(3) ]
     
     """Pour un simple plot"""
     if subplot == False:
@@ -227,8 +227,7 @@ def joliplot(xlabel, ylabel, xdata, ydata, color = False, fig = False, axes = []
             #si color = False fait une couleur au hasard
             if color == False:
                 color = np.random.randint(1,n+1)
-            
-                
+        
             if exp :
                 marker = ' ' + markers[color]
             
@@ -236,7 +235,7 @@ def joliplot(xlabel, ylabel, xdata, ydata, color = False, fig = False, axes = []
                 marker = '-'
                 if color == 8 :
                     marker = '--'
-                if color == 2 :
+                if color == 3 :
                     marker = '-.'
     
             
@@ -257,7 +256,7 @@ def joliplot(xlabel, ylabel, xdata, ydata, color = False, fig = False, axes = []
                 plt.xscale('log')
                 plt.tight_layout()
                 
-            plt.grid()
+            # plt.grid()
             
             if zeros :
                plt.xlim(left=0 )

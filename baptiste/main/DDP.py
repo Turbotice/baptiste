@@ -3,6 +3,8 @@
 Created on Mon Nov 27 18:06:43 2023
 
 @author: Banquise
+
+Description du fonctionnement dans cahier de Manip Mars 2024
 """
 
 import cv2 
@@ -25,7 +27,7 @@ from PIL import Image
 from datetime import datetime
 from scipy.optimize import minimize
 import matplotlib.cm as cm
-
+import pandas
 
 import baptiste.display.display_lib as disp
 import baptiste.experiments.import_params as ip
@@ -38,10 +40,21 @@ import baptiste.math.fits as fits
 
 dico = dic.open_dico()
 
-#%% liste_tot
+
+                
+#%% Liste top refaite mieux
+
+# nb_exp = 12
+nb_exp = 10
+# nb_exp = 8
+
+# exps = ['TMFR', 'ECTD', 'ETHY', 'EDTH', 'NPDP', 'RLPY', 'MLO', 'EJCJ', 'DML', 'QSC0', 'TNB0', 'CCMO']
+exps = ['ECTD', 'EDTH', 'NPDP', 'RLPY', 'MLO', 'EJCJ', 'DML', 'QSC0', 'TNB0', 'CCMO']
+# exps = ['ECTD', 'EDTH', 'NPDP', 'RLPY', 'DML', 'QSC0', 'TNB0', 'CCMO']
+
 
 date_min = 231115
-date_max = 231231
+date_max = 240117
 save = False
 
 long_onde = np.array([])
@@ -49,128 +62,503 @@ amp_max = np.array([])
 amp_moy = np.array([])
 l_cracks = np.array([])
 
-liste_top = np.zeros((7,86), dtype = object)
+# liste_top = np.zeros((7,160), dtype = object)
+liste_top = np.zeros((6,156), dtype = object)
+# liste_top = np.zeros((7,133), dtype = object)
 
+tableau_1 = pandas.read_csv('E:\\Baptiste\\Resultats_exp\\Tableau_params\\Tableau1_Params_231117_240116\\tableau_1.txt', sep = '\t', header = 0)
+tableau_1 = np.asarray(tableau_1)
 
+# courbure
+best_a = True
+if best_a :
+    path = ['E:\\Baptiste\\Resultats_exp\\Courbure\\231120_ECTD\\' + '20240422_180550_params_courbure.pkl' ,
+            'E:\\Baptiste\\Resultats_exp\\Courbure\\231121_EDTH_a30\\' + '20240424_172527_params_courbure.pkl',
+            'E:\\Baptiste\\Resultats_exp\\Courbure\\231122_NPDP\\' + '20240419_171920_params_courbure.pkl' , 
+            'E:\\Baptiste\\Resultats_exp\\Courbure\\231124_RLPY\\' + '20240422_153853_params_courbure.pkl' ,
+            'E:\\Baptiste\\Resultats_exp\\Courbure\\231129_MLO_a50\\' + '20240422_182428_params_courbure.pkl',
+            'E:\\Baptiste\\Resultats_exp\\Courbure\\231129_EJCJ_a30\\' + '20240423_123023_params_courbure.pkl' ,
+            'E:\\Baptiste\\Resultats_exp\\Courbure\\231130_DML_a50\\' + '20240424_190359_params_courbure.pkl',
+            'E:\\Baptiste\\Resultats_exp\\Courbure\\240109_QSC_a50\\' + '20240422_171834_params_courbure.pkl',
+            'E:\\Baptiste\\Resultats_exp\\Courbure\\240115_TNB_a30\\' + '20240424_123149_params_courbure.pkl',
+            'E:\\Baptiste\\Resultats_exp\\Courbure\\240116_CCM_ttpts\\' + 'CCM_nomexp_A_kappamax_kappath_a30.txt']
 
 u = 0
-v = 1
 for date in dico.keys() :
     if date.isdigit() :
         if float(date) >= date_min and float(date) < date_max :
-            for nom_exp in dico[date].keys() :
-                
-                liste_top[0,u] = nom_exp
-                u += 1
+            if float(date) != 231123 :
+                for nom_exp in dico[date].keys() :
+                    for exp in exps :
+                        if nom_exp[:3] in exp :
+                            liste_top[0,u] = nom_exp
+                            u += 1
 
+aa = 0
+for date in dico.keys() :
+    if date.isdigit() :
+        if float(date) >= date_min and float(date) < date_max :
+            if float(date) != 231123 :
+                for nom_exp in dico[date].keys() :
+                    if nom_exp in liste_top[0,:]:
+                        print(nom_exp)
+                        for i in range(len(exps)) :
+                            if nom_exp[:3] in exps[i] :
+                                aa = i
+                        print(exps[aa])
+                        indice = np.where(nom_exp == liste_top[0,:])[0][0]
+                        if 'lambda' in dico[date][nom_exp].keys() :
+                            liste_top[1,indice] = float(dico[date][nom_exp]['lambda'])
+                            
+                        if 'Amp_moy' in dico[date][nom_exp].keys() :
+                            liste_top[2,indice] = dico[date][nom_exp]['Amp_moy']
+                            
+                        if 'Amp_max' in dico[date][nom_exp].keys() :
+                            liste_top[3,indice] = dico[date][nom_exp]['Amp_max']
+                            
+                        if 'l_cracks' in dico[date][nom_exp].keys() :
+                            liste_top[4,indice] = np.nansum(dico[date][nom_exp]['l_cracks']) / 1000
+                        
+
+
+                        if 'CCM' in nom_exp :  #CCM  
+                            params_k = pandas.read_csv(path[-1], header = None, sep = '\t')
+                            params_k = np.asarray(params_k)
+                            if nom_exp in params_k[:,0] :
+                                blbl = np.where(nom_exp == params_k[:,0])[0][0]
+                                k_max = params_k[blbl,2]
+                            else :
+                                k_max = 0
+                            
+                            liste_top[5,indice] = k_max
+
+                        
+                                
+
+                        elif 'EDTH' in nom_exp : #ECTD et EDTH
+                        
+                            params_k = dic.open_dico(path[aa])
+                            
+                            if nom_exp[-2:].isdigit() :
+                                k_max = params_k['courbure']['k_minmin'][int(nom_exp[-2:])]
+                            elif nom_exp[-1:].isdigit() :
+                                k_max = params_k['courbure']['k_minmin'][int(nom_exp[-1:])]
+                            else :
+                                k_max = 0
+                                
+                            liste_top[5,indice] = k_max
+                        
+                        elif 'ECT' in nom_exp :   
+                            params_k = dic.open_dico(path[aa])
+                            
+                            if nom_exp[-2:].isdigit() :
+                                if int(nom_exp[-2:]) != 12 :
+                                    k_max = params_k['courbure']['k_maxmax'][int(nom_exp[-2:])]
+                                else :
+                                    k_max = 0
+                            elif nom_exp[-1:].isdigit() :
+                                k_max = params_k['courbure']['k_maxmax'][int(nom_exp[-1:])]
+                            else :
+                                k_max = 0
+                  
+                            liste_top[5,indice] = k_max
+                            
+                        
+                        elif 'RLP' in nom_exp :   
+                            params_k = dic.open_dico(path[aa])
+                            if nom_exp[-1:].isdigit() :
+                                if not nom_exp[-2:].isdigit() :
+                                    k_max = params_k['courbure']['k_minmin'][int(nom_exp[-1:])]
+                                else :
+                                    k_max = 0
+                            else :
+                                k_max = 0
+                  
+                            liste_top[5,indice] = k_max
+                        
+                        elif 'DML' in nom_exp :   
+                            params_k = dic.open_dico(path[aa])
+                            
+                            if nom_exp[-2:].isdigit() :
+                                if int(nom_exp[-2:]) < 12 :
+                                    k_max = params_k['courbure']['k_minmin'][int(nom_exp[-2:])]
+                                else :
+                                    k_max = 0
+                            elif nom_exp[-1:].isdigit() :
+                                k_max = params_k['courbure']['k_minmin'][int(nom_exp[-1:])]
+                            else :
+                                k_max = 0
+                  
+                            liste_top[5,indice] = k_max
+                        
+                        elif 'NPDP' in nom_exp :   
+                            params_k = dic.open_dico(path[aa])
+                            
+                            if nom_exp[-1:].isdigit() :
+                                if int(nom_exp[-1:]) < 8 :
+                                    k_max = params_k['courbure']['k_minmin'][int(nom_exp[-1:])]
+                                else :
+                                    k_max = 0
+                            else :
+                                k_max = 0
+                  
+                            liste_top[5,indice] = k_max
+                            
+                        elif 'MLO2' in nom_exp :   
+                            params_k = dic.open_dico(path[aa])
+                            
+                            if nom_exp[-2:].isdigit() :
+                                if int(nom_exp[-2:]) < 25 :
+                                    k_max = params_k['courbure']['k_minmin'][int(nom_exp[-2:])]
+                                else :
+                                    k_max = 0
+                            elif nom_exp[-1:].isdigit() :
+                                k_max = params_k['courbure']['k_minmin'][int(nom_exp[-1:])]
+                            else :
+                                k_max = 0
+                            
+                            liste_top[5,indice] = k_max
+                            
+                        elif 'EJCJ' in nom_exp :   
+                            params_k = dic.open_dico(path[aa])
+                            
+                            if nom_exp[-2:].isdigit() :
+                                if int(nom_exp[-2:]) < 25 :
+                                    k_max = params_k['courbure']['k_minmin'][int(nom_exp[-2:])]
+                                else :
+                                    k_max = 0
+                            elif nom_exp[-1:].isdigit() :
+                                k_max = params_k['courbure']['k_minmin'][int(nom_exp[-1:])]
+                            else :
+                                k_max = 0
+                            
+                            liste_top[5,indice] = k_max
+                            
+                        elif 'QSC' in nom_exp :   
+                            params_k = dic.open_dico(path[aa])
+                            
+                            if nom_exp[-2:].isdigit() :
+                                if int(nom_exp[-2:]) < 22 :
+                                    k_max = params_k['courbure']['k_minmin'][int(nom_exp[-2:])]
+                                else :
+                                    k_max = 0
+                            elif nom_exp[-1:].isdigit() :
+                                k_max = params_k['courbure']['k_minmin'][int(nom_exp[-1:])]
+                            else :
+                                k_max = 0
+                            
+                            liste_top[5,indice] = k_max
+                            
+                        elif 'TNB' in nom_exp :   
+                            params_k = dic.open_dico(path[aa])
+                            
+                            if nom_exp[-2:].isdigit() :
+                                if int(nom_exp[-2:]) < 31 :
+                                    k_max = params_k['courbure']['k_minmin'][int(nom_exp[-2:])]
+                                else :
+                                    k_max = 0
+                            elif nom_exp[-1:].isdigit() :
+                                k_max = params_k['courbure']['k_minmin'][int(nom_exp[-1:])]
+                            else :
+                                k_max = 0
+                            
+                            liste_top[5,indice] = k_max
+                            
+                        
+                        else :
+                            
+                            params_k = dic.open_dico(path[aa])
+                            
+                            if nom_exp[-2:].isdigit() :
+                                k_max = params_k['courbure']['k_minmin'][int(nom_exp[-2:]) - 1]
+                            elif nom_exp[-1:].isdigit() :
+                                k_max = params_k['courbure']['k_minmin'][int(nom_exp[-1:]) - 1]
+                            else :
+                                k_max = 0
+                  
+                            liste_top[5,indice] = k_max
+
+
+# df = pandas.DataFrame(liste_top)
+# df.to_csv('E:\\Baptiste\\Resultats_exp\\Tableau_params\\Tableau3_Params_231117_240116\\tableau_3.txt', index=False, header=False, sep = '\t')   
+
+
+#%% Plot Amp_max (nom_exp)
+
+
+
+for i in exps :
+    expp = np.array([])
+    ampp = np.array([])
+    for j in liste_top[0,:] :
+        if i[:3] in j :
+            indice = np.where(j == liste_top[0,:])[0][0]
+            expp = np.append(expp, j)
+            ampp = np.append(ampp, liste_top[3, indice])
+            
+    disp.figurejolie()
+    disp.joliplot("Nom exp", "Amp max", expp, ampp , color = 2)
+
+
+#%% Plot Lcrack tot (nom_exp)
+
+
+
+for i in exps :
+    expp = np.array([])
+    lcracktot = np.array([])
+    for j in liste_top[0,:] :
+        if i[:3] in j :
+            indice = np.where(j == liste_top[0,:])[0][0]
+            expp = np.append(expp, j)
+            lcracktot = np.append(lcracktot, liste_top[4, indice])
+            
+    disp.figurejolie()
+    disp.joliplot(r"Nom exp", r"$L_{crack}$ tot", expp, lcracktot , color = 4)
+
+#%% Plot Lcracktot (Amp_max) + fit
+
+display = True
+save = True
+
+path_save = 'E:\\Baptiste\\Resultats_exp\\Amp seuil en fonction de lambda\\Resultats_20240528\\'
+
+a = np.zeros(nb_exp)
+b = np.zeros(nb_exp)
+amp_s = np.zeros(nb_exp)
+long_onde = np.zeros(nb_exp)
+erreur = np.zeros(nb_exp, dtype = object)
+lcracktot = [np.array([]) for i in range (nb_exp)]
+lcrack_lc0 = [np.array([]) for i in range (nb_exp)]
+ampp = [np.array([]) for i in range (nb_exp)]
+ampp_lc0 = [np.array([]) for i in range (nb_exp)]
+long_onde_lc0 = [np.array([]) for i in range (nb_exp)]
+
+u = 0
+for i in exps :
+    for j in liste_top[0,:] :
+        if i[:3] == j[:3] :
+            indice = np.where(j == liste_top[0,:])[0][0]
+            if liste_top[3, indice] != 0.0 :
+                if i == 'MLO' :
+                    ampp[u] = np.append(ampp[u], liste_top[3, indice])
+                    long_onde[u] = liste_top[1,indice]
+                    lcracktot[u] = np.append(lcracktot[u], liste_top[4, indice])
+                    
+                    lcrack_lc0[u] = np.append(lcrack_lc0[u], liste_top[4, indice])
+                    long_onde_lc0[u] = liste_top[1,indice]
+                    ampp_lc0[u] = np.append(ampp_lc0[u], liste_top[3, indice])
+                    
+                else :    
+                    if liste_top[4, indice] != 0.0 :
+                        ampp[u] = np.append(ampp[u], liste_top[3, indice])
+                        lcracktot[u] = np.append(lcracktot[u], liste_top[4, indice])
+                        long_onde[u] = liste_top[1,indice]
+                        
+                        ampp_lc0[u] = np.append(ampp_lc0[u], liste_top[3, indice])
+                        lcrack_lc0[u] = np.append(lcrack_lc0[u], liste_top[4, indice])
+                        long_onde_lc0[u] = liste_top[1,indice]
+                        
+                    else :
+                        ampp_lc0[u] = np.append(ampp_lc0[u], liste_top[3, indice])
+                        lcrack_lc0[u] = np.append(lcrack_lc0[u], liste_top[4, indice])
+                        long_onde_lc0[u] = liste_top[1,indice]
+                        
+    x_amp = np.linspace(np.min(ampp[u]), np.max(ampp[u]), 100)
+    # plt.plot(x_amp, lambdasur2)
+    
+    if len (ampp[u]) > 2 :
+        if i != 'ECTD' and i != 'EJCJ' and i != 'EDTH' :
+            ampp[u] = ampp[u][:-1]
+            lcracktot[u] = lcracktot[u][:-1]
+            ampp_lc0[u] = ampp_lc0[u][:-1]
+            lcrack_lc0[u] = lcrack_lc0[u][:-1]
+    
+    if display :
+        disp.figurejolie()
+        disp.joliplot(r"Amp (m)", r"$L_{crack}$ (m)", ampp_lc0[u], lcrack_lc0[u] , color = 8, zeros = True)
+    
+    popt = np.polyfit(ampp[u], lcracktot[u], 1, full = True)
+    a[u] = popt[0][0]
+    b[u] = popt[0][1]
+    amp_s[u] = (0 - b[u]) / a[u] #(long_onde[u] - b[u]) / a[u] 
+    if len (ampp[u]) > 2 :
+        erreur[u] = popt[1:][0][0]
+    elif len (ampp[u]) == 2 :
+        erreur[u] = 0#(ampp[1] - amp_s[u])/ampp[1] / 2
+
+    x_amp = np.linspace(-200, 200, 1000)
+    if display :
+        disp.joliplot(r"Amplitude (m)", r"$L_{crack}$ (m)", x_amp, x_amp * a[u] + b[u] , color = 5, exp = False)
+        
+    zeroo = np.linspace(0, 0, 1000)
+    plt.plot(x_amp, zeroo)
+    disp.joliplot(r"Amplitude (m)", r"$L_{crack}$ (m)", x_amp, zeroo, color = 5, exp = False)
+    
+    plt.xlim([0, np.max(ampp_lc0[u]) * 1.05 ])
+    plt.ylim([-np.max(lcrack_lc0[u]) / 10, np.max(lcrack_lc0[u]) * 1.1 ]) 
+    
+    
+    
+    if save :
+        plt.savefig(path_save + "l_crack_amplitude+fit_" + i + '_' + str(tools.datetimenow()) + '_' + i  + '.png', dpi = 200)
+        plt.savefig(path_save + "l_crack_amplitude+fit_" + i + '_pdf' + str(tools.datetimenow()) + '_' + i  + '.pdf')
+    
     
 
+    u += 1
+    
+#%% Plot Lcracktot (kappa) + fit
+
+display = True
+save = False
+
+
+a = np.zeros(nb_exp)
+b = np.zeros(nb_exp)
+k_s = np.zeros(nb_exp)
+long_onde = np.zeros(nb_exp)
+erreur = np.zeros(nb_exp, dtype = object)
+
+
 u = 0
-for date in dico.keys() :
-    if date.isdigit() :
-        if float(date) >= date_min and float(date) < date_max :
-            print(date)                
-            for nom_exp in dico[date].keys() :
-                print(nom_exp)
-                if 'lambda' in dico[date][nom_exp].keys() :
-                    liste_top[1,u] = dico[date][nom_exp]['lambda']
-                    
-                if 'l_cracks' in dico[date][nom_exp].keys() :
-                    liste_top[4,u] = np.nansum(dico[date][nom_exp]['l_cracks']) / 1000
-                    
-                if 'Amp_moy' in dico[date][nom_exp].keys() :
-                    liste_top[2,u] = dico[date][nom_exp]['Amp_moy']
-                    
-                if 'Amp_max' in dico[date][nom_exp].keys() :
-                    liste_top[3,u] = dico[date][nom_exp]['Amp_max']
-                
-                
-                
-                
-                u += 1
-                if u > 85 :
-                    for k in range (v) :
-                        liste_top[5, u - k-1] = liste_top[4, u-k-1] / np.max(liste_top[4, u-v:u-1])
-                    plt.figure()
-                    plt.plot(liste_top[3, u-v:u], liste_top[4, u-v:u],'kx')
-                    if save :
-                        plt.savefig('E:\Baptiste\Resultats_exp\\' + nom_exp + "crack_amp.pdf")
-                    v = 1
-                    print(v)
-                    amp_lcrack = np.stack((liste_top[3, u-v:u], liste_top[5, u-v:u]))
-                    np.savetxt('E:\\Baptiste\\Resultats_exp\\amp_crack\\amp_lcrack_' + liste_top[0, u-v] + ".txt", amp_lcrack)
-                    
-                else :
-                    if liste_top[0,u-1][:3] == liste_top[0,u][:3] :
-                        v +=1
-                    else :
-                        for k in range (v) :
-                            liste_top[5, u - k] = liste_top[4, u-k] / np.max(liste_top[4, u-v:u])
-                        plt.figure()
-                        plt.plot(liste_top[3, u-v:u], liste_top[4, u-v:u], 'kx')
-                        if save :
-                            plt.savefig('E:\Baptiste\Resultats_exp\\' + nom_exp + "crack_amp.pdf")
-                        v = 1
-                        print(v)
-                        amp_lcrack = np.stack((liste_top[3, u-v:u], liste_top[5, u-v:u]))
-                        np.savetxt('E:\\Baptiste\\Resultats_exp\\amp_crack\\amp_lcrack_' + liste_top[0, u-v] + ".txt", amp_lcrack)
-                
+for i in exps :
+    kappa = np.array([])
+    lcracktot = np.array([])
+    lambdasur2 = 0
+    for j in liste_top[0,:] :
+        
+        if i[:3] == j[:3] :
+            indice = np.where(j == liste_top[0,:])[0][0]
+            
+            if liste_top[5, indice] != 0.0 :
+                # if i == 'EDTH' or i == 'EJCJ' or i == 'TBN0':
+                if liste_top[4, indice] != 0.0 :
+                    kappa = np.append(kappa, liste_top[5, indice])
+                    lcracktot = np.append(lcracktot, liste_top[4, indice])
+                    lambdasur2 = liste_top[1,indice] / 2
+                    # kappa = np.append(kappa, liste_top[5, indice])
+                    # lcracktot = np.append(lcracktot, liste_top[4, indice])
+                    # lambdasur2 = liste_top[1,indice] / 2
+            
+    if display :
+        disp.figurejolie()
+        disp.joliplot(r"$\kappa$ (m$^{-1}$)", r"$L_{crack}$ (m)", kappa, lcracktot , color = 8, legend = i)
+    
+    long_onde[u] = lambdasur2 * 2
+    lambdasur2 = np.linspace(lambdasur2, lambdasur2, 100)
+    x_amp = np.linspace(np.min(kappa), np.max(kappa), 100)
+    # plt.plot(x_amp, lambdasur2)
+    
+    # if len (kappa) > 2 :
+    #     kappa = kappa[:-1]
+    #     lcracktot = lcracktot[:-1]
+    
+    popt = np.polyfit(kappa, lcracktot, 1, full = True)
+    a[u] = popt[0][0]
+    b[u] = popt[0][1]
+    k_s[u] = (long_onde[u] - b[u]) / a[u] #(0 - b[u]) / a[u] 
+    if len (kappa) > 2 :
+        erreur[u] = popt[1:][0][0]
+    elif len (kappa) == 2 :
+        erreur[u] = 0#(ampp[1] - k_s[u])/ampp[1] / 2
 
-# for nom_exp in liste_top[0,:] :
-#     if nom_
-#%% Intersection Lambda Crack :
-u = 0
-v = 1 
-for date in dico.keys() :
-    if date.isdigit() :
-        if float(date) >= date_min and float(date) < date_max :
-            print(date)                
-            for nom_exp in dico[date].keys() :
-                print(nom_exp)            
-                u += 1
-                if u > 85 :
-                    for k in range (v) :
-                        liste_top[5, u - k-1] = liste_top[4, u-k-1] / np.max(liste_top[4, u-v:u-1])
-                #     plt.figure()
-                #     plt.plot(liste_top[3, u-v:u], liste_top[4, u-v:u],'kx')
-                #     if save :
-                #         plt.savefig('E:\Baptiste\Resultats_exp\\' + nom_exp + "crack_amp.pdf")
-                    amp_lcrack = np.stack((liste_top[3, u-v:u], liste_top[5, u-v:u]))
-                    np.savetxt('E:\\Baptiste\\Resultats_exp\\amp_crack\\amp_lcrack_' + liste_top[0, u-v] + ".txt", amp_lcrack)
-                    
-                    print(v)
-                    v = 1
+    x_amp = np.linspace(np.min(kappa), np.max(kappa), 100)
+    if display :
+        disp.joliplot(r"$\kappa$ (m$^{-1}$)", r"$L_{crack}$ (m)", x_amp, x_amp * a[u] + b[u] , color = 5, legend = "fit", exp = False, zeros= True)
+        if save :
+            plt.savefig('E:\\Baptiste\\Resultats_exp\\Amp seuil en fonction de lambda\\240506_lcrack_Aetkappa\\' + "l_crack_amplitude+fit_" + str(tools.datetimenow()) + '_' + i  + '.png', dpi = 200)
+    
+    
 
-                    
-                else :
-                    
-                    if u == 46 :
-                        for k in range (v) :
-                            liste_top[5, u - k] = liste_top[4, u-k] / np.max(liste_top[4, u-v:u])
-                #         plt.figure()
-                #         plt.plot(liste_top[3, u-v:u], liste_top[4, u-v:u], 'kx')
-                #         if save :
-                #             plt.savefig('E:\Baptiste\Resultats_exp\\' + nom_exp + "crack_amp.pdf")
-                        print(v)
-                        print('odfjgqjgokqjrt')
-                        v = 1
-                        
-                    
-                    elif liste_top[0,u-1][:3] == liste_top[0,u][:3] :
-                        v +=1
-                        
-                    
-                        
-                    else :
-                        for k in range (v) :
-                            liste_top[5, u - k] = liste_top[4, u-k] / np.max(liste_top[4, u-v:u])
-                #         plt.figure()
-                #         plt.plot(liste_top[3, u-v:u], liste_top[4, u-v:u], 'kx')
-                #         if save :
-                #             plt.savefig('E:\Baptiste\Resultats_exp\\' + nom_exp + "crack_amp.pdf")
-                        print(v)
-                        v = 1
+    u += 1
+#%% kappa seuil (lambda) avec erreur
 
+disp.figurejolie()
+disp.joliplot( r"$\lambda$ (m)", r"$\kappa_s$ (m$^{-1}$)", long_onde, k_s, color = 5, zeros=True)
+plt.errorbar(long_onde, k_s, yerr = erreur * k_s * 2, fmt = 'none',capsize = 5, ecolor = 'red',elinewidth = 3)
+for i in range (nb_exp):
+    plt.annotate(exps[i], (long_onde[i], k_s[i]))
+    
+# plt.xlim(0, 0.6)
+# plt.ylim(0, 0.025)
+
+if save :
+    plt.savefig('E:\\Baptiste\\Resultats_exp\\Amp seuil en fonction de lambda\\Test_fit_2024_04_16\\' + "ampseuil_lambda_lcrack_lambda" + str(tools.datetimenow()) + '.pdf', dpi = 1)
+
+#%% amp seuil (lambda) avec erreur
+
+disp.figurejolie()
+disp.joliplot( r"$\lambda$ (m)", r"A$_c$ (m)", long_onde, amp_s, color = 5, zeros=True)
+plt.errorbar(long_onde, amp_s, yerr = erreur * amp_s * 2, fmt = 'none',capsize = 5, ecolor = 'red',elinewidth = 3)
+for i in range (nb_exp):
+    plt.annotate(exps[i], (long_onde[i], amp_s[i]))
+    
+# plt.xlim(0, 0.6)
+# plt.ylim(0, 0.025)
+
+if save :
+    plt.savefig('E:\\Baptiste\\Resultats_exp\\Amp seuil en fonction de lambda\\Test_fit_2024_04_16\\' + "ampseuil_lambda_lcrack_lambda" + str(tools.datetimenow()) + '.pdf', dpi = 1)
+
+
+
+#%% a (lambda)
+
+exps_filt = [exps[1]] + exps [3:5] + exps[6:-1]
+long_onde_filt = np.append( np.append([long_onde[1]], long_onde [3:5]), long_onde[6:-1])
+a_filt = np.append( np.append([a[1]], a[3:5]), a[6:-1])
+
+disp.figurejolie()
+disp.joliplot( r"$\lambda$ (m)", "a", long_onde_filt, a_filt, color = 5, zeros=False)
+# for i in range (nb_exp):
+#     plt.annotate(exps[i], (long_onde[i], a[i]))
+# plt.savefig('E:\\Baptiste\\Resultats_exp\\Amp seuil en fonction de lambda\\Test_fit_2024_04_16\\' + "a_lambda" + str(tools.datetimenow()) + '.pdf', dpi = 1)
+
+
+popt = np.polyfit(long_onde_filt, a_filt, 1)
+
+disp.joliplot( r"$\lambda$ (m)", "a", long_onde_filt, long_onde_filt * popt[0] + popt[1], color = 2, zeros=True, exp = False)
+
+
+disp.figurejolie()
+disp.joliplot( r"$\lambda$ (m)", "a", long_onde, a, color = 5, zeros=False)
+for i in range (nb_exp):
+    plt.annotate(exps[i], (long_onde[i], a[i]))
+
+#%% b (lambda)
+
+disp.figurejolie()
+disp.joliplot( r"$\lambda$ (m)", "b", long_onde, b, color = 5, zeros=False)
+# plt.savefig('E:\\Baptiste\\Resultats_exp\\Amp seuil en fonction de lambda\\Test_fit_2024_04_16\\' + "b_lambda" + str(tools.datetimenow()) + '.pdf', dpi = 1)
+
+
+#%%Fit : scaling Amplitude
+
+
+fits.fit_powerlaw(long_onde, amp_s, display = True, legend = 'Threshold', xlabel =r"$\lambda$ (m)", ylabel = r"A$_c$ (m)" )
+
+pente = amp_s/long_onde * 2 * np.pi
+lambda_sort, pente_sort = tools.sort_listes(long_onde,pente)
+H = 0.11
+Ursell_number = amp_s * long_onde**2 / H**3
+lambda_sur_A = long_onde/amp_s
+
+if save :
+    plt.savefig(path_save + "ampseuil_lambda_lcrack_lambda_powerlaw" + str(tools.datetimenow()) + '.pdf', dpi = 1)
+
+#%%Fit : scaling courbure
+
+
+fits.fit_powerlaw(long_onde, k_s, display = True, legend = 'Threshold', xlabel =r"$\lambda$ (m)", ylabel = "Amplitude (m)" )
+
+pente = k_s/long_onde * 2 * np.pi
+lambda_sort, pente_sort = tools.sort_listes(long_onde,pente)
+H = 0.11
+Ursell_number = k_s * long_onde**2 / H**3
+lambda_sur_A = long_onde/k_s
+
+if save :
+    plt.savefig('E:\\Baptiste\\Resultats_exp\\Amp seuil en fonction de lambda\\Test_fit_2024_04_16\\' + "ampseuil_lambda_lcrack_lambda_powerlaw" + str(tools.datetimenow()) + '.pdf', dpi = 1)
 
 
 #%%ADD POINTS NICOLAS
@@ -292,12 +680,12 @@ plt.ylabel('Amplitude (m)')
             
 #%% Plot bien
 disp.figurejolie()
-colors = np.zeros((86,4))
-for i in range (86): 
+colors = np.zeros((169,4))
+for i in range (169): 
     colors[i,:] = disp.vcolors(int(liste_top[5,i] * 9))
      
 plt.scatter(liste_top[1,:],liste_top[3,:],color=colors)
-plt.scatter(liste_top_nico[6,:],liste_top_nico[1,:],color=colors_nico)
+# plt.scatter(liste_top_nico[6,:],liste_top_nico[1,:],color=colors_nico)
 # plt.ylim([0.001,0.024])
 
 #%%L_cracks (Amp)

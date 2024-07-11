@@ -38,7 +38,7 @@ def import_param (titre_exp,date, exp_type = "TT"):
     """
     if exp_type == "TT":
     #"\d" + date + "_vagues_facq" + str(facq) + "Hz_texp" + str(texp) + "us_fmotor"+ str(fpot) + "_Amplitude" +str(Apot) + "_Hw" + str(Hw) + "cm_Pasdamier" + str(pasdamier) + "mm"
-        if float(date) >= 221020 :  
+        if float(date) >= 221007 :  
             facq = float ( titre_exp[titre_exp.index("facq") + 4:titre_exp.index("facq") + 7]) # fréquence d'acquisition (Hz)
         else :
             facq = float ( titre_exp[titre_exp.index("facq") + 4:titre_exp.index("facq") + 6]) # fréquence d'acquisition (Hz)
@@ -324,7 +324,7 @@ def initialisation(date, nom_exp = '', exp = False, exp_type = "LAS", display = 
     #cree les parametres, cree fichier resultats, trouve les images, calcul angle laser si besoin
     
     if loc == 'f' :
-        if float(date) > 240101 :
+        if float(date) > 231116 :
             loc = "E:\Baptiste\Resultats_video\d" + date + "\\"
         else :    
             loc = "D:\Banquise\Baptiste\Resultats_video\d" + date + "\\"

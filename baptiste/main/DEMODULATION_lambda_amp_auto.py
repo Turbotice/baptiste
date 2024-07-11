@@ -48,8 +48,8 @@ import baptiste.math.RDD as rdd
 import baptiste.math.fits as fits
 
 
-date = '231120'
-nom_exp = 'ECTDR'
+date = '221212'
+nom_exp = 'CCCS2'
 exp = True
 exp_type = 'LAS'
 
@@ -59,9 +59,9 @@ dico, params, loc = ip.initialisation(date, nom_exp, exp = True, display = False
 
 #%%Paramètre de traitement
 
-params['fexc'] = 9.85
+params['fexc'] = 9.88
 
-save = False
+save = True
 kappa_only = False
 display = False
 savefig = True
@@ -79,17 +79,17 @@ for a in nom_exp :
         nom_save_file += a
 
 # paramètes éstimés, on va chercher des k qui correspondent plus ou moins pour D éstimé (mesuré auparavant)
-
-params['D_estime'] = 0.2E-5
+D_estime = 20e-6
+params['D_estime'] = D_estime
 
 #pour estimer un k à partir d'une fréquence
-tension_surface = 0.05
+
 g = 9.81
-rho = 1000
+rho = 900
 dsurrho = params['D_estime'] / rho
 
 def RDD_comp (k, dsurrho):
-   return np.sqrt(g * k + tension_surface/rho * k**3 + dsurrho * k**5)
+   return np.sqrt(g * k + dsurrho * k**5)
 
 x_est = np.arange(10,1000,5)
 
@@ -106,26 +106,75 @@ for idx,x_value in enumerate(x_est):
     res = minimize(diff, 1.0, args=(x_value), method='Nelder-Mead', tol=1e-6)
     y_est[idx] = res.x[0]
 
+fichiers = [params['path_images'][:-15]]
+
+liste_u = [1,2]
+
+#%% Selectionner tous les RDD qu'on veut
+save = True
+date_min = 240114
+root_D = 'D:\\Banquise\\Baptiste\\Resultats_video\\d'
+root_E = 'E:\\Baptiste\\Resultats_video\\d'
+fichiers = []
+
+for date in dico :
+    if date.isdigit() :
+
+        if float(date) > date_min and float(date) < 240101 :
+            print(date)
+            
+            for nom_exp in dico[np.str(date)] :
+                
+                if 'D' in dico[date][nom_exp] :
+                    pass                
+                else :
+                    if nom_exp[-1] == 'R' :
+                        dico, params, loc = ip.initialisation(date, nom_exp, exp = True, display = False)
+                        fichiers.append(params['path_images'][:-15])
+                        
+        if float(date) > date_min and float(date) > 240101 :
+            print(date)
+            
+            for nom_exp in dico[np.str(date)] :
+                
+                if 'D' in dico[date][nom_exp] :
+                    pass                
+                else :
+                    if nom_exp[-1] == 'R' :
+                        dico, params, loc = ip.initialisation(date, nom_exp, exp = True, display = False)
+                        fichiers.append(params['path_images'][:-15])
+
 
 
 #%% MAIN
 
-for file in [0] :
+
+
+for file in fichiers :
     
+    folder_results = file + "resultats"
     
-    folder_results = params['path_images'][:-15] + "resultats"
+    date = file[file.index("Resultats") + 17: file.index("Resultats") + 23]
+    nom_exp = file[file.index("Resultats") + 32: file.index("Resultats") + 37]
+    
+    prout, params, loc = ip.initialisation(date, nom_exp, exp = True, display = False)
+    params['D_estime'] = D_estime
+    params['fexc'] = 5
+    save_path = 'E:\\Baptiste\\Resultats_exp\\All_RDD\\' + date + "\\"
+    # os.mkdir(save_path )
+    # os.mkdir(save_path + 'resultats')
     name_file = "positionLAS.npy"
     data_originale = np.load(folder_results + "\\" + name_file)
     
     data_originale = np.rot90(data_originale)
     data_originale = np.flip(data_originale, 0)
-    
-    debut_las = 1#100#250#400
-    fin_las = np.shape(data_originale)[0] - 1120#50#200#300NBFT#100DAP
+    [nx,nt] = data_originale.shape
+    debut_las = 700#100#250#400
+    fin_las = 1500#np.shape(data_originale)[0] - int(3* nx / 4)#50#200#300NBFT#100DAP
     
     
     t0 = 1
-    tf = np.shape(data_originale)[1] - 1
+    tf = 15000 #np.shape(data_originale)[1] - 1
     
     if display:
         disp.figurejolie()
@@ -156,7 +205,7 @@ for file in [0] :
     #enlever moyenne pr chaque pixel
     
     if params['im_ref'] :
-        mean_pixel = np.mean(data,axis = 1) #liste avec moyenne en temps de chaque pixel 
+        mean_pixel = np.nanmean(data,axis = 1) #liste avec moyenne en temps de chaque pixel 
         for i in range (0,nt):
             data[:,i] = data[:,i] - mean_pixel #pour chaque temps, on enleve la moyenne temporelle de chaque pixel
     
@@ -176,7 +225,7 @@ for file in [0] :
     
     for i in range(0,nt):  
         signalsv[:,i] = savgol_filter(data_m[:,i], params['taille_savgol'],params['ordre_savgol'], mode = 'nearest')
-        if np.mod(i,1000)==0:
+        if np.mod(i,5000)==0:
             print('On processe l image numero: ' + str(i) + ' sur ' + str(nt))
     print('Done !')
     
@@ -198,11 +247,11 @@ for file in [0] :
     """ Analyse d'un signal temporel """
     #On prend un point qcq en x, et on regarde le signal au cours du temps.
     
-    i = 200
+    i = 0
     
     # On va regarder la periode sur signal.
     
-    Y1 = fft.fft(data[i,:]- np.mean(data[i,:]))
+    Y1 = fft.fft(data[i,:]- np.nanmean(data[i,:]))
     
     P2 = abs(Y1/nt)
     P1 = P2[1:int(nt/2+1)]
@@ -214,15 +263,18 @@ for file in [0] :
     disp.joliplot('f (Hz)', '|P1(f)|', f, P1, title = 'Single-Sided Amplitude Spectrum of X(t)', exp = True)
     
     if savefig :
-        plt.savefig(params['path_images'][:-15] + "resultats" + "/" + "FFT_temporelle_" + nom_exp + "_fexc_" + str(round(params['fexc'])) + "Hz_pixel_" + str(i) + ".pdf", dpi = 1)
+        plt.savefig(save_path + "resultats" + "/" + "FFT_temporelle_" + nom_exp + "_fexc_" + str(round(params['fexc'])) + "Hz_pixel_" + str(i) + tools.datetimenow() + ".pdf", dpi = 1)
         
     f_0 = params['fexc']
-    n_harm = int(input("Nombre d'harmoniques à chercher ? "))
+    n_harm = 1 #int(input("Nombre d'harmoniques à chercher ? "))
     
     lambda_exp = []
     kappa_exp = []
     
-    for u in range (1,n_harm+1):
+    liste_f = range (1,n_harm+1)
+    if liste_u != False :
+        liste_f = liste_u
+    for u in liste_f :
         
         """ Demodulation et amplitude """
         
@@ -231,15 +283,17 @@ for file in [0] :
             f_exc = abs(params['facq'] - f_exc)
             
         amp_demod = []
-        cut_las = 200 * u - 200
-        if u >= 3 :
-            cut_las = 300
-            if u >= 4 :
-                cut_las = 400
-        if f_0 * u > 80 :
-            cut_las = 500
-        if f_0 * u > 120 :
-            cut_las = 700
+        cut_las = 1 * u - 1
+        # if u >= 2 :
+        #     cut_las = 550
+        # if u >= 3 :
+        #     cut_las = 300
+        #     if u >= 4 :
+        #         cut_las = 400
+        # if f_0 * u > 80 :
+        #     cut_las = 500
+        # if f_0 * u > 120 :
+        #     cut_las = 700
             
         nx_new = nx - cut_las
         X = np.linspace(0, nx_new * params['mmparpixel']/1000, nx_new) #echelle des x en m
@@ -262,13 +316,13 @@ for file in [0] :
         attenuation,pcov = curve_fit (exppp, X, I, p0 = [1,0])
         attenuationA = curve_fit (exppp, X, np.abs(amp_demod), p0 = [1,0])
         
-        if savefig :
-            disp.figurejolie()
-            disp.joliplot(r"x (m)", r"I", X, I, color = 3, exp = False, log = True, legend = r"f = " + str(int(f_0 * u) ) + " Hz")
-            disp.joliplot(r"x (m)", r"I", X, exppp(X, attenuation[0], attenuation[1]), color = 5, exp = False, log = True, legend = r"fit, on trouve $\kappa = $" + str(round(attenuation[1],4)))
-            plt.xscale('linear')
-            plt.yscale('log')
-            plt.savefig(params['path_images'][:-15] + "resultats" + "/" + "I(x)_fitkappa_" + str(round(f_0 * u)) + "Hz" + ".pdf", dpi = 1)
+        # if savefig :
+        #     disp.figurejolie()
+        #     disp.joliplot(r"x (m)", r"I", X, I, color = 3, exp = False, log = True, legend = r"f = " + str(int(f_0 * u) ) + " Hz")
+        #     disp.joliplot(r"x (m)", r"I", X, exppp(X, attenuation[0], attenuation[1]), color = 5, exp = False, log = True, legend = r"fit, on trouve $\kappa = $" + str(round(attenuation[1],4)))
+        #     plt.xscale('linear')
+        #     plt.yscale('log')
+        #     plt.savefig(save_path + "resultats" + "/" + "I(x)_fitkappa_" + str(round(f_0 * u)) + "Hz" + tools.datetimenow() + ".pdf", dpi = 1)
        
 
         err_kappa = np.sqrt(np.diag(pcov))[1] #c'est la standard deviation (à priori exact (cf doc curve fit))
@@ -284,11 +338,11 @@ for file in [0] :
             ampfoispente = np.append( amp_demod * np.exp(attenuationA[0][1] * X), np.zeros(2**padding - nx_new))
             ampfoispente_0 = np.append( (amp_demod) , np.zeros(2**padding - nx_new))
             
-            if savefig :
-                disp.figurejolie()
-                disp.joliplot("X (m)", "Signal", X, np.real(ampfoispente[:nx_new]),color =2, legend = r'Signal démodulé * atténuation (m)', exp = False)
-                disp.joliplot("X (m)", "Signal", X, np.real(ampfoispente_0[:nx_new]),color = 10, legend = r'Signal démodulé', exp = False)
-                plt.savefig(params['path_images'][:-15] + "resultats" + "/" + "Partie réelle_Signal_démodulé_" + str(round(f_0 * u)) + "Hz" + ".pdf", dpi = 1)
+            # if savefig :
+            #     disp.figurejolie()
+            #     disp.joliplot("X (m)", "Signal", X, np.real(ampfoispente[:nx_new]),color =2, legend = r'Signal démodulé * atténuation (m)', exp = False)
+            #     disp.joliplot("X (m)", "Signal", X, np.real(ampfoispente_0[:nx_new]),color = 10, legend = r'Signal démodulé', exp = False)
+            #     plt.savefig(save_path + "resultats" + "/" + "Partie réelle_Signal_démodulé_" + str(round(f_0 * u)) + "Hz" + tools.datetimenow() + ".pdf", dpi = 1)
                 
             
 
@@ -313,7 +367,7 @@ for file in [0] :
                 plt.xlim((0,100))
                 if f_exc != f_0 * u :
                     plt.xlim((2**padding-100, 2**padding))
-                plt.savefig(params['path_images'][:-15] + "resultats" + "/" + "FFT_spatiale_0padding_" + str(round(f_0 * u)) + "Hz" + ".pdf", dpi = 1)
+                plt.savefig(save_path + "resultats" + "/" + "FFT_spatiale_0padding_" + str(round(f_0 * u)) + "Hz"+ tools.datetimenow() + ".pdf", dpi = 1)
                 
             
             
@@ -335,7 +389,7 @@ for file in [0] :
             dist = int(peaks_theorique/ 10)
             prominence = max(np.abs(mean_fft))
             
-            qtt_pics = 5
+            qtt_pics = 50
             if f_0*u > 100 :
                 qtt_pics = 10
             if f_0*u >150:
@@ -345,11 +399,11 @@ for file in [0] :
             if f_0*u >250:
                 qtt_pics = 50
     
-            peaks1, _ = find_peaks(abs(mean_fft), prominence = prominence/qtt_pics, distance = 2, width=(1,50))
+            peaks1, _ = find_peaks(abs(mean_fft), prominence = prominence/qtt_pics, distance = 2, width=(1,100))
     
             pics_lala = []
             
-            params['tolerance_k'] = 1/4
+            params['tolerance_k'] = 1/3
             # if f_0*u > 80 :
             #     tolerance_k = 1/7
             # if f_0*u >140:
@@ -401,7 +455,7 @@ for file in [0] :
                 plt.xlim((0,200))
                 if f_exc != f_0 * u :
                     plt.xlim((2**padding-200, 2**padding))
-                plt.savefig(params['path_images'][:-15] + "resultats" + "/" + "FFT_spatiale_pics_trouvés_" + str(round(f_0 * u)) + "Hz" + ".pdf", dpi = 1)
+                plt.savefig(save_path + "resultats" + "/" + "FFT_spatiale_pics_trouvés_" + str(round(f_0 * u)) + "Hz"+ tools.datetimenow() + ".pdf", dpi = 1)
              
             
             """ Fit second degré """
@@ -443,55 +497,60 @@ for file in [0] :
                 
             else : 
                 error_lambda = 0
+                
+            # if u == 2 :
+            #     longueur_donde = 2 * np.pi / 70.5 / 2**padding * nx_new
+            #     error_lambda = 2 * np.pi / 69 / 2**padding * nx_new - 2 * np.pi / 70.5 / 2**padding * nx_new
     
-            if True :
+            if not np.isnan(longueur_donde) :
                 if u == 0 :
                     u = 1
                 lambda_exp.append([longueur_donde, error_lambda, f_0 * u])
                 lambda_tot.append([longueur_donde, error_lambda, f_0 * u])
+                if savefig :
+                    #plot le résultats supperposé au signal
+                    disp.figurejolie()
+                    disp.joliplot('X (m)', 'Y (m)', X, np.sin(X * 2 * np.pi / lambda_tot[-1][0]) * exppp(X, np.max(np.real(ampfoispente_0[:nx_new])), kappa_tot[-1][0]), exp = False, legend = r'$\lambda$ et $\kappa$ trouvés')
+                    disp.joliplot('X (m)', 'Y (m)', X, np.real(ampfoispente_0[:nx_new]), exp = False, legend = 'Signal démodulé')
+                    plt.savefig(save_path + "resultats" + "/" + "Signal demodule superpose au résultat_" + str(round(f_0 * u)) + "Hz"+ tools.datetimenow() + ".pdf", dpi = 1)
             if u == 1 :
                 dico = dic.add_dico(dico,date,nom_exp,'lambda', longueur_donde)
                 dico = dic.add_dico(dico,date,nom_exp,'err_lambda', error_lambda)
             
-            if savefig :
-                #plot le résultats supperposé au signal
-                disp.figurejolie()
-                disp.joliplot('X (m)', 'Y (m)', X, np.sin(X * 2 * np.pi / lambda_tot[-1][0]) * exppp(X, np.max(np.real(ampfoispente_0[:nx_new])), kappa_tot[-1][0]), exp = False, legend = r'$\lambda$ et $\kappa$ trouvés')
-                disp.joliplot('X (m)', 'Y (m)', X, np.real(ampfoispente_0[:nx_new]), exp = False, legend = 'Signal démodulé')
-                plt.savefig(params['path_images'][:-15] + "resultats" + "/" + "Signal demodule superpose au résultat_" + str(round(f_0 * u)) + "Hz" + ".pdf", dpi = 1)
-    
+            
+            print('Harmonique ', u)
     
     if save:
         lambda_exp = np.asarray(lambda_exp)
-        np.savetxt(params['path_images'][:-15] + "resultats" + "/lambda_err_fexc" + date + "_" + nom_exp + ".txt", lambda_exp, "%s")
+        np.savetxt(save_path + "resultats" + "/lambda_err_fexc" + date + "_" + nom_exp + ".txt", lambda_exp, "%s")
         kappa_exp = np.asarray(kappa_exp)
-        np.savetxt(params['path_images'][:-15] + "resultats" + "/kappa_err_fexc" + date + "_" +  nom_exp + ".txt", kappa_exp, "%s")
+        np.savetxt(save_path + "resultats" + "/kappa_err_fexc" + date + "_" +  nom_exp + ".txt", kappa_exp, "%s")
         
-        dic.save_dico(params, params['path_images'][:-15] + "resultats//" + tools.datetimenow() + "params_traitementdonnees.pkl" )
-        
-        dic.save_dico(dico)
-        
+    disp.figurejolie()
+    lambda_exp = np.asarray(lambda_exp)
+    kk = 2 * np.pi / lambda_exp[:,0]
+    k_th = np.linspace(np.min(kk), np.max(kk), 100)
+    omega = 2 * np.pi * lambda_exp[:,2]
+    disp.joliplot(r'k (m$^{-1}$)', r'$\omega$ (s$^{-1}$)', kk, omega, color = 5, log = True, exp = True)
     
+    disp.figurejolie()
+    fit_params = fits.fit(rdd.RDD_flexion, kk, omega, display = True, err = False, nb_param = 1, p0 = [params["D_estime"]],zero = False, xlabel = r'k (m$^{-1}$)', ylabel = r'$\omega$', legend_fit = r'D/$\rho$ = ', log = True)
+    disp.joliplot(r'k (m$^{-1}$)', r'$\omega$ (s$^{-1}$)',k_th, rdd.RDD_flexion(k_th, params['D_estime'] / rho), color = 9, exp= False,legend = 'RDD estimée' )
+    params['rho'] = rho
+    if save :
+        params['D'] = fit_params[0][0] * rho
+        params['err_D'] = np.sqrt(fit_params[1][0][0]) * rho
+        plt.savefig(save_path + "resultats" + "/" + "RDDetFit_" + str(round(f_0 * u)) + "Hz" + tools.datetimenow() + ".pdf", dpi = 1)
+        dic.save_dico(params, save_path + "resultats//" + tools.datetimenow() + "params_traitementdonnees.pkl")
+        print('params saved')
+        print('D = ', params['D'])
+        print('err_D = ', params['err_D'])
+       
  
-lambda_exp = np.asarray(lambda_exp)        
-kappa_exp = np.asarray(kappa_exp)
-#%% Tracer la RDD vite fait :
-save = False   
-disp.figurejolie()
 
-kk = 2 * np.pi / lambda_exp[:,0]
+#%% Save dico
 
-omega = 2 * np.pi * lambda_exp[:,2]
-
-disp.joliplot(r'k (m$^{-1}$)', r'$\omega$ (s$^{-1}$)', kk, omega, color = 5, log = True, exp = True)
-
-disp.figurejolie()
-
-a = fits.fit(rdd.RDD_flexion, kk, omega, display = True, err = False, nb_param = 1, p0 = [params["D_estime"]],zero = False, xlabel = r'k (m$^{-1}$)', ylabel = r'$\omega$', legend_fit = r'D/$\rho$ = ', log = True)
-
-if save :
-    params['D'] = a[0][0]
-    params['err_D'] = a[1][0][0]
-    plt.savefig(params['path_images'][:-15] + "resultats" + "/" + "RDDetFit_" + str(round(f_0 * u)) + "Hz" + ".pdf", dpi = 1)
-    dic.save_dico(params, params['path_images'][:-15] + "resultats//" + tools.datetimenow() + "params_traitementdonnees.pkl" )
-    print('params saved')
+dico = dic.add_dico(dico,date,nom_exp,'D', params['D'])
+dico = dic.add_dico(dico,date,nom_exp,'err_D', params['err_D'] )
+dico = dic.add_dico(dico,date,nom_exp,'rho_utilise', rho)
+dic.save_dico(dico)

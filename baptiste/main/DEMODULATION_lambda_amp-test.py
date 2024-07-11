@@ -46,8 +46,8 @@ import baptiste.files.dictionaries as dic
 import baptiste.tools.tools as tools
 
 
-date = '240116'
-nom_exp = 'CCM01'
+date = '240109'
+nom_exp = 'QSC10'
 exp = True
 exp_type = 'LAS'
 
@@ -80,14 +80,13 @@ if True : #cam_dessus :
 data_originale = data_originale - np.nanmean(data_originale, axis = 0)    
 
 
-params['debut_las'] = 50
-params['fin_las'] = np.shape(data_originale)[0] - 1570
-
+params['debut_las'] = 150
+params['fin_las'] = np.shape(data_originale)[0] - 420
 #100 / 400 Pour DAP
 #650 / 300 Pour CCCS1
 #1 / 200 pr CCCS2
 
-params['t0'] = 500
+params['t0'] = 100
 params['tf'] = np.shape(data_originale)[1] - 1
 
 
@@ -114,8 +113,10 @@ params['im_ref'] = False
 params['minus_mean'] = True
 
 params['ordre_savgol'] = 2
-params['taille_savgol'] = 11
+params['taille_savgol'] = 31
 params['size_medfilt'] = 51
+
+
 
 
 
@@ -317,11 +318,11 @@ plt.clim(-1,1)
 savefig = False
 save = False
 #Moyenne temporelle amp aux moments interessants, et avec le temps
-longueur_donde = int(dico[date][nom_exp]['lambda'] / params['mmparpixel'] * 1000 / 2) * 2
+longueur_donde = int( float(dico[date][nom_exp]['lambda']) / params['mmparpixel'] * 1000 / 2) * 2
 
-params['t0_A'] = 0
-params['x0_A'] = 400
-params['plage_x'] = longueur_donde
+params['t0_A'] = 10
+params['x0_A'] = 800
+params['plage_x'] = 1 #longueur_donde
 fexc = params['fexc']
 strobo = int(params['facq']/fexc) + 1
 
@@ -358,8 +359,8 @@ save = False
 
 #%% AMPLITUDE V2
 
-params['t0_A'] = 100
-params['x0_A'] = 0
+params['t0_A'] = 20
+params['x0_A'] = 50
 params['larg_fit_a'] = 2
 
 display_all = True
@@ -376,6 +377,8 @@ Amp_moy = np.zeros(nx - params['x0_A'])
 t_pix = np.linspace(params['t0_A'], nt, nt-params['t0_A'])
 x_pix = np.linspace(params['x0_A'], nx, nx - params['x0_A'])
 
+t_plot = np.linspace(0, (nt-params['t0_A']) / params['facq'], nt-params['t0_A'])
+
 distance = int(params['facq']/ params['fexc']) - 4
 
 for i in range(params['x0_A'], nx,1) : #pour chaque pixel
@@ -383,7 +386,7 @@ for i in range(params['x0_A'], nx,1) : #pour chaque pixel
     
     if display_all and i == params['x0_A'] :
         disp.figurejolie()
-        disp.joliplot("t (frames)", "z (m)", t_pix, pix, exp = False) #mvt du pixel en fct du tps
+        disp.joliplot("t (s)", r"$\eta$ (m)", t_plot, pix, exp = False, color = 5) #mvt du pixel en fct du tps
     
     peaks_max_0 = find_peaks(pix, distance = distance)
     
@@ -397,8 +400,8 @@ for i in range(params['x0_A'], nx,1) : #pour chaque pixel
     
     peaks_max = peaks_max + params['t0_A']
     
-    if display_all and i == params['x0_A'] :
-        disp.joliplot("t (frames)", "z (m)", peaks_max, vals_max, exp = True)
+    # if display_all and i == params['x0_A'] :
+    #     disp.joliplot("t (frames)", "z (m)", peaks_max, vals_max, exp = True)
     
     peaks_min_0 = find_peaks(-pix, distance = distance)
     
@@ -412,8 +415,8 @@ for i in range(params['x0_A'], nx,1) : #pour chaque pixel
     
     peaks_min = peaks_min + params['t0_A']
     
-    if display_all and i == params['x0_A'] :
-        disp.joliplot("t (frames)", "z (m)", peaks_min, vals_min, exp = True)
+    # if display_all and i == params['x0_A'] :
+    #     disp.joliplot("t (frames)", "z (m)", peaks_min, vals_min, exp = True)
     
     nb_peaks = np.min( (len(peaks_max), len(peaks_min)) )
     Amp_t_x = np.zeros(nb_peaks)
@@ -425,7 +428,7 @@ for i in range(params['x0_A'], nx,1) : #pour chaque pixel
     Amp_t["peaks_min"][str(i)] = peaks_min
     Amp_t["peaks_max"][str(i)] = peaks_max
 
-    if display_all and i == 300:  
+    if display_all and i == int((nx- params['x0_A'])/2):  
         disp.figurejolie()
         disp.joliplot("t", "Amp", peaks_max[:len(Amp_t_x)], Amp_t_x)
     
@@ -437,7 +440,7 @@ Amp_t['Amp_max_x'] = Amp_max
 Amp_t['Tmax'] = T_max
 Amp_t['Amp_moy_x'] = Amp_moy
 
-Amp_t['Amp_max'] = np.quantile(Amp_max, 0.95)
+Amp_t['Amp_max'] = np.quantile(Amp_max, 0.99)
 Amp_t['Amp_moy'] = np.quantile(Amp_moy, 0.99)
 
 
@@ -984,7 +987,7 @@ if display :
 if save :  
     param_complets.extend(["Resultats attenuation :","f_exc = " + str(f_exc) ,"attenuation = " + str(attenuation[0][1])])
 
-#%% Longueure d'onde
+#%% Longueur d'onde
 
 save = False
 
@@ -1213,19 +1216,20 @@ else :
 
 print("indice_tot = ", indice_tot)
 print("lambda = ", longueur_donde)
-    
 
-dico = dic.add_dico(dico,date,nom_exp,'lambda',longueur_donde)
-dic.save_dico(dico)
+    
+if save :
+    dico = dic.add_dico(dico,date,nom_exp,'lambda',longueur_donde)
+    dic.save_dico(dico)
 
 #%%PLOT longueure d'onde avec le signal
 
-indice = 5 # int(np.round(indice))
-ecart_indice = 5
+indice = 16 # int(np.round(indice))
+ecart_indice = 2
 
 save = False
 # param_complets = param_complets.tolist()
-f_exc = 10
+f_exc = params['fexc']
 amp_demod = []
 cut_las = 0
 

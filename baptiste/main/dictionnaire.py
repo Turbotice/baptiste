@@ -27,6 +27,7 @@ import os
 from PIL import Image
 
 
+
 import baptiste.display.display_lib as disp
 import baptiste.experiments.import_params as ip
 import baptiste.files.file_management as fm
@@ -46,7 +47,7 @@ if openn :
 loc = "D:\Banquise\Baptiste\Resultats_video\\"
 loc = "E:\\Baptiste\\Resultats_video\\"
 
-date_min = 240101#220411 #AVANT C'EST NUL
+date_min = 230101#220411 #AVANT C'EST NUL
 
 date_max = 240120 #AJD ?
 #%%Ajout de termes depuis un fichier txt ou csv
@@ -63,29 +64,95 @@ lignes,colonnes = complements.shape
 for i in range(1,lignes) :
     date = str(complements[i,0])
     nom_exp = complements[i,1]
-    remove_dico(dico, date,nom_exp, 'angle_cam_LAS')
+    dic.remove_dico(dico, date,nom_exp, 'angle_cam_LAS')
     for j in range (2,colonnes) : 
-        dico = add_dico(dico,date,nom_exp,str(complements[0,j]),complements[i,j])
+        dico = dic.add_dico(dico,date,nom_exp,str(complements[0,j]),complements[i,j])
         
 save = False
 if save :
-    save_dico(dico)
+    dic.save_dico(dico)
 
 
-#%% Print de qlq aparametres
+#%% Tableau 1 et 2
+
+
+# tableau_1 = np.array(['nom_exp','date', 'D', 'err_D', 'h', 'rho','lambda','CM', 'mesuré'], dtype = object)
+tableau_2 = np.array(['nom_exp','date', 'D', 'err_D', 'h','CM', 'mesuré'], dtype = object)
+date_min = 220720
+nom_exp_avant = ''
 
 for date in dico :
     if date.isdigit() :
+        
 
         if float(date) > date_min and int(date) != 221011 :
             print(date)
-    
+            
             for nom_exp in dico[np.str(date)] :
-                
-                if 'amp_fracs_fft' in dico[date][nom_exp] :
-                    # if "non" in dico[date][nom_exp]['casse'] :
-                    print(nom_exp)
+                # if nom_exp_avant[:3] != nom_exp[:3] or nom_exp[-1] == 'R' :
+                if 'D' in dico[date][nom_exp] or 'h' in dico[date][nom_exp] :
+                    new_line = np.zeros(7, dtype = object)
+                    new_line[0] = nom_exp
+                    new_line[1] = date
+                    if 'D' in dico[date][nom_exp] :
+                        new_line[2] = dico[date][nom_exp]['D']
+                    if 'err_D' in dico[date][nom_exp] :
+                        new_line[3] = dico[date][nom_exp]['err_D']
+                    if 'h' in dico[date][nom_exp] :
+                        new_line[4] = dico[date][nom_exp]['h']
+                    if 'CM' in dico[date][nom_exp] :
+                        new_line[5] = dico[date][nom_exp]['CM']
+                    else :
+                        new_line[5] = dico['variables_globales']['CM']['CM']
+                    if not new_line[5] == dico['variables_globales']['CM']['CM'] :
+                        new_line[6] = 1                        
+                    tableau_2 = np.vstack((tableau_2, new_line))
+                    nom_exp_avant = nom_exp
 
+# for date in dico :
+#     if date.isdigit() :
+
+#         if float(date) > date_min and int(date) != 221011 :
+#             print(date)
+
+    
+#             for nom_exp in dico[np.str(date)] :
+#                 if nom_exp[-1] == 'R' :
+#                     new_line = np.zeros(9, dtype = object)
+#                     new_line[0] = nom_exp
+#                     new_line[1] = date
+#                     if 'D' in dico[date][nom_exp] :
+#                         new_line[2] = dico[date][nom_exp]['D']
+#                     if 'err_D' in dico[date][nom_exp] :
+#                         new_line[3] = dico[date][nom_exp]['err_D']
+#                     if 'h' in dico[date][nom_exp] :
+#                         new_line[4] = dico[date][nom_exp]['h']
+#                     if 'rho_utilise' in dico[date][nom_exp] :
+#                         new_line[5] = dico[date][nom_exp]['rho_utilise']
+#                     if 'lambda' in dico[date][nom_exp[:-1] + "1"] :
+#                         new_line[6] = dico[date][nom_exp[:-1] + "1"]['lambda']
+#                     if 'CM' in dico[date][nom_exp] :
+#                         new_line[7] = dico[date][nom_exp]['CM']
+#                     else :
+#                         new_line[7] = dico['variables_globales']['CM']['CM']
+#                     if not new_line[7] == dico['variables_globales']['CM']['CM'] :
+#                         new_line[8] = 1
+#                     if 'Hw'in dico[date][nom_exp] :
+#                         print(dico[date][nom_exp]['Hw'])
+                        
+#                     tableau_1 = np.vstack((tableau_1, new_line))
+                               
+                     
+# df = pandas.DataFrame(tableau_1)
+# df.to_csv('E:\\Baptiste\\Resultats_exp\\Tableau_params\\Tableau1_Params_231117_240116\\tableau_1.txt', index=False, header=False, sep = '\t')
+save = True    
+if save : 
+    df = pandas.DataFrame(tableau_2)
+    df.to_csv('E:\\Baptiste\\Resultats_exp\\Tableau_params\\Tableau2_Params_220101_240116\\tableau_2_v3.txt', index=False, header=False, sep = '\t')    
+                    
+                    
+                    
+                    
 #%% Ajout de CM si CM par remesuré
 
 for date in dico :
@@ -113,15 +180,16 @@ data = pandas.read_csv('E:\Baptiste\\Resultats_exp\\Traitement_fracture.csv', se
 
 data = np.asarray(data)
 loc = 'D:\\Banquise\\Baptiste\\Resultats_video\\'
-loc = "E:\\Baptiste\\Resultats_video\\"
+# loc = "E:\\Baptiste\\Resultats_video\\"
 exp_type = 'LAS'
 nom_fich = '\\resultats'
 
-for i in range (86,175):
+for i in range (0,86): #175
     nom_exp = data[i,1]
     date =  data[i,0][8:10]+ data[i,0][3:5] + data[i,0][0:2]
     f = data[i,2]
-    loc = 'E:\\Baptiste\\Resultats_video\\d' + date + '\\'
+    # loc = 'E:\\Baptiste\\Resultats_video\\d' + date + '\\'
+    loc = 'D:\\Banquise\\Baptiste\\Resultats_video\\d' + date + '\\'
     
     print(date)
     print(nom_exp)
@@ -166,13 +234,16 @@ for i in range (86,175):
     print('h', h)
             
 #%% Ajout l_cracks depuis txt ds date
-
+date_min = 231117
 for date in dico :
     if date.isdigit() :
         if float(date) > date_min :
             print(date)
             u = 0
-            loc = "E:\\Baptiste\\Resultats_video\\d" + date + '\\'
+            if float(date) > 240101 :
+                loc = "E:\\Baptiste\\Resultats_video\\d" + date + '\\'
+            else :
+                loc = "D:\Banquise\Baptiste\Resultats_video\\d" + date + '//'
 
             cracks = pandas.read_csv(loc + date + "_l_cracks.txt", sep = ' ', header = None)
             cracks = np.asarray(cracks)
