@@ -1638,13 +1638,17 @@ if save :
 path_save = 'E:\Baptiste\\Resultats_exp\\Courbure\\Resultats\\20240527_l_lmabda_a6_complet\\'
 
 save = False
-display = True
+display = False
+axes = True
 
 dates = ['231120', '231121', '231122', '231124', '231129', '231129', '231130', '240109', '240115', '240116' ]
 nom_exps = ['ECTD9', 'EDTH8', 'NPDP2', 'RLPY3', 'EJCJ6', 'MLO23', 'DMLO1', 'QSC07', 'TNB03', 'CCM03']
 t0s = [800, 500, 300, 1000, 600, 350, 400, 280, 500, 600]
 x0s = [400, 390, 150, 270, 260, 500, 630, 120, 670, 50]
 xfs = [600, 570, 680, 500, 480, 880, 950, 1520, 920, 200]
+
+# x0s = [400, 390, 220, 270, 260, 500, 630, 120, 670, 50]
+# xfs = [600, 570, 570, 500, 480, 880, 950, 1520, 920, 200]
 
 # x0s = [400, 390, 360, 270, 260, 500, 630, 170, 670, 50]
 # xfs = [600, 570, 460, 500, 480, 880, 950, 1420, 920, 200]
@@ -1674,6 +1678,7 @@ l = np.zeros(nb_exp, dtype = float)
 l_exp = np.zeros(nb_exp, dtype = object)
 long_onde = np.zeros(nb_exp)
 kappa = np.zeros(nb_exp, dtype = object)
+
 
 
 for i in liste_exp : #range (len (dates)) :
@@ -1788,6 +1793,8 @@ for i in liste_exp : #range (len (dates)) :
             xfit = x_plotexp[a +j:a +j + 2*a] 
             popt = np.polyfit(xfit,yfit, 2)
             popt_x[j] = -popt[0] * 2
+            if axes :
+                popt_x[j] = -popt[0] 
             b_x[j] = popt[1]
             # yth = np.polyval(popt, xfit)
             # disp.joliplot('x (m)', r'$\kappa$ (m$^{-1}$)', xfit, yth, exp = False, color = 5)
@@ -1819,6 +1826,25 @@ for i in liste_exp : #range (len (dates)) :
             if save :
                 plt.savefig(path_save + tools.datetimenow() + 'kappa_carre_x_t_'+ str(p) + '_' + nom_exp + '.pdf')
                 plt.savefig(path_save + tools.datetimenow() + 'kappa_carre_x_t_'+ str(p) + '_' + nom_exp + '.png')
+        if axes :
+
+            fig, ax1 = plt.subplots()
+    
+            # Instantiate a second axes that shares the same x-axis
+            ax2 = ax1.twinx()  
+
+            ax1.plot(x_plotexp, forme, color = '#990000')
+            ax2.plot(x_kappa - 0.003, popt_x_mean, color = disp.vcolors(2))
+            
+            ax2.set_ylabel(r'$\kappa$ (m$^{-1}$)', color = disp.vcolors(2))
+            ax1.set_ylabel(r'$\eta$ (m)', color = '#990000') 
+            ax1.set_xlabel(r'$x$ (m)') 
+            
+            ax1.ticklabel_format(axis="y", style="sci", scilimits=(0,0))
+            ax1.ticklabel_format(axis='x', style="sci", scilimits=(0,0))
+            ax2.ticklabel_format(axis='y', style="sci", scilimits=(0,0))
+            plt.show()
+        
         
         #on cherche la largeur à mi hauteur
         l_t[p] = LMH(x_kappa, popt_x_mean )
@@ -2066,7 +2092,10 @@ disp.joliplot('t (0 à T)', 'x (m)', t_plotexp, forme, exp = True, color = 8, le
 
 #%% COURBURE SEUIL
 
-save = True
+dates = ['231120', '231121', '231122', '231124', '231129', '231129', '231130', '240109', '240115', '240116' ]
+nom_exps = ['ECTD9', 'EDTH8', 'NPDP2', 'RLPY3', 'EJCJ6', 'MLO23', 'DMLO1', 'QSC07', 'TNB03', 'CCM03']
+
+save = False
 save_path = 'E:\\Baptiste\\Resultats_exp\\Courbure\\Resultats\\20240528_finalito\\'
 
 tableau_1 = pandas.read_csv('E:\\Baptiste\\Resultats_exp\\Tableau_params\\Tableau1_Params_231117_240116\\tableau_1.txt', sep = '\t', header = 0)
@@ -2236,6 +2265,8 @@ if save :
     plt.savefig(save_path + 'l_lambda_' + tools.datetimenow() + '.pdf')
     plt.savefig(save_path + 'l_lambda_png_' + tools.datetimenow() + '.png', dpi = 500)
     
+
+    
 def fct_x(x, a) :
     return a * x
 
@@ -2244,6 +2275,8 @@ popt, pcov = curve_fit(fct_x, lambda_s, l_s)
 l_fit = lambda_s * popt[0]
 
 disp.joliplot(r'$\lambda$ (m)', r'l (m)', lambda_s, l_fit, color = 8, exp = False)
+
+
 
 
 if save : 
@@ -2285,11 +2318,17 @@ popt, pcov = curve_fit(fct_x, lambda_s, l_s)
 
 l_fit = lambda_s * popt[0]
 
+h = np.array([4.34395009e-05, 6.16962733e-05, 7.65625770e-05, 1.56614978e-04,
+       5.00820683e-05, 5.00820683e-05, 4.81136506e-05, 1.39455272e-04,
+       7.07629643e-05, 8.62863165e-05]) * 900 / 680
+
 
 disp.joliplot(r'$\lambda$ (m)', r'$\kappa_c^{2}lD / h$ (J.m$^{-2}$)', lambda_s, l_s * k_s**2 * np.mean(D) /np.mean(h), log = False, color = 18, zeros = True)
+# disp.joliplot(r'$\lambda$ (m)', r'$\kappa_c^{2}lD / h$ (J.m$^{-2}$)', D / np.mean(h)**3 * 10, l_s * k_s**2 * D /np.mean(h), log = False, color = 18, zeros = True)
+
 
 plt.ylim([0,0.5])
-plt.xlim([0,0.7])
+plt.xlim([0,0.6])
 
 if save : 
     plt.savefig(save_path + 'Gc_lambda_' + tools.datetimenow() + '.pdf')
@@ -2299,12 +2338,12 @@ disp.figurejolie()
 disp.joliplot(r'$\lambda$ (m)', r'$\kappa_c^{2}lD / h$ (J.m$^{-2}$)', lambda_s, l_s * k_s**2 * np.mean(D) /np.mean(h), log = False, color = 18, zeros = True)
 
 plt.ylim([0,0.5])
-plt.xlim([0,0.7])
+plt.xlim([0,0.6])
 
 stdd = np.std(l_s * k_s**2 * np.mean(D) /np.mean(h))
 yy = np.linspace(0,0,100) + np.mean(l_s * k_s**2 * np.mean(D) /np.mean(h))
 
-xx = np.linspace(0,0.7,100)
+xx = np.linspace(0,0.6,100)
 
 yy_sp = np.linspace(0,0,100) + np.mean(l_s * k_s**2 * np.mean(D) /np.mean(h)) + stdd
 
@@ -2329,7 +2368,7 @@ l_fit = lambda_s * popt[0]
 disp.joliplot(r'$\lambda$ (m)', r'$\kappa_c^{2}lD / h$ (J.m$^{-2}$)', lambda_s, l_fit * k_s**2 * np.mean(D) /np.mean(h), log = False, color = 18, zeros = True)
 
 plt.ylim([0,0.5])
-plt.xlim([0,0.7])
+plt.xlim([0,0.6])
 
 if save : 
     plt.savefig(save_path + 'Gc_lambda_lfit_' + tools.datetimenow() + '.pdf')
@@ -2339,12 +2378,12 @@ disp.figurejolie()
 disp.joliplot(r'$\lambda$ (m)', r'$\kappa_c^{2}lD / h$ (J.m$^{-2}$)', lambda_s, l_fit * k_s**2 * np.mean(D) /np.mean(h), log = False, color = 18, zeros = True)
 
 plt.ylim([0,0.5])
-plt.xlim([0,0.7])
+plt.xlim([0,0.6])
 
 stdd = np.std(l_fit * k_s**2 * np.mean(D) /np.mean(h))
 yy = np.linspace(0,0,100) + np.mean(l_fit * k_s**2 * np.mean(D) /np.mean(h))
 
-xx = np.linspace(0,0.7,100)
+xx = np.linspace(0,0.6,100)
 
 yy_sp = np.linspace(0,0,100) + np.mean(l_fit * k_s**2 * np.mean(D) /np.mean(h)) + stdd
 
@@ -2375,6 +2414,24 @@ if save :
     params_tot['nom_exps'] = nom_exps
     dic.save_dico(params_tot, path = save_path + 'params_tot.pkl')
     
+    
+
+savetxt = False
+if savetxt :
+    file = np.zeros((11,9), dtype = object)
+    file[1:,0] = dates
+    file[1:,1] = nom_exps
+    file[1:,2] = lambda_s
+    file[1:,3] = h
+    file[1:,4] = L_d
+    file[1:,5] = D
+    file[1:,6] = a_s
+    file[1:,7] = l_s
+    file[1:,8] = k_s
+    file[0,:] = ['dates', 'nom_exps', 'lambda_s', 'h', 'L_d', 'D', 'a_s', 'l_s', 'k_s' ]
+    df = pandas.DataFrame(file)
+    df.to_csv('E:\Baptiste\\Resultats_exp\\' + 'data.txt', sep='\t', index=False)
+
 
 
 

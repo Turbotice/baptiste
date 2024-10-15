@@ -296,8 +296,8 @@ for i in exps :
             expp = np.append(expp, j)
             ampp = np.append(ampp, liste_top[3, indice])
             
-    disp.figurejolie()
-    disp.joliplot("Nom exp", "Amp max", expp, ampp , color = 2)
+    # disp.figurejolie()
+    # disp.joliplot("Nom exp", "Amp max", expp, ampp , color = 2)
 
 
 #%% Plot Lcrack tot (nom_exp)
@@ -313,13 +313,13 @@ for i in exps :
             expp = np.append(expp, j)
             lcracktot = np.append(lcracktot, liste_top[4, indice])
             
-    disp.figurejolie()
-    disp.joliplot(r"Nom exp", r"$L_{crack}$ tot", expp, lcracktot , color = 4)
+    # disp.figurejolie()
+    # disp.joliplot(r"Nom exp", r"$L_{crack}$ tot", expp, lcracktot , color = 4)
 
 #%% Plot Lcracktot (Amp_max) + fit
 
 display = True
-save = True
+save = False
 
 path_save = 'E:\\Baptiste\\Resultats_exp\\Amp seuil en fonction de lambda\\Resultats_20240528\\'
 
@@ -394,11 +394,14 @@ for i in exps :
     zeroo = np.linspace(0, 0, 1000)
     plt.plot(x_amp, zeroo)
     disp.joliplot(r"Amplitude (m)", r"$L_{crack}$ (m)", x_amp, zeroo, color = 5, exp = False)
+    # plt.ticklabel_format(axis="y", style="sci", scilimits=(0,0))
+    # plt.ticklabel_format(axis="x", style="sci", scilimits=(0,0))
     
     plt.xlim([0, np.max(ampp_lc0[u]) * 1.05 ])
     plt.ylim([-np.max(lcrack_lc0[u]) / 10, np.max(lcrack_lc0[u]) * 1.1 ]) 
     
-    
+    if i == 'QSC0' :
+        print(ampp)
     
     if save :
         plt.savefig(path_save + "l_crack_amplitude+fit_" + i + '_' + str(tools.datetimenow()) + '_' + i  + '.png', dpi = 200)
@@ -537,6 +540,9 @@ disp.joliplot( r"$\lambda$ (m)", "b", long_onde, b, color = 5, zeros=False)
 
 fits.fit_powerlaw(long_onde, amp_s, display = True, legend = 'Threshold', xlabel =r"$\lambda$ (m)", ylabel = r"A$_c$ (m)" )
 
+plt.xlim(0.04, 1)
+plt.ylim(0.001, 0.025)
+
 pente = amp_s/long_onde * 2 * np.pi
 lambda_sort, pente_sort = tools.sort_listes(long_onde,pente)
 H = 0.11
@@ -549,7 +555,7 @@ if save :
 #%%Fit : scaling courbure
 
 
-fits.fit_powerlaw(long_onde, k_s, display = True, legend = 'Threshold', xlabel =r"$\lambda$ (m)", ylabel = "Amplitude (m)" )
+fits.fit_powerlaw(long_onde, k_s, display = True, legend = 'Threshold', xlabel =r"$\lambda$ (m)", ylabel = "courbure (m)" )
 
 pente = k_s/long_onde * 2 * np.pi
 lambda_sort, pente_sort = tools.sort_listes(long_onde,pente)

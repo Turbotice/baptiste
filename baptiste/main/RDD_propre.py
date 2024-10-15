@@ -93,19 +93,27 @@ data = np.stack((k,omega), axis = -1)
 
 blbl, inliers, outliers = fits.fit_ransac(np.log(k), np.log(omega), display = False)
 # inliers[25] = True
+width = 6.3 #8.6*4/5
+disp.figurejolie(width = width)
+disp.joliplot(r'k (m$^{-1}$)',r"$\omega$ (m)", data[inliers, 0], data[inliers, 1], log = True, color = 14, width = width)
 
-disp.figurejolie(width = 100000)
-disp.joliplot(r'k (m$^{-1}$)',r"$\omega$ (m)", data[inliers, 0], data[inliers, 1], log = True, color = 14)
+# disp.joliplot(r'k (m$^{-1}$)',r"$\omega$ (m)", data[outliers, 0], data[outliers, 1], log = True, color = 15)
 
-disp.joliplot(r'k (m$^{-1}$)',r"$\omega$ (m)", data[outliers, 0], data[outliers, 1], log = True, color = 15)
-
-k_lin = np.linspace(70, 1000, 100)
+k_lin = np.linspace(10, 1000, 100)
 omega_cap = rdd.RDD_capilaire(k_lin, tension_surface/rho)
 
 
-disp.joliplot(r'k (m$^{-1}$)',r"$\omega$ (m)", k_lin, omega_cap, exp = False, log = True, color = 2)
+disp.joliplot(r'$k$ (m$^{-1}$)',r"$\omega$ (m)", k_lin, omega_cap, exp = False, log = True, color = 8)
 
 popt = fits.fit(rdd.RDD_flexion, data[inliers, 0], data[inliers, 1], display = False)
 
-disp.joliplot(r'k (m$^{-1}$)',r"$\omega$ (m)", k_lin, rdd.RDD_flexion(k_lin, popt[0][0]), exp = False, log = True, color = 8)
-plt.ylim([26, 10000])
+disp.joliplot(r'$k$ (m$^{-1}$)',r"$\omega$ (s$^{-1}$)", k_lin, rdd.RDD_flexion(k_lin, popt[0][0]), exp = False, log = True, color = 2)
+plt.ylim([10, 5000])
+
+plt.savefig('Y:\Banquise\\Baptiste\\Articles\\Interaction ondes banquise laboratoire\\figures\\Figures_240617\\RDD_v4.svg')
+
+
+
+
+
+

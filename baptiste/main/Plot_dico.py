@@ -367,6 +367,16 @@ tableau_2 = np.asarray(tableau_2)
 
 D = np.array(tableau_2[:,2][np.where(tableau_2[:,2] != 0)], dtype = float)
 h = np.array(tableau_2[:,4][np.where(tableau_2[:,2] != 0)], dtype = float)
+
+"""
+ATTENTION
+h RECTIFIE CAR ON A MESURE RHO A POSTERIORI, H DANS LE DICO EST CELUI SI RHO EST EGAL A 900 kg.m-3, OR EN VRAI C'EST 680 kg.m-3
+"""
+h = h * 900 / 680
+"""
+FIN DE ATTENTION
+"""
+
 dates = np.array(tableau_2[:,1][np.where(tableau_2[:,2] != 0)], dtype = int)
 
 disp.figurejolie()
