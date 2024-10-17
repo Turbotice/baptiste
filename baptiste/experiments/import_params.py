@@ -10,8 +10,10 @@ Toutes les fonctions qi permettent d'importer les parmaètres expérimentaux des
 import matplotlib.pyplot as plt
 import baptiste.files.file_management as fm
 import numpy as np
-import baptiste.files.dictionaries as dic
+import os
 
+import baptiste.files.dictionaries as dic
+import baptiste.display.display_lib as disp
 
 
 
@@ -36,7 +38,7 @@ def import_param (titre_exp,date, exp_type = "TT"):
     """
     if exp_type == "TT":
     #"\d" + date + "_vagues_facq" + str(facq) + "Hz_texp" + str(texp) + "us_fmotor"+ str(fpot) + "_Amplitude" +str(Apot) + "_Hw" + str(Hw) + "cm_Pasdamier" + str(pasdamier) + "mm"
-        if float(date) >= 221020 :  
+        if float(date) >= 221007 :  
             facq = float ( titre_exp[titre_exp.index("facq") + 4:titre_exp.index("facq") + 7]) # fréquence d'acquisition (Hz)
         else :
             facq = float ( titre_exp[titre_exp.index("facq") + 4:titre_exp.index("facq") + 6]) # fréquence d'acquisition (Hz)
@@ -51,8 +53,8 @@ def import_param (titre_exp,date, exp_type = "TT"):
         Larg_ice = float ( titre_exp[titre_exp.index("sur") - 2:titre_exp.index("sur")])#largeur glace (cm)
         
         tacq =  float ( titre_exp[titre_exp.index("tacq") + 4:titre_exp.index("tacq") + 7])#temps total acquisition (s)
-        type_exp =  str (titre_exp[14:17])    #FSD pour cassage glace, FCD pour mesure damier, LAS pour profil laser
-        return facq, texp, Tmot, Vmot, Hw, Larg_ice, Long_ice, tacq, type_exp
+
+        return facq, texp, Tmot, Vmot, Hw, Larg_ice, Long_ice, tacq
     if exp_type == "IND":
         h = float ( titre_exp[titre_exp.index("ha") + 2:titre_exp.index("ha") + 4])
         return h
@@ -62,7 +64,7 @@ def import_param (titre_exp,date, exp_type = "TT"):
 
 def import_angle (date, nom_exp, loc, display = False):
     """
-    Trouve les paramètres de la nappe laser associée à une expérience depuis le fichier texte rempli avec ces paramètres
+    Trouve les paramètres de la nappe laser associée à une expérience depuis le fichier texte rempli avec ces paramètres. 2 colonnes : 1) distance à la nappe 2) hauteur de la nappe
 
     Parameters
     ----------
@@ -70,7 +72,7 @@ def import_angle (date, nom_exp, loc, display = False):
         DESCRIPTION.
     nom_exp : TYPE
         DESCRIPTION.
-    loc : racine des données.
+    loc : racine du dossier des données.
     display : TYPE, optional
         DESCRIPTION. The default is False.
 
@@ -91,12 +93,7 @@ def import_angle (date, nom_exp, loc, display = False):
     dx_dh = np.loadtxt(path + '\\angle_laser.txt')
 
     dx = dx_dh[:,0]
-    dh = dx_dh[:,1]
-    
-    if display :
-        plt.figure()
-        plt.plot(dx,dh,'ko')
-        
+    dh = dx_dh[:,1]        
 
     hprime = np.polyfit(dx,dh,1)
 
@@ -104,9 +101,10 @@ def import_angle (date, nom_exp, loc, display = False):
     xxx = np.linspace(0,max(dx),200)
     
     if display :
-        plt.plot(xxx, hprime[0] * xxx + hprime[1])
-        plt.xlabel("Distance laser")
-        plt.ylabel("h mesuré")
+        
+        disp.figurejolie()
+        disp.joliplot("Distance horizontale au laser (mm)", "Hauteur laser (mm)", dx,dh, color = 8)
+        disp.joliplot("Distance horizontale au laser (mm)", "Hauteur laser (mm)", xxx, hprime[0] * xxx + hprime[1], color = 5, exp = False)
     
     tab_angles = np.arctan(dh_prime/dx) * 180 / np.pi
 
@@ -114,23 +112,14 @@ def import_angle (date, nom_exp, loc, display = False):
     xxx = np.linspace(1,len(dh_prime) + 1, len(dh_prime))
     er_angle = (max(tab_angles) - min(tab_angles))/2
     if display :
-        plt.figure()
-        plt.plot(dx, dh_prime, 'mx')
-        plt.figure()
-        plt.plot(xxx, tab_angles, 'ko')
-        plt.xlabel("Mesure")
-        plt.ylabel("Angle (en radian)")
-        plt.title('Angles')
-        print('angle moyen : ', angle, 'erreur', er_angle )
-        plt.figure()
-        plt.plot(dx, tab_angles, 'ko')
-        plt.xlabel("distance laser")
-        plt.ylabel("Angle (en radian)")
+        disp.figurejolie()
+        disp.joliplot("Distance horizontale au laser (mm)", "Angle (en radian)", dx, tab_angles, color = 3)
+        print('angle moyen : ', angle, '+-', er_angle )
     grossissement = 1 / np.tan(angle* np.pi / 180)
     grossissements = 1 / np.tan(tab_angles* np.pi / 180)
     er_grossissement = (max(grossissements) - min (grossissements))/2
     if display :
-        print('grossissement :',grossissement, "erreur ", er_grossissement)
+        print('grossissement :',grossissement, "+- ", er_grossissement)
     
     return grossissement, er_grossissement, angle, er_angle
 
@@ -210,7 +199,26 @@ def import_calibration(titre_exp, date):
                                                                         mmparpixel = 0.41809515845806505
                                                                         mmparpixelz = 0.41809515845806505
                                                                         mmparpixely = 0.41809515845806505
-                                                            
+                                                                        if float(date) >= 231115:
+                                                                            mmparpixel = 0.252947
+                                                                            mmparpixelz = 0.252947
+                                                                            mmparpixely = 0.252947
+                                                                            if float(date) >= 231124:
+                                                                                mmparpixel = 0.25134469411350724
+                                                                                mmparpixelz = 0.25134469411350724
+                                                                                mmparpixely = 0.25134469411350724
+                                                                                if float(date) >= 231129:
+                                                                                    mmparpixel = 0.3976933784052496
+                                                                                    mmparpixelz = 0.3976933784052496
+                                                                                    mmparpixely = 0.3976933784052496
+                                                                                    if float(date) >= 240109:
+                                                                                        mmparpixel = 0.2516229681445322
+                                                                                        mmparpixelz = 0.2516229681445322
+                                                                                        mmparpixely = 0.2516229681445322
+                                                                                    
+                                                                                    
+                                                                                    
+                                          
                                                             
                                                             
                                                         
@@ -266,6 +274,16 @@ def import_calibration(titre_exp, date):
                                                                                 mmparpixel = 0.429258241758
                                                                                 if float(date) >= 230220:
                                                                                     mmparpixel =  0.41809515845806505
+                                                                                    if float(date) >= 231115:
+                                                                                        mmparpixel = 0.252947
+                                                                                        if float(date) >= 231124:
+                                                                                            mmparpixel = 0.25134469411350724
+                                                                                            if float(date) >= 231129:
+                                                                                                mmparpixel = 0.3976933784052496
+                                                                                                if float(date) >= 240109:
+                                                                                                    mmparpixel = 0.2516229681445322
+                                                                                            
+                                                                                  
                                                                                 
                                                                                 
                                                                                 
@@ -301,14 +319,74 @@ def import_calibration(titre_exp, date):
         
         return mmparpixely, mmparpixelz
         
-def initialisation(exp = False, titre_exp = '',date = '', exp_type = "TT", loc = '', nom_exp = ''):
-    dico = dic.open_dico()
+def initialisation(date, nom_exp = '', exp = False, exp_type = "LAS", display = False, dico = 'f', loc = 'f'):
+    #à mettre au debut d'un code.
+    #cree les parametres, cree fichier resultats, trouve les images, calcul angle laser si besoin
+    
+    if loc == 'f' :
+        if float(date) > 231116 :
+            loc = "E:\Baptiste\Resultats_video\d" + date + "\\"
+        else :    
+            loc = "D:\Banquise\Baptiste\Resultats_video\d" + date + "\\"
+            
+    # loc = 'W:\\Banquise\\Baptiste\\Resultats_video\\d' + date + "\\"
+    
+    if dico == 'f' :
+        dico = dic.open_dico()
     params = {}
+    params['date'] = date
+    
     if exp :
-        params['facq, texp, Tmot, Vmot, Hw, Larg_ice, Long_ice, tacq, type_exp'] = import_param(titre_exp, date, exp_type)
-        params['mmparpixelx, mmparpixely, mmparpixelz, mmparpixel'] = import_angle(date, nom_exp, loc, display = False)
+        params['exp_type'] = exp_type
+        params['nom_exp'] = nom_exp
+
+        params.update({'path_images':fm.import_images(loc, nom_exp, exp_type)[0],  'liste_images': fm.import_images(loc, nom_exp, exp_type)[1], 
+                       'titre_exp':fm.import_images(loc, nom_exp, exp_type)[2]})
         
-    return dico, params
+        print (params['path_images'])
+        
+        params.update({'mmparpixelx': import_calibration(params['titre_exp'], date)[0], 'mmparpixely':import_calibration(params['titre_exp'], date)[1], 
+                       'mmparpixelz': import_calibration(params['titre_exp'], date)[2], 'mmparpixel': import_calibration(params['titre_exp'], date)[3]})
+
+        
+        params.update({'facq': import_param(params['titre_exp'], date)[0], 'texp':import_param(params['titre_exp'], date)[1] ,
+               'Tmot': import_param(params['titre_exp'], date)[2], 'Vmot': import_param(params['titre_exp'], date)[3], 
+               'Hw' : import_param(params['titre_exp'], date)[4], 'Larg_ice' : import_param(params['titre_exp'], date)[5], 
+               'Long_ice': import_param(params['titre_exp'], date)[6], 'tacq': import_param(params['titre_exp'], date)[7]})
+        
+        params.update({'grossissement' : import_angle(date, nom_exp, loc, display = False)[0], 'er_grossissement':import_angle(date, nom_exp, loc, display = False)[1] , 
+               'angle': import_angle(date, nom_exp, loc, display = False)[2], 'er_angle': import_angle(date, nom_exp, loc, display = False)[3]}) 
+        
+        params['nb_frames'] = len(params['liste_images'])
+        
+        if display : 
+            import_angle(date, nom_exp, loc, display = True)
+            
+        try:
+            os.mkdir(params['path_images'][:-15] + 'resultats')
+        except:
+            pass
+        
+        if float(date) >= 231115 :
+            params['fexc'] = params['Tmot']/10
+         
+        if not(date in dico.keys()): 
+            dico[date] = {}
+            
+        if not(nom_exp in dico[date].keys()):
+            dico[date][nom_exp] = {}
+            dico[date][nom_exp] = params
+            
+            dic.save_dico(dico)
+            
+        params['save_folder_exp'] = "E:\\Baptiste\\Resultats_exp\\d" + date + "\\" + nom_exp
+        
+        try:
+            os.mkdir(params['path_images'][:-15] + 'resultats')
+        except:
+            pass
+        
+    return dico, params, loc
         
 
 

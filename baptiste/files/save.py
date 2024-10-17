@@ -41,7 +41,7 @@ def save_graph (path, nom_fig, params = False, num_fig = False, nc = False, pkl 
     
     #met la date dans le nom et va dans le folder resultats
     date_time = tools.datetimenow()
-    nom_fig = nom_fig + '_' + date_time   
+    nom_fig = date_time + '_' + nom_fig   
     
     #par défaut save la derniere figure faite
     if type(num_fig) == bool :
@@ -53,16 +53,16 @@ def save_graph (path, nom_fig, params = False, num_fig = False, nc = False, pkl 
             num_fig = 44
     else : 
         disp.figurejolie(num_fig = num_fig)
-        
+    num_fig = str(num_fig)
     path = path + "\\resultats\\" + nom_fig + "\\"
     if not os.path.exists(path):
         os.makedirs(path)
     
     #save la figure
     if pdf :
-        plt.savefig(path + nom_fig + "_" + num_fig + ".pdf", dpi = 1)
+        plt.savefig(path + nom_fig + "_" + str(num_fig) + ".pdf", dpi = 1)
     else :
-        plt.savefig(path + nom_fig + "_" + num_fig + ".png", dpi = 1)
+        plt.savefig(path + nom_fig + "_" + str(num_fig) + ".png", dpi = 1)
     
     print( 'figure ' + str(num_fig) + " saved with the name " + nom_fig)
     
@@ -85,10 +85,10 @@ def save_graph (path, nom_fig, params = False, num_fig = False, nc = False, pkl 
                 dic.save_dico(params[num_fig]['data'], path + "data_" + nom_fig + "_" + num_fig + ".pkl")
             full_params = {}
             for i in params.keys() :
-                if not i.isdigit() :
+                if True : #not i.isdigit() :
                     full_params[i] = params[i]
                 
-            dic.save_dico(full_params, path + "params_" + nom_fig + "_" + num_fig + ".pkl")
+            dic.save_dico(params, path + "params_" + nom_fig + "_" + num_fig + ".pkl")
         elif type(data) == dict :
             dic.save_dico(data, path + "data_" + nom_fig + "_" + num_fig + ".pkl")
             
@@ -111,9 +111,9 @@ def save_image(image):
 def save_mat(champ, path, title = 'data'):
     data = dict(data = champ)
     
-    mdic = {"data": champ, "label": "experiment"}
-    savemat(path + title + ".mat", mdic)
-    savemat(path + title + '.mat', data)
+    # mdic = {"data": champ, "label": "experiment"}
+    # savemat(path + 'resultats\\' + title + ".mat", mdic)
+    savemat(path + 'resultats\\' + title + '.mat', data)
     
     
 def save_nc(path, data, coords, params) :
@@ -143,5 +143,6 @@ def save_nc(path, data, coords, params) :
     # saving as a netcdf file
     ds.to_netcdf(path + ".nc", encoding=encoding)
     
+
 
 

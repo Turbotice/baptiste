@@ -14,7 +14,6 @@ from scipy.signal import find_peaks
 from skimage.measure import profile_line
 import scipy.fft as fft
 import scipy.io as io
-import baptiste.files.dictionaries as dic
 
 import baptiste.display.display_lib as disp
 import baptiste.experiments.import_params as ip
@@ -28,11 +27,17 @@ import baptiste.files.save as sv
 date = '230516'
 nom_exp = 'UQARG'
 
-dico, params = ip.initialisation(exp = False)
+dico, params, loc = ip.initialisation(date)
 
 loc_h = 'D:\Banquise\Baptiste\Resultats_video\d221104\d221104_PIVA6_PIV_44sur026_facq151Hz_texp5000us_Tmot010_Vmot410_Hw12cm_tacq020s/'
 loc_h = 'W:\Banquise\\Data_DD_UQAR\\'
-path = loc_h
+# loc_h = 'W:\\Banquise\\Baptiste\\baie_HAHA_drone\\'
+# loc_h = 'D:\\Banquise\\Baptiste\\Drone\\Traitements\\'
+
+params['special_folder'] = 'Traitement_baieHaha_drone'
+
+path = loc_h 
+
 
 
 """
@@ -45,16 +50,21 @@ path = loc_h
 
 #%% DONNEES PIVLAB
 
-params['PIV_file'] = 'PIVlab_6m30_7m10_3couches_64_32_16_traitement230412'
-
+params['PIV_file'] = 'PIVlab_6m30_7m10_3couches_64_32_16_traitement230412'            #GSL BQ
+# params['PIV_file'] = 'PIVlab_64_32_16_pasfragments_HQ_230515'                           #GSL HQ banquise continue
+# params['PIV_file'] = 'PIVlab_64_32_16_GSL_full_HQ_230516'                             #GSL HQ full
+# params['PIV_file'] = 'PIVlab_BB_HQ_1700_3200_8'                                       #BB HQ
 # data_brut = io.loadmat(loc_h + 'PIVlab_3000.mat')
 
-# data_brut = io.loadmat(loc_h + 'PIVlab_6m30_7m10_3couches_64_32_16_traitement230412')     #GSL BQ
-# data_brut = io.loadmat(loc_h + 'PIVlab_BB_HQ_1700_3200_8')                                #BB HQ
-# data_brut = io.loadmat(loc_h + "PIVlab_64_32_16_pasfragments_HQ_230515")                  #GSL HQ banquise continue
-# data_brut = io.loadmat(loc_h + 'PIVlab_64_32_16_GSL_full_HQ_230516')                      #GSL HQ full
+# params['PIV_file_u'] = 'matlab_u_og_baiehahadrone'
+# params['PIV_file_v'] = 'matlab_v_og_baiehahadrone'
+
+# params['PIV_file'] = 'PIVlab_7_10_23_32_16_100frames_file11'
 
 data_brut = io.loadmat(loc_h + params['PIV_file']) 
+
+# data_brut_u = io.loadmat(loc_h + params['PIV_file_u']) 
+# data_brut_v = io.loadmat(loc_h + params['PIV_file_v']) 
 
 
 #%%PARAMETRES
@@ -62,9 +72,9 @@ data_brut = io.loadmat(loc_h + params['PIV_file'])
 display = True
 save = False
   
-params['facq'] = 29.97 #151
-params['ratio_PIV'] = 8
-params['mparpixel'] = 0.030 * params['ratio_PIV'] * 3 # *3 si BQ # +- 0.0005 pour GSL (dapres Elie), #0.07988 1ere mesure BQ #0.0300 2 eme mesure HQ #0.031 Elie
+params['facq'] =29.97 #29.97 #151
+params['ratio_PIV'] = 16
+params['mparpixel'] = 0.03 * 3 * params['ratio_PIV'] # *3 si BQ # +- 0.0005 pour GSL (dapres Elie), #0.07988 1ere mesure BQ #0.0300 2 eme mesure HQ #0.031 Elie
 # params['mparpixel'] = 0.03538 * params['ratio_PIV'] * 3 #3.538 +/- 0.0507 cm/px pour BB
 kacqx = 2 * np.pi / params['mparpixel']
 kacqy = 2 * np.pi / params['mparpixel']
@@ -76,21 +86,24 @@ kacqy = 2 * np.pi / params['mparpixel']
 champ_u = data_brut["u_original"]
 champ_v = data_brut["v_original"]
 
+# champ_u = data_brut_u["u_original"]
+# champ_v = data_brut_v["v_original"]
+
 data_u = []
 data_v = []
 
 
-for i in range (np.shape(champ_u)[0]):
-    data_u.append(champ_u[i][0]- np.nanmean(champ_u[i][0]))
+for i in range (np.shape(champ_u)[0] -10):
+    data_u.append(champ_u[i][0])#- np.nanmean(champ_u[i][0]))
 data_u = np.asarray(data_u)
 
-for i in range (np.shape(champ_v)[0]):
-    data_v.append(champ_v[i][0]- np.nanmean(champ_v[i][0]))
+for i in range (np.shape(champ_v)[0]-10):
+    data_v.append(champ_v[i][0])#- np.nanmean(champ_v[i][0]))
 data_v = np.asarray(data_v)
 
 
-data = np.sqrt(np.power(data_v,2) + np.power(data_u,2))
-# data = data_u
+# data = np.sqrt(np.power(data_v,2) + np.power(data_u,2))
+data = data_u
 
 
 
@@ -104,8 +117,49 @@ params['x0'] = 0        #en pixels
 params['xf'] = nx
 params['y0'] = 0
 params['yf'] = ny
-params['t0'] = 0        #en secondes
+params['t0'] = 0 * params['facq']        #en secondes
 params['tf'] = nt
+
+data = data[int(params['x0']):int(params['xf']),int(params['y0']):int(params['yf']),int(params['t0']):int(params['tf'])]
+
+[nx,ny,nt] = data.shape
+
+x = np.linspace(0, nx * params['mparpixel'] , nx)  #Taille X en pixel
+y = np.linspace(0, ny * params['mparpixel'] , ny)  #Taille Y en pixel
+t = np.linspace(0, nt /params['facq'], nt)       
+
+
+#On enleve la moyenne temporelle pour chaque pixel
+# data = imp.substract_mean(data, space = True, temp = False)
+
+#%%
+champ_u = data_brut_u["u_original"]
+champ_v = data_brut_v["v_original"]
+
+data_u = np.zeros( (np.shape(champ_u)[0],champ_u[0][0].shape[0],champ_u[0][0].shape[1])  )
+data_v = 0
+
+
+for i in range (np.shape(champ_u)[0] - 5):
+    data_u[i] = champ_u[i][0]- np.nanmean(champ_u[i][0])
+data_u = np.asarray(data_u)
+
+data = data_u
+
+
+
+data = np.transpose(data, (2,1,0)) #Pour passer de s(t,y,x) à s(x,y,t)
+data = np.flip(data, 1)
+
+[nx,ny,nt] = data.shape
+
+
+params['x0'] = 0        #en pixels
+params['xf'] = nx - 20
+params['y0'] = 0
+params['yf'] = ny
+params['t0'] = 0        #en secondes
+params['tf'] = nt - 10
 
 data = data[int(params['x0']):int(params['xf']),int(params['y0']):int(params['yf']),int(params['t0']):int(params['tf'])]
 
@@ -131,12 +185,12 @@ display_video = False
 if display_video :
     disp.figurejolie()
     plt.pcolormesh(y, x, data[:,:,0], shading='auto')
-    plt.xlabel("Y (cm)")
-    plt.ylabel("X (cm)")
+    plt.xlabel("Y (m)")
+    plt.ylabel("X (m)")
     cbar = plt.colorbar()
     cbar.set_label("Champ u")
     plt.axis("equal")
-    for mmm in range (1100,1120):
+    for mmm in range (1,20):
         # disp.figurejolie()
         plt.pcolormesh(y, x, data[:,:,mmm], shading='auto')
         plt.pause(0.1)
@@ -148,6 +202,7 @@ if display_video :
 if display :
     params = disp.figurejolie(params, nom_fig = 'champ_vitesse_img_1') 
     params[str(params['num_fig'][-1])]['data'] = disp.joliplot("X (m)","Y (m)",x,y,table = data[:,:,0], tcbar = "Champ u")
+    plt.clim(0,np.quantile(data[:,:,0],0.90))
     
     if save :
         sv.save_graph (path, 'test_data0', params = params, num_fig = False, nc = False, pkl = True)
@@ -193,24 +248,24 @@ if save :
 #%%DEMODULATION
 
 
-params["f_exc"] =0.28
+params["f_exc"] =0.4
 #[0.02931119 0.24914509 0.48363459] 3 fréquences fondamentales pour videos complete
 
 demod = ft.demodulation(t,data,params["f_exc"])
 
 if display :
-    params = disp.figurejolie(params, nom_fig = 'champ_demodule_' + params["f_exc"] + "Hz") 
+    params = disp.figurejolie(params, nom_fig = 'champ_demodule_' + str(params["f_exc"]) + "Hz") 
     params[str(params['num_fig'][-1])] = disp.joliplot("X (m)","Y (m)",x,y,table = (np.real(demod)), tcbar = 'Champ u démodulé à ' + str(params["f_exc"]) + "Hz")  
-    # plt.clim(vmin = -0.03, vmax = 0.03)
+    plt.clim(0, np.quantile(data[:,:,0],0.50))
     if save :
         sv.save_graph (path, 'FFT_2D', params = params, num_fig = False, nc = False, pkl = True)
 
 #%%FFT 2D 
 
-padpad = True
+padpad = False
 
 if padpad :
-    padding = [9,9,11]
+    padding = [9,9,7]
     data_pad = ft.add_padding(data, padding)
     YY, kkx, kky, ff = ft.fft_bapt(data_pad, kacqx, kacqy, params['facq'], og_shape = [nx,ny,nt])
 
@@ -257,9 +312,9 @@ print(f_fonda[:3])
 # 2) Demoduler pour angle
 save_demod = False
 
-fmin = 0.02 #2/nt * params['facq'] #fréquence minimale résolue pour avoir au moins 2 périodes par fréquence
-fmax = 2
-nb_f = 100
+fmin = 0.1 #2/nt * params['facq'] #fréquence minimale résolue pour avoir au moins 2 périodes par fréquence
+fmax = 1
+nb_f = 20
 padding = [9,9]    #puissance de 2 pour le 0 padding
 k_xx = []
 k_yy = []
@@ -288,7 +343,7 @@ for i in np.linspace(fmin, fmax, nb_f) :
     Y_FFT, k_x, k_y = ft.fft_bapt(demod_padding, kacqx, kacqy)
     nx_FFT = np.shape(Y_FFT)[0]
     ny_FFT = np.shape(Y_FFT)[1]
-    max_fft, maxx = ft.max_fft(Y_FFT, f1 = k_x,f2 = k_y, zone = [True, False], display = False)
+    max_fft, maxx = ft.max_fft(Y_FFT, f1 = k_x,f2 = k_y, display = False)
     k_xx.append(max_fft[0])
     k_yy.append(max_fft[1])
     kk.append(cart2pol(max_fft[0],max_fft[1])[0])
@@ -302,6 +357,7 @@ for i in np.linspace(fmin, fmax, nb_f) :
     
     if plotplot :
         if int(huhu/nb_f * nb_plot ) == (huhu/nb_f * nb_plot):
+            disp.figurejolie()
             ft.plot_fft(Y_FFT, k_x, k_y, tcbar = r'Démodulation à f = ' + str(round(i, 3)) + " Hz")
             plt.plot(max_fft[0], max_fft[1], 'ro')
  
@@ -313,39 +369,69 @@ fff = np.asarray(fff)
 
 
 #%% Affichage RDD
-disp.figurejolie()
+save = False
 
-disp.joliplot('f(Hz)', 'ky / kx',fff,theta, exp = False, color = 5)
+params = disp.figurejolie(params, nom_fig = 'theta_de_f') 
+params[str(params['num_fig'][-1])]['data'] = disp.joliplot(r"f (Hz)",r"$\theta$", fff, theta, color = 1)
+ 
+if save :
+    sv.save_graph (path, params[str(params['num_fig'][-1])]['nom_fig'], params = params)
 
-disp.figurejolie()
 
-disp.joliplot('f(Hz)', r'K (m$^{-1}$)', fff, kk, color = 9, exp = True)
+params = disp.figurejolie(params, nom_fig = 'k_de_f') 
+params[str(params['num_fig'][-1])]['data'] = disp.joliplot(r"f (Hz)",r"K (m$^{-1}$)", fff, kk, color = 2)
+ 
+if save :
+    sv.save_graph (path, params[str(params['num_fig'][-1])]['nom_fig'], params = params)
 
 
 #%%Region d'interet
 
 #en Hz
-zone1 = np.array([fmin,1.4])
-# zone1 = np.array([0.51,0.75])
+# zone1 = np.array([fmin,1.4])
+zone1 = np.array([0.51,0.75])
 zone2 = np.array([0.2,0.442])
 zone3 = np.array([0.442,0.6775])
 
-# zone2 = np.array([0.3,0.6])
-zone2 = np.array([fmin,fmax])
+# zone2 = np.array([fmin,0.4])
+# zone3 = np.array([0.4,0.6])
+zone2 = np.array([fmin,0.6])
+
+""" Banquise totale HQ"""
+# zone1 = np.array([fmin,0.18]) 
+# zone2 = np.array([0.21,0.43])
+# zone3 = np.array([0.44,0.68])
+zone4 = np.array([0.758,0.767])
 
 #conversion en numérique
 zone1 = np.array((zone1 - fmin)/(fmax - fmin) * nb_f, dtype = 'int64')
 zone2 = np.array((zone2 - fmin)/(fmax - fmin) * nb_f, dtype = 'int64')
 zone3 = np.array((zone3 - fmin)/(fmax - fmin) * nb_f, dtype = 'int64')
+zone4 = np.array((zone4 - fmin)/(fmax - fmin) * nb_f, dtype = 'int64')
 
+#ZONE 1-2-3
 ff_new = np.concatenate((fff[zone1[0]:zone1[1]] * 2,fff[zone2[0]:zone2[1]],fff[zone3[0]:zone3[1]]*2/3))
 kk_new = np.concatenate((kk[zone1[0]:zone1[1]],kk[zone2[0]:zone2[1]],kk[zone3[0]:zone3[1]]))
+
+
+#ZONE 2-3-4
+ff_new = np.concatenate((fff[zone2[0]:zone2[1]], fff[zone3[0]:zone3[1]] * 2/3, fff[zone4[0]:zone4[1]]*2/3))
+kk_new = np.concatenate((kk[zone2[0]:zone2[1]], kk[zone3[0]:zone3[1]], kk[zone4[0]:zone4[1]]))
+
+#ZONE 3-4
+ff_new = np.concatenate((fff[zone3[0]:zone3[1]] * 2/3, fff[zone4[0]:zone4[1]]*2/3))
+kk_new = np.concatenate((kk[zone3[0]:zone3[1]], kk[zone4[0]:zone4[1]]))
+
+#ZONE 2-3
+ff_new = np.concatenate((fff[zone2[0]:zone2[1]], fff[zone3[0]:zone3[1]]*2/3))
+kk_new = np.concatenate((kk[zone2[0]:zone2[1]], kk[zone3[0]:zone3[1]]))
 
 disp.figurejolie()
 plt.plot(ff_new,kk_new,'ko')
 plt.plot(fff[zone1[0]:zone1[1]] * 2,kk[zone1[0]:zone1[1]],'rx')
 plt.plot(fff[zone2[0]:zone2[1]],kk[zone2[0]:zone2[1]],'bx')
 plt.plot(fff[zone3[0]:zone3[1]]*2/3,kk[zone3[0]:zone3[1]],'gx')
+plt.plot(fff[zone4[0]:zone4[1]]*2/3,kk[zone4[0]:zone4[1]],'yx')
 
 #%%Fit RDD :
 
@@ -357,12 +443,21 @@ popt = fits.fit_powerlaw( kk, 2 * np.pi * fff, display = True,  xlabel = r'log(k
 popt1 = fits.fit_powerlaw( kk[zone1[0]:zone1[1]], 2 * np.pi * fff[zone1[0]:zone1[1]], display = True, xlabel = r'log(k)', ylabel = 'log($\omega$)', legend = 'zone 1')
 popt2 = fits.fit_powerlaw( kk[zone2[0]:zone2[1]], 2 * np.pi * fff[zone2[0]:zone2[1]], display = True, xlabel = r'log(k)', ylabel = 'log($\omega$)', legend = 'zone 2')
 popt3 = fits.fit_powerlaw( kk[zone3[0]:zone3[1]], 2 * np.pi * fff[zone3[0]:zone3[1]], display = True, xlabel = r'log(k)', ylabel = 'log($\omega$)', legend = 'zone 3')
+popt4 = fits.fit_powerlaw( kk[zone4[0]:zone4[1]], 2 * np.pi * fff[zone4[0]:zone4[1]], display = True, xlabel = r'log(k)', ylabel = 'log($\omega$)', legend = 'zone 4')
+
+
+logff_new = np.log(2 * np.pi * ff_new)
+logkk_new = np.log(kk_new)
 
 disp.figurejolie()
-import seaborn as sns
-sns.regplot(logk[zone1[0]:zone1[1]],logomega[zone1[0]:zone1[1]], color ='blue')
-sns.regplot(logk[zone2[0]:zone2[1]],logomega[zone2[0]:zone2[1]], color ='red')
-sns.regplot(logk[zone3[0]:zone3[1]],logomega[zone3[0]:zone3[1]], color ='green')
+popt_new = fits.fit_powerlaw( kk_new, ff_new * 2 * np.pi, display = True, xlabel = r'log(k)', ylabel = 'log($\omega$)', legend = '2-3-4')
+
+
+# disp.figurejolie()
+# import seaborn as sns
+# sns.regplot(logk[zone1[0]:zone1[1]],logomega[zone1[0]:zone1[1]], color ='blue')
+# sns.regplot(logk[zone2[0]:zone2[1]],logomega[zone2[0]:zone2[1]], color ='red')
+# sns.regplot(logk[zone3[0]:zone3[1]],logomega[zone3[0]:zone3[1]], color ='green')
 
 #%% RANSAC pour le fit :
     
@@ -374,28 +469,38 @@ no_use_data = np.zeros(len(logk), dtype = 'bool')
 no_use_data[zone1[0]:zone1[1]] = True
 no_use_data[zone2[0]:zone2[1]] = True
 no_use_data[zone3[0]:zone3[1]] = True
+no_use_data[zone4[0]:zone4[1]] = True
 
    
-model_robust1, inliers1, outliers1 = fits.fit_ransac(logk[zone1[0]:zone1[1]], logomega[zone1[0]:zone1[1]], thresh = 0.4, display = True)
+# model_robust1, inliers1, outliers1 = fits.fit_ransac(logk[zone1[0]:zone1[1]], logomega[zone1[0]:zone1[1]], thresh = 0.4, display = True)
 
 model_robust2, inliers2, outliers2 = fits.fit_ransac(logk[zone2[0]:zone2[1]], logomega[zone2[0]:zone2[1]], thresh = 0.001, display = False, newfig = True)
 
-model_robust3, inliers3, outliers3 = fits.fit_ransac(logk[zone3[0]:zone3[1]], logomega[zone3[0]:zone3[1]], thresh = 0.1, display = False, newfig = True)
+# model_robust3, inliers3, outliers3 = fits.fit_ransac(logk[zone3[0]:zone3[1]], logomega[zone3[0]:zone3[1]], thresh = 0.1, display = False, newfig = True)
+
+model_robust_new, inliers_new, outliers_new = fits.fit_ransac(logkk_new, logff_new, thresh = 0.1, display = False, newfig = True)
+
 
 no_use_data = (no_use_data == False)
+disp.figurejolie()
 disp.joliplot(r'log(k)', r'log($\omega$)', logk[no_use_data], logomega[no_use_data], color= 11, exp = True, legend = 'Data without fit')
 
 plt.legend(loc='lower right')
 plt.show()  
 
+disp.figurejolie()
+disp.joliplot(r'log(k)', r'log($\omega$)', logk[zone2[0]:zone2[1]], logomega[zone2[0]:zone2[1]], color= 11, exp = True, legend = 'Data without fit')
 
-g1 = np.mean(np.exp(2 * logomega[zone1[0]:zone1[1]][inliers1] - logk[zone1[0]:zone1[1]][inliers1]))
+
+
+# g1 = np.mean(np.exp(2 * logomega[zone1[0]:zone1[1]][inliers1] - logk[zone1[0]:zone1[1]][inliers1]))
 g2 = np.mean(np.exp(2 * logomega[zone2[0]:zone2[1]][inliers2] - logk[zone2[0]:zone2[1]][inliers2]))
-g3 = np.mean(np.exp(2 * logomega[zone3[0]:zone3[1]][inliers3] - logk[zone3[0]:zone3[1]][inliers3]))
-print('g1 = ' + str(round(g1,3)))
+# g3 = np.mean(np.exp(2 * logomega[zone3[0]:zone3[1]][inliers3] - logk[zone3[0]:zone3[1]][inliers3]))
+g_new = np.mean(np.exp(2 * logff_new[inliers_new] - logkk_new[inliers_new]))
+# print('g1 = ' + str(round(g1,3)))
 print('g2 = ' + str(round(g2,3)))
-print('g3 = ' + str(round(g3,3)))
-
+# print('g3 = ' + str(round(g3,3)))
+print('g_new = ', g_new)
 
 
   
@@ -405,7 +510,8 @@ zone = 1
 zone = 2
 # zone = 3
 # zone = 23
-
+zone = '2-3-4'
+save = False
 
 # if zone == 2 :
 #     data_pes2 = np.stack((kk[zone2[0]:zone2[1]],fff[zone2[0]:zone2[1]] * 2 * np.pi), axis = -1)
@@ -414,39 +520,42 @@ zone = 2
 
     
 
-disp.figurejolie(1)
+params = disp.figurejolie(params, nom_fig = 'fit_pesante_full') 
 
-if zone == 23 :   
-    fits.fit(rdd.RDD_pesante, np.append(kk[zone2[0]:zone2[1]][inliers2],kk[zone3[0]:zone3[1]][inliers3]) , 
-             np.append(fff[zone2[0]:zone2[1]][inliers2] * 2 * np.pi,fff[zone3[0]:zone3[1]][inliers3] * 2 * np.pi * 2 / 3) , 
-             err = True, p0 = [0.2], bounds=([0], [1]), zero = True, th_params = 0.01)
+#     fits.fit(rdd.RDD_pesante, np.append(kk[zone2[0]:zone2[1]][inliers2],kk[zone3[0]:zone3[1]][inliers3]) , 
+#              np.append(fff[zone2[0]:zone2[1]][inliers2] * 2 * np.pi,fff[zone3[0]:zone3[1]][inliers3] * 2 * np.pi * 2 / 3) , 
+#              err = True, p0 = [0.2], bounds=([0], [1]), zero = True, th_params = 0.01)
 
+zone = 2
 if zone == 2 :
     
-    fits.fit(rdd.RDD_pesante, kk[zone2[0]:zone2[1]][inliers2], fff[zone2[0]:zone2[1]][inliers2] * 2 * np.pi, err = True, p0 = [0.2], bounds=([0], [1]),
-             zero = True, th_params = 0.01)
+    fits.fit(rdd.RDD_pesante, kk[zone2[0]:zone2[1]], fff[zone2[0]:zone2[1]] * 2 * np.pi, err = True, p0 = [0.2], bounds=([0], [1]),
+              zero = True, th_params = 0.01)
+    if save :
+        params[str(params['num_fig'][-1])]['data'] = sv.data_to_dict(['k','omega'], [kk[zone2[0]:zone2[1]],fff[zone2[0]:zone2[1]]], data = [kk[zone2[0]:zone2[1]],fff[zone2[0]:zone2[1]]])
+        if save :
+            sv.save_graph(path, params[str(params['num_fig'][-1])]['nom_fig'] , params = params)
     
-    # disp.joliplot(r'log(k)', r'log($\omega$)', data_pes2[inliers2, 0], data_pes2[inliers2, 1], color= 13, exp = True, legend = r'RDD expérimentale')
-    # popt2, pcov2 = curve_fit(rdd.RDD_pesante, data_pes2[inliers2, 0], data_pes2[inliers2, 1], p0 = [0.2], bounds=([0], [1]))
-    # kk_range2 = np.linspace(0, np.max(kk[zone2[0]:zone2[1]]), len(kk[zone2[0]:zone2[1]]))
-    # disp.joliplot(r'k (m$^{-1}$)', r'$\omega$', kk_range2, rdd.RDD_pesante(kk_range2, popt2[0]), color= 5, exp = False, legend = r'fit : $\delta\rho * h$ = ' + str(round(popt2[0],4)))
-    # disp.joliplot(r'k (m$^{-1}$)', r'$\omega$', kk_range2, np.sqrt(9.81 * kk_range2), exp = False, legend = r'RDD sans inertie', color = 10,zeros = True)
-    # plt.fill_between(kk_range2, rdd.RDD_pesante(kk_range2, popt2[0] + np.sqrt(pcov2[0])), rdd.RDD_pesante(kk_range2, popt2[0] - np.sqrt(pcov2[0])), color = disp.vcolors(2))
 
-if zone == 3 :
+# if zone == 3 :
     
-    fits.fit(rdd.RDD_pesante, kk[zone3[0]:zone3[1]][inliers3], fff[zone3[0]:zone3[1]][inliers3] * 2 * np.pi * 2 / 3, err = True, p0 = [0.2], bounds=([0], [1]),
-             zero = True, th_params = 0.01)
+#     fits.fit(rdd.RDD_pesante, kk[zone3[0]:zone3[1]][inliers3], fff[zone3[0]:zone3[1]][inliers3] * 2 * np.pi * 2 / 3, err = True, p0 = [0.2], bounds=([0], [1]),
+#              zero = True, th_params = 0.01)
     
-    # disp.joliplot(r'log(k)', r'log($\omega$)', data_pes3[inliers3, 0], data_pes3[inliers3, 1], color= 13, exp = True, legend = r'RDD expérimentale')
-    # popt3, pcov3 = curve_fit(rdd.RDD_pesante, data_pes3[inliers3, 0], data_pes3[inliers3, 1], p0 = [0.2], bounds=([0], [1]))
-    # kk_range3 = np.linspace(0, np.max(kk[zone3[0]:zone3[1]]), len(kk[zone3[0]:zone3[1]]))
-    # disp.joliplot(r'k (m$^{-1}$)', r'$\omega$', kk_range3, rdd.RDD_pesante(kk_range3, popt3[0]), color= 5, exp = False, legend = r'fit : $\delta\rho * h$ = ' + str(round(popt3[0],4)))
-    # disp.joliplot(r'k (m$^{-1}$)', r'$\omega$', kk_range3, np.sqrt(9.81 * kk_range3), exp = False, legend = r'RDD sans inertie', color = 3,zeros = True)
-    # plt.fill_between(kk_range3, rdd.RDD_pesante(kk_range3, popt3[0] + np.sqrt(pcov3[0])), rdd.RDD_pesante(kk_range3, popt3[0] - np.sqrt(pcov3[0])), color = 'blue')
 
 # joliplot(r'k (m$^{-1}$)', r'$\omega$', kk_range2, RDD_pesante(kk_range2, 0.9 * 0.2), exp = False, legend = r'RDD pesante théorique ($\delta\rho$ = 0.9 et h = 0.2m)', color = 9,zeros = True)
 
+params = disp.figurejolie(params, nom_fig = 'fit_pesante_2_384') 
+zone = '2-3-4'
+if zone == '2-3-4' :
+    fits.fit(rdd.RDD_pesante, kk_new, ff_new * 2 * np.pi, err = True, p0 = [0.2], bounds=([0], [1]),
+             zero = True, th_params = 0.01)
+    if save :
+        params[str(params['num_fig'][-1])]['data'] = sv.data_to_dict(['k','omega'], [kk_new,ff_new], data = [kk_new,ff_new])
+        if save :
+            sv.save_graph(path, params[str(params['num_fig'][-1])]['nom_fig'] , params = params)
+    
+    
 
 
 
@@ -457,9 +566,10 @@ if zone == 3 :
 data_pes2 = np.stack((kk[zone2[0]:zone2[1]],fff[zone2[0]:zone2[1]] * 2 * np.pi), axis = -1)
 # data_pes3 = np.stack((kk[161:275],(fff[161:275] * 2 * np.pi)**2), axis = -1)
 
-
-popt2, pcov2 = fits.fit(rdd.RDD_pesante_flexion, kk[zone2[0]:zone2[1]][inliers2], fff[zone2[0]:zone2[1]][inliers2] * 2 * np.pi, err = False, p0 = [0.3,1e4],
+disp.figurejolie()
+popt2, pcov2 = fits.fit(rdd.RDD_pesante_flexion, kk[zone2[0]:zone2[1]], fff[zone2[0]:zone2[1]] * 2 * np.pi, err = False, p0 = [0.3,1e4],
                       bounds=([0.2,1e2], [1, 1e8]), zero = True, nb_param = 2, th_params = [0.4, 8e2])
+plt.plot(np.linspace(0,np.max(kk)))
 
 
 # popt3, pcov3 = fits.fit(rdd.RDD_pesante_flexion, kk[zone3[0]:zone3[1]][inliers3], fff[zone3[0]:zone3[1]][inliers3] * 2 * np.pi * 2 / 3, err = False, p0 = [0.3,1e4], bounds=([0,1e4], [0.5, 1e5]),

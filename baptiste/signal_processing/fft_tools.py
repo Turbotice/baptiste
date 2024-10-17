@@ -16,15 +16,18 @@ def add_padding (data, padding) :
     datasize = data.shape
     data_pad = np.zeros(np.power(2,padding), dtype = 'complex')
     if len(padding) == 1 :
+        data_pad = np.zeros(np.power(2,padding), dtype = 'complex')
         data_pad[:datasize] = data
     if len(padding)  == 2 :
+        data_pad = np.zeros( np.power(2,padding), dtype = 'complex')
         data_pad[:datasize[0], :datasize[1]] = data
     if len(padding)  == 3 :
+        data_pad = np.zeros( np.power(2,padding), dtype = 'complex')
         data_pad[:datasize[0], :datasize[1], :datasize[2]] = data
     return data_pad
 
 
-def fft_bapt(data, df1, df2 = False, df3 = False, og_shape = False, abso = True):
+def fft_bapt(data, df1, df2 = False, df3 = False, og_shape = False, abso = False):
 
     dim = len(data.shape)       
 
@@ -39,7 +42,7 @@ def fft_bapt(data, df1, df2 = False, df3 = False, og_shape = False, abso = True)
         P1 = P2 
         
         
-        f = np.linspace(0, df1/2, n1)
+        f = np.linspace(0, df1, n1)
         
         if abso :
             return P1, f  

@@ -7,7 +7,7 @@ import baptiste.tools.tools as tools
 
 ## TAILLE DES FIGURES
 
-def set_size(width = 8.6, fraction=1, subplots=(1, 1)):
+def set_size(width, fraction=1, subplots=(1, 1)):
     """Set figure dimensions to avoid scaling in LaTeX.
 
     Parameters
@@ -23,32 +23,27 @@ def set_size(width = 8.6, fraction=1, subplots=(1, 1)):
     fig_dim: tuple
             Dimensions of figure in inches
     """
-    # if width == 'thesis':
-    #     width_cm = 12
-    # elif width == 'beamer':
-    #     width_cm = 10
-    # else:
-    width_cm = width #en cm
+    if width == 'thesis':
+        width_pt = 426.79135
+    elif width == 'beamer':
+        width_pt = 307.28987
+    else:
+        width_pt = width
 
     # Width of figure (in pts)
-    
-    cm_to_pt = 1/0.0351459804
-    golden_ratio = .9
-    fig_width_pt = int(width_cm * fraction * cm_to_pt)
-    
+    fig_width_pt = width_pt * fraction
     # Convert from pt to inches
-    
     inches_per_pt = 1 / 72.27
 
-    # # Golden ratio to set aesthetic figure height
-    # # https://disq.us/p/2940ij3
-    # #golden_ratio = (5**.5 - 1) / 2
-    # golden_ratio = .9
-    # # Figure width in inches
+    # Golden ratio to set aesthetic figure height
+    # https://disq.us/p/2940ij3
+    #golden_ratio = (5**.5 - 1) / 2
+    golden_ratio = .9
+    # Figure width in inches
     fig_width_in = fig_width_pt * inches_per_pt
-    # # Figure height in inches
+    # Figure height in inches
     fig_height_in = fig_width_in * golden_ratio * (subplots[0] / subplots[1])
-    # #fig_height_in = fig_width_in * .9 * (subplots[0] / subplots[1])
+    #fig_height_in = fig_width_in * .9 * (subplots[0] / subplots[1])
 
     return (fig_width_in, fig_height_in)
 
@@ -58,14 +53,14 @@ def set_size(width = 8.6, fraction=1, subplots=(1, 1)):
 tex_fonts = {
     # Use LaTeX to write all text
     "text.usetex": True,
-    "font.family": "Computer Modern Roman",
+    "font.family": "serif",
     # Use 10pt font in plots, to match 10pt font in document
-    "axes.labelsize": 10,
-    "font.size": 10,
+    "axes.labelsize": 18,
+    "font.size": 18,
     # Make the legend/label fonts a little smaller
-    # "legend.fontsize": 14,
-    # "xtick.labelsize": 15,
-    # "ytick.labelsize": 15
+    "legend.fontsize":14,
+    "xtick.labelsize": 12,
+    "ytick.labelsize": 12
 }
 
 plt.rcParams.update(tex_fonts)
@@ -99,7 +94,7 @@ def vcolors(n) :
 
 
     
-def figurejolie(params = False, num_fig = False, subplot = False, nom_fig = False, width = 8.6):
+def figurejolie(params = False, num_fig = False, subplot = False, nom_fig = False):
     if subplot == False :
         
         #si params renseigné
@@ -114,7 +109,7 @@ def figurejolie(params = False, num_fig = False, subplot = False, nom_fig = Fals
                 params['num_fig'].append(randnumfig)
                 num_fig = randnumfig
                 
-            plt.figure(num = num_fig, figsize = set_size(width = width, fraction = 1, subplots = (1,1)))
+            plt.figure(num = num_fig, figsize = set_size(width=500, fraction = 1, subplots = (1,1)))
             
             #ajoute nom_fig dans les params
             if type(nom_fig) != bool :
@@ -125,18 +120,18 @@ def figurejolie(params = False, num_fig = False, subplot = False, nom_fig = Fals
             return params
         else :
             if type(num_fig) != bool :
-                plt.figure(num = num_fig, figsize = set_size(fraction = 1, subplots = (1,1), width = width))
+                plt.figure(num = num_fig, figsize = set_size(width=500, fraction = 1, subplots = (1,1)))
             else :
-                plt.figure(figsize = set_size(fraction = 1, subplots = (1,1), width = width))
+                plt.figure(figsize = set_size(width=500, fraction = 1, subplots = (1,1)))
     else :
-        fig = plt.figure(num = num_fig, figsize = set_size(fraction = 1, subplots = subplot))
+        fig = plt.figure(num = num_fig, figsize = set_size(width=500, fraction = 1, subplots = subplot))
         axes = []
                            
         return fig, axes
 
 
 def joliplot(xlabel, ylabel, xdata, ydata, color = False, fig = False, axes = [], title = False, subplot = False, legend = False, 
-             log = False, exp = True, image = False, zeros = False, params = False, table = False, tcbar = '', width = 8.6, linewidth = False):
+             log = False, exp = True, image = False, zeros = False, params = False, table = False, tcbar = ''):
     """
     Plot un graph ou un subplot ou une image
 
@@ -169,12 +164,12 @@ def joliplot(xlabel, ylabel, xdata, ydata, color = False, fig = False, axes = []
     """Jolis graphs predefinis"""
     
     
-    n = 18
-    markers = ['0','x','o','v','p','X','d','s','s','h','.','.','o','o','o','v','v','o', 'd']
-    markeredgewidth = np.array([1.5,1.8,1.5, 1.5, 2.5, 1.3, 1.3, 1.6,1.6,2,1.6,1.6,2,2,2,2,2,2.5, 2.5]) * width / 11
-    ms = np.array([7,6.5,7, 7, 9.2, 8, 8, 8, 7,7, 7, 7,9,7,7,7,7,9, 9]) * width / 11
-    mfc = ['None','#91A052','#990000',vcolors(5),'None','None','None','None','k','None','None','None','None','None','None','None','None', vcolors(4), vcolors(3)]
-    colors = ['g','#91A052','#990000', vcolors(5), '#008B8B', vcolors(2), '#FF8000', vcolors(6), 'k',vcolors(1),'#01FA22',vcolors(3), vcolors(1),'#990000', vcolors(2),'#990000', vcolors(2), vcolors(4), vcolors(3) ]
+    n = 17
+    markers = ['0','x','o','v','p','X','d','s','s','h','.','.','o','o','o','v','v','o']
+    markeredgewidth = [1.5,1.8,1.5, 1.5, 2.5, 1.3, 1.3, 1.6,1.6,2,1.6,1.6,2,2,2,2,2,2.2]
+    ms = [7,6.5,7, 7, 9.2, 8, 8, 8, 7,7, 7, 7,9,7,7,7,7,7]
+    mfc = ['None','#91A052','#990000',vcolors(5),'None','None','None','None','k','None','None','None','None','None','None','None','None', vcolors(4)]
+    colors = ['g','#91A052','#990000', vcolors(5), '#008B8B', vcolors(2), '#FF8000', vcolors(6), 'k',vcolors(1),'#01FA22',vcolors(3), vcolors(1),'#990000', vcolors(2),'#990000', vcolors(2), vcolors(4) ]
     
     """Pour un simple plot"""
     if subplot == False:
@@ -224,25 +219,16 @@ def joliplot(xlabel, ylabel, xdata, ydata, color = False, fig = False, axes = []
         
         #pour un graph
         else :
-            if linewidth != False:
-                linewidth = linewidth
-            else :
-                linewidth = width / 9
-
             #si color = False fait une couleur au hasard
             if color == False:
                 color = np.random.randint(1,n+1)
-        
+            
+                
             if exp :
                 marker = ' ' + markers[color]
             
             else :
                 marker = '-'
-                if color == 8 :
-                    marker = '--'
-                if color == 3 :
-                    marker = '-.'
-                
     
             
             
@@ -250,10 +236,10 @@ def joliplot(xlabel, ylabel, xdata, ydata, color = False, fig = False, axes = []
                 plt.title(title)
                
             if legend != False :
-                plt.plot(xdata, ydata, marker, color = colors[color], mfc = mfc[color], markeredgewidth = markeredgewidth[color], ms = ms[color], label = legend, linewidth = linewidth)
+                plt.plot(xdata, ydata, marker, color = colors[color], mfc = mfc[color], markeredgewidth = markeredgewidth[color], ms = ms[color], label = legend)
                 plt.legend()
             else :
-                plt.plot(xdata, ydata, marker, color = colors[color], mfc = mfc[color], markeredgewidth = markeredgewidth[color], ms = ms[color], linewidth = linewidth)
+                plt.plot(xdata, ydata, marker, color = colors[color], mfc = mfc[color], markeredgewidth = markeredgewidth[color], ms = ms[color])
                 
             plt.xlabel(xlabel) 
             plt.ylabel(ylabel)
@@ -262,7 +248,7 @@ def joliplot(xlabel, ylabel, xdata, ydata, color = False, fig = False, axes = []
                 plt.xscale('log')
                 plt.tight_layout()
                 
-            # plt.grid()
+            plt.grid()
             
             if zeros :
                plt.xlim(left=0 )
@@ -273,9 +259,6 @@ def joliplot(xlabel, ylabel, xdata, ydata, color = False, fig = False, axes = []
                 y_range = np.linspace(np.min(ydata), np.max(ydata), len(ydata))
                 return sv.data_to_dict([xlabel, ylabel], [x_range, y_range], [xdata, ydata])
             
-            if log != True :
-                plt.ticklabel_format(axis="y", style="sci", scilimits=(0,0))
-                plt.ticklabel_format(axis="x", style="sci", scilimits=(0,0))
 
 
     #pour un subplot

@@ -24,14 +24,23 @@ from scipy import stats
 import scipy.fft as fft
 import os
 from PIL import Image
-%run Functions_FSD.py
-%run parametres_FSD.py
-%run display_lib_gld.py
+
+import baptiste.display.display_lib as disp
+import baptiste.experiments.import_params as ip
+import baptiste.signal_processing.fft_tools as ft
+import baptiste.image_processing.image_processing as imp
+import baptiste.math.fits as fits
+import baptiste.math.RDD as rdd
+import baptiste.files.save as sv
+import baptiste.files.dictionaries as dic
+import baptiste.tools.tools as tools
 
 
 
-dico = open_dico()
+dico = dic.open_dico()
 
+
+#%% plot var1 (var2) depuis le dico
 date_min = 230103
 date_max = 230120 #AJD ?
 
@@ -64,6 +73,11 @@ for date in dico :
 
 #%% Diagramme de phase
 
+dico = dic.open_dico()
+
+date_min = 230103
+date_max = 230120 #AJD ?
+
 casse = []
 l_onde = []
 amplitude = []
@@ -76,49 +90,49 @@ ldk = []
 
 
 for date in dico :
-
-    if float(date) > date_min :
-        print(date)
-
-        for nom_exp in dico[str(date)] :
-
-            if 'amp_fracs_fft' in dico[date][nom_exp] and nom_exp != 'MPPF2' and nom_exp != 'MPPF3' :
-                # if "non" in dico[date][nom_exp]['casse'] :
-                print(nom_exp)
-                for j in range (dico[date][nom_exp]['amp_fracs_fft'].shape[0]):
-                    if np.shape(dico[date][nom_exp]['amp_fracs_fft'])[1] < 7 :
-                        if 'oui' == dico[date][nom_exp]['casse'] :
-                            casse.append(True)
+    if date.isdigit() : 
+        if float(date) > date_min and float(date) < date_max :
+            print(date)
+    
+            for nom_exp in dico[str(date)] :
+    
+                if 'amp_fracs_fft' in dico[date][nom_exp] and nom_exp != 'MPPF2' and nom_exp != 'MPPF3' :
+                    # if "non" in dico[date][nom_exp]['casse'] :
+                    print(nom_exp)
+                    for j in range (dico[date][nom_exp]['amp_fracs_fft'].shape[0]):
+                        if np.shape(dico[date][nom_exp]['amp_fracs_fft'])[1] < 7 :
+                            if 'oui' == dico[date][nom_exp]['casse'] :
+                                casse.append(True)
+                            else :
+                                casse.append(False)
                         else :
-                            casse.append(False)
-                    else :
-                        if dico[date][nom_exp]['amp_fracs_fft'][j,6]:
-                            casse.append(True)
-                        else :
-                            casse.append(False)
-                        
-                   
-                    amplitude.append(dico[date][nom_exp]['amp_fracs_fft'][j,4] * np.sqrt(2))# * np.pi /dico[date][nom_exp]['lambda'] )
-                    exp.append(nom_exp)
-                    l_d.append(dico[date][nom_exp]['Ld'])
-                    ldk.append(2 * np.pi * dico[date][nom_exp]['Ld'] /dico[date][nom_exp]['lambda'])
-                    l_onde.append(dico[date][nom_exp]['lambda'])
+                            if dico[date][nom_exp]['amp_fracs_fft'][j,6]:
+                                casse.append(True)
+                            else :
+                                casse.append(False)
+                            
+                       
+                        amplitude.append(dico[date][nom_exp]['amp_fracs_fft'][j,4] * np.sqrt(2))# * np.pi /dico[date][nom_exp]['lambda'] )
+                        exp.append(nom_exp)
+                        l_d.append(dico[date][nom_exp]['Ld'])
+                        ldk.append(2 * np.pi * dico[date][nom_exp]['Ld'] /dico[date][nom_exp]['lambda'])
+                        l_onde.append(dico[date][nom_exp]['lambda'])
   
     
 #%% Graph
 annotated_name = False
-annotated_ld = True
+annotated_ld = False
 
-figurejolie()
+# figurejolie()
 for i in range (len(amplitude)) :
     if casse[i] :
-        joliplot(r"$\lambda$ (m)", r"Amplitude (m)", l_onde[i], amplitude[i], color = 13)
+        disp.joliplot(r"$\lambda$ (m)", r"Amplitude (m)", l_onde[i], amplitude[i], color = 13)
         if annotated_name :
             plt.annotate (exp[i],(l_onde[i], amplitude[i]))
         if annotated_ld :
             plt.annotate (round(l_d[i], 4),(l_onde[i], amplitude[i]))
     else :
-        joliplot(r"$\lambda$ (m)", r"Amplitude (m)", l_onde[i], amplitude[i], color = 14)
+        disp.joliplot(r"$\lambda$ (m)", r"Amplitude (m)", l_onde[i], amplitude[i], color = 14)
         if annotated_name :
             plt.annotate (exp[i],(l_onde[i], amplitude[i]))
         if annotated_ld :
@@ -129,23 +143,23 @@ plt.ylim(0,0.016)
 
 
 
-joliplot(r"$\lambda$ (m)", r"Amplitude (m)", 0, 0, color = 13, legend = 'Casse stationnaire')
-joliplot(r"$\lambda$ (m)", r"Amplitude (m)", 0, 0, color = 14, legend = 'Casse pas stationnaire')
+disp.joliplot(r"$\lambda$ (m)", r"Amplitude (m)", 0, 0, color = 13, legend = 'Casse stationnaire')
+disp.joliplot(r"$\lambda$ (m)", r"Amplitude (m)", 0, 0, color = 14, legend = 'Casse pas stationnaire')
 
-x = np.linspace(0,0.42,100)
-y = 0.006/0.25 * x 
-y_2 = x**2 * 0.10
-y_3 = x**3 * 0.42
-# y_4 = x ** 1.5 * 0.055
+# x = np.linspace(0,0.42,100)
+# y = 0.006/0.25 * x 
+# y_2 = x**(1.5) * 0.056
+# y_3 = x**2 * 0.1
+# # y_4 = x ** 1.5 * 0.055
 
-plt.plot(x,y, label = 'Modèle linéaire')
-plt.plot(x,y_2, label = 'Modèle quadratique')
+# plt.plot(x,y, label = 'Modèle linéaire')
+# plt.plot(x,y_2, label = 'Modèle 1.5')
 
-plt.plot(x,y_3, label = 'Modèle x3')
+# plt.plot(x,y_3, label = 'Modèle 2')
 
-# plt.plot(x,y_4, label = 'Modèle x3/2')
+# # plt.plot(x,y_4, label = 'Modèle x3/2')
 
-plt.legend()
+# plt.legend()
 #%% Ajoute points de stage
 data = np.loadtxt("D:\Banquise\Baptiste\Resultats\\220628_diagramme_de_phase\\diagramme_de_phase_trié.txt")
 
@@ -157,6 +171,7 @@ cassage = data[:,4]
 hpese = data[:,5]
 hbonbonne = data[:,6]
 
+disp.figurejolie()
 
 lambdacomplet = np.zeros(len( lambdames))
 
@@ -237,11 +252,251 @@ for i in range( len(omega)):
 
 
 # figurejolie()
-joliplot(r'$\lambda$ (m)', r'Amplitude (m)', data_traitées0[:,1], data_traitées0[:,2], color = 16, title = False, legend = r'Casse pas propagatif', exp = True)
-joliplot(r'$\lambda$ (m)', r'Amplitude (m)', data_traitées1[:,1], data_traitées1[:,2], color = 15, title = False, legend = r'Casse propagatif', exp = True)
+disp.joliplot(r'$\lambda$ (m)', r'Amplitude (m)', data_traitées0[:,1], data_traitées0[:,2], color = 16, title = False, legend = r'Intact', exp = True)
+disp.joliplot(r'$\lambda$ (m)', r'Amplitude (m)', data_traitées1[:,1], data_traitées1[:,2], color = 15, title = False, legend = r'Fracturé', exp = True)
 # joliplot(r'$\lambda$ (m)', r'Amplitude (m)', data_traitées2[:,1], data_traitées2[:,2], color = 2, title = r'Recherche de seuil, $\lambda$(amp)', legend = r'Casse', exp = True)
    
     
+#%% Plus joli
+
+disp.figurejolie()
+#Données de stage
+disp.joliplot(r'$\lambda$ (m)', r'Amplitude (m)', data_traitées0[:,1], data_traitées0[:,2], color = 16, title = False, legend = r'Intact', exp = True)
+disp.joliplot(r'$\lambda$ (m)', r'Amplitude (m)', data_traitées1[:,1], data_traitées1[:,2], color = 15, title = False, legend = r'Fracturé', exp = True)
+
+#Données stationnaire
+
+for i in range (len(amplitude)) :
+    if casse[i] :
+        disp.joliplot(r"$\lambda$ (m)", r"Amplitude (m)", l_onde[i], amplitude[i], color = 15)
+        if annotated_name :
+            plt.annotate (exp[i],(l_onde[i], amplitude[i]))
+        if annotated_ld :
+            plt.annotate (round(l_d[i], 4),(l_onde[i], amplitude[i]))
+    else :
+        disp.joliplot(r"$\lambda$ (m)", r"Amplitude (m)", l_onde[i], amplitude[i], color = 16)
+        if annotated_name :
+            plt.annotate (exp[i],(l_onde[i], amplitude[i]))
+        if annotated_ld :
+            plt.annotate (round(l_d[i], 4),(l_onde[i], amplitude[i]))
+
+plt.xlim(0,0.45)
+plt.ylim(0,0.016)
+
+
+#FIT
+x = np.linspace(0,0.42,100)
+y = 0.006/0.25 * x**(0.75) * 0.6
+y_2 = x**(1.5) * 0.056
+y_3 = x**2 * 0.1
+# y_4 = x ** 1.5 * 0.055
+
+# joliplot(r"$\lambda$ (m)", r"Amplitude (m)", x,y, color = 3, legend = r'Modèle contrainte visqueuse ($\frac{3}{4}$)', exp = False)
+# joliplot(r"$\lambda$ (m)", r"Amplitude (m)",x,y_2,color = 8, legend = r'Modèle flexion ($\frac{3}{2}$)', exp = False)
+# joliplot(r"$\lambda$ (m)", r"Amplitude (m)",x,y_3,color = 6, legend = r'Modèle $^{2}$', exp = False)
+
+# plt.plot(x,y_4, label = 'Modèle x3/2')
+plt.grid()
+plt.legend()
+#%% RDD theorique
+
+disp.figurejolie()
+
+k = np.logspace(-7, 3)
+
+def RDD_full(k,drhoh, Dsurrho, Tsurrho, H, g):
+    return np.sqrt( np.tanh(H * k) * ((g * k + Tsurrho * k**3 + Dsurrho * k **5) * (( 1 + drhoh * k)**(-1))) )
+
+disp.joliplot(r'$\omega$', r'k',k, RDD_full(k,0.001,1,10000,100, 10), exp = False, log = True, color = 8)
+
+plt.axis('equal')
+
+#%% RDD theorique
+
+disp.figurejolie()
+
+k = np.logspace(-8, 3)
+
+def RDD_full(k, Dsurrho, Tsurrho, g):
+    return np.sqrt( (g * k + Tsurrho * k**3 + Dsurrho * k **5) )
+
+disp.joliplot(r'$\omega$', r'k',k, RDD_full(k,1e6,10000000,10), exp = False, color = 8, log = True)
+
+# plt.axis('equal')
+
+#%% RDD fictive FULLLL
+
+x1 = np.logspace(-1,0,100)
+x2 = np.logspace(0,1,100)
+x3 = np.logspace(1,2,100)
+x4 = np.logspace(2,3,100)
+x5 = np.logspace(3,4,100)
+
+disp.figurejolie()
+
+disp.joliplot( r'k $(m^{-1})$',r'$\omega$ (Hz)',x1, x1, exp = False, color = 8, log = True)
+disp.joliplot( r'k $(m^{-1})$',r'$\omega$ (Hz)',x2, x2**(0.5), exp = False, color = 8, log = True)
+disp.joliplot( r'k $(m^{-1})$',r'$\omega$ (Hz)',x3, x3**(1.5)/10, exp = False, color = 8, log = True)
+disp.joliplot( r'k $(m^{-1})$',r'$\omega$ (Hz)',x4, x4**(2.5)/1000, exp = False, color = 8, log = True)
+disp.joliplot( r'k $(m^{-1})$',r'$\omega$ (Hz)',x5, x5**2/np.sqrt(1000), exp = False, color = 8, log = True)
+
+plt.grid()
+
+# plt.axis('equal')
+
+#%% RDD fictive g et D
+
+x1 = np.logspace(-1,0,100)
+x2 = np.logspace(0,1,100)
+
+disp.figurejolie()
+
+disp.joliplot(r'k $(m^{-1})$',r'$\omega$ (Hz)',x1, x1**(0.5), exp = False, color = 8, log = True)
+disp.joliplot(r'k $(m^{-1})$',r'$\omega$ (Hz)',x2, x2**(2.5), exp = False, color = 8, log = True)
+
+# plt.axis('equal')
+
+#%% Coeff magique
+#%% D et h : tableau 2
+
+save = False
+save_path = 'E:\\Baptiste\\Resultats_exp\\All_RDD\\Resultats\\'
+
+tableau_2 = pandas.read_csv('E:\\Baptiste\\Resultats_exp\\Tableau_params\\Tableau2_Params_220101_240116\\tableau_2_v2.txt', sep = '\t', header = 1)
+tableau_2 = np.asarray(tableau_2)
+
+D = np.array(tableau_2[:,2][np.where(tableau_2[:,2] != 0)], dtype = float)
+h = np.array(tableau_2[:,4][np.where(tableau_2[:,2] != 0)], dtype = float)
+
+"""
+ATTENTION
+h RECTIFIE CAR ON A MESURE RHO A POSTERIORI, H DANS LE DICO EST CELUI SI RHO EST EGAL A 900 kg.m-3, OR EN VRAI C'EST 680 kg.m-3
+"""
+h = h * 900 / 680
+"""
+FIN DE ATTENTION
+"""
+
+dates = np.array(tableau_2[:,1][np.where(tableau_2[:,2] != 0)], dtype = int)
+
+disp.figurejolie()
+disp.joliplot('date', 'All D', tableau_2[:,1], tableau_2[:,2])
+if save : 
+    plt.savefig(save_path + "D_date" + tools.datetimenow() + ".pdf", dpi = 1)
+
+
+disp.figurejolie()
+disp.joliplot('date', 'All h', tableau_2[:,1], tableau_2[:,4])
+if save : 
+    plt.savefig(save_path + "h_date" + tools.datetimenow() + ".pdf", dpi = 1)
+
+
+disp.figurejolie()
+disp.joliplot('D', 'h', D, h, log = False)
+for i in range (len(dates)): 
+    plt.annotate(dates[i], (D[i], h[i]))
+if save : 
+    plt.savefig(save_path + "h_D" + tools.datetimenow() + ".pdf", dpi = 1)
+
+
+model_robust, inliers, outliers = fits.fit_powerlaw(D, h, xlabel = 'D (Nm)', ylabel = 'h (m)', display = True, fit = 'ransac')    
+for i in range (len(dates)): 
+    plt.annotate(dates[i], (np.log(D)[i], np.log(h)[i]))
+if save : 
+    plt.savefig(save_path + "h_D_plus_fit" + tools.datetimenow() + ".pdf", dpi = 1)
+    
+    
+model_robust, inliers, outliers = fits.fit_powerlaw(D, h, fit = 'ransac')    
+for i in range (len(dates)): 
+    plt.annotate(dates[i], (D[i], h[i]))
+if save : 
+    plt.savefig(save_path + "h_D_plus_fit" + tools.datetimenow() + ".pdf", dpi = 1)
+
+
+E = D / h**3 * 10
+disp.figurejolie()
+disp.joliplot('date', 'E', dates, E)
+# for i in range (len(D)): 
+#     plt.annotate(dates[i], (D[i], E[i]))
+if save : 
+    plt.savefig(save_path + "E_date" + tools.datetimenow() + ".pdf", dpi = 1)
+    
+    
+    
+def lineaire_3(x, a):
+    return x ** (1/3) * a
+
+popt, pcov = fits.fit(lineaire_3, D, h, display = False)
+
+D_scale = np.linspace(np.min(D), np.max(D), 200)
+
+disp.figurejolie()
+disp.joliplot('D (Nm)', 'h (m)', D_scale, lineaire_3(D_scale, popt[0]),color = 2, exp = False, log = True, legend = 'E = ' + str(round(10 / popt[0]**3 / 1e6)) + ' MPa')
+disp.joliplot('D (Nm)', 'h (m)', D, h,color = 4, exp = True, log = True)
+
+
+plt.savefig(save_path + "D_h_fit_E_hpuissance3" + tools.datetimenow() + ".pdf", dpi = 1)
+
+
+#%% D et h : tableau 1
+
+save = True
+save_path = 'E:\\Baptiste\\Resultats_exp\\All_RDD\\Resultats\\'
+
+tableau_1 = pandas.read_csv('E:\\Baptiste\\Resultats_exp\\Tableau_params\\Tableau1_Params_231117_240116\\tableau_1.txt', sep = '\t', header = None)
+tableau_1 = np.asarray(tableau_1)
+
+
+
+
+
+#%% plot tanh(kh) des exps
+
+lam = np.linspace(0.062, 0.541, 1000)
+k = 2 * np.pi / lam
+H = np.linspace(1,100,1000)
+
+disp.figurejolie()
+disp.joliplot(r'$\lambda$', r'tanh(kH)', lam, np.tanh(k * 0.11), exp = False, color = 5)
+
+
+
+#%% Coeff magique
+disp.figurejolie()
+data_coeff = np.loadtxt("D:\Banquise\Baptiste\\Resultats\\Coeff_magique\\coeff_magique.txt", skiprows= 1)
+
+poids_bonbonne = data_coeff[:,0] - data_coeff[:,1]
+
+poids_déposé = poids_bonbonne /data_coeff[:,2] 
+
+
+disp.joliplot(r'Masse perdue (g)',r'Masse déposée (g)',   poids_déposé, poids_bonbonne, color = 2)
+
+def lin (x,a) :
+    return a * x 
+
+popt, pcov = fits.fit(lin, poids_déposé, poids_bonbonne,  display = True, err = False, nb_param = 1, p0 = [0], bounds = False, 
+        zero = True, th_params = False, xlabel = r'Masse déposée (g)', ylabel = r'Masse perdue (g)', legend_data = r'Experimental Data', legend_fit = 'a = ')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
