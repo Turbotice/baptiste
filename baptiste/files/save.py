@@ -49,7 +49,7 @@ def save_graph (path, nom_fig, params = False, num_fig = False, nc = False, pkl 
             num_fig = params['num_fig'][-1]
             disp.figurejolie(num_fig = num_fig)
         else :
-            print('Reinseigner params ou num_fig, paramètres non sauvegardés')
+            print('Renseigner params ou num_fig, paramètres non sauvegardés')
             num_fig = 44
     else : 
         disp.figurejolie(num_fig = num_fig)
@@ -62,7 +62,8 @@ def save_graph (path, nom_fig, params = False, num_fig = False, nc = False, pkl 
     if pdf :
         plt.savefig(path + nom_fig + "_" + str(num_fig) + ".pdf", dpi = 1)
     else :
-        plt.savefig(path + nom_fig + "_" + str(num_fig) + ".png", dpi = 1)
+        plt.savefig(path + nom_fig + "_" + str(num_fig) + '_png' + ".png")
+        plt.savefig(path + nom_fig + "_" + str(num_fig) + ".pdf", dpi = 1)
     
     print( 'figure ' + str(num_fig) + " saved with the name " + nom_fig)
     

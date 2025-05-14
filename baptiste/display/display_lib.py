@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import numpy as np
 
+
 import baptiste.files.save as sv
 import baptiste.tools.tools as tools
 
@@ -55,22 +56,52 @@ def set_size(width = 8.6, fraction=1, subplots=(1, 1)):
 
 ## FONTS
 
-tex_fonts = {
-    # Use LaTeX to write all text
-    "text.usetex": True,
-    "font.family": "Computer Modern Roman",
-    # Use 10pt font in plots, to match 10pt font in document
-    "axes.labelsize": 10,
-    "font.size": 10,
-    # Make the legend/label fonts a little smaller
-    # "legend.fontsize": 14,
-    # "xtick.labelsize": 15,
-    # "ytick.labelsize": 15
-}
+# tex_fonts = {
+#     # Use LaTeX to write all text
+#     "text.usetex": True,
+#     "font.family": "fart",
+#     'fontname':'Computer Modern',
+#     # Use 10pt font in plots, to match 10pt font in document
+#     "axes.labelsize": 10,
+#     "font.size": 10,
+#     # Make the legend/label fonts a little smaller
+#     # "legend.fontsize": 14,
+#     # "xtick.labelsize": 15,
+#     # "ytick.labelsize": 15
+# }
 
-plt.rcParams.update(tex_fonts)
-plt.rcParams['text.usetex'] = True
+
+# mpl.rc('text', usetex=True)
+# plt.rcParams['font.family'] = 'serif' # or 'sans-serif' or 'monospace'
+# plt.rcParams['font.serif'] = 'cmr10'
+# plt.rcParams['font.sans-serif'] = 'cmss10'
+# plt.rcParams['font.monospace'] = 'cmtt10'
+# plt.rcParams["axes.formatter.use_mathtext"] = True # to fix the minus signs
+
+# plt.rcParams["pdf.fonttype"] = 42
+# plt.rcParams["svg.fonttype"] = 'none'
+# mpl.rc('text', usetex=True)
+
+params = {"ytick.color" : "black",
+          "xtick.color" : "black",
+          "axes.labelcolor" : "black",
+          "axes.edgecolor" : "black",
+          "text.usetex" : True,
+          "font.family" : "serif",
+          "font.serif" : ["Computer Modern Serif"]}
+plt.rcParams.update(params)
+
+plt.rc('font', family='serif',size=10)
 mpl.rc('text', usetex=True)
+mpl.rc('legend', fontsize=10)
+mpl.rcParams['text.latex.preamble'] = r'\boldmath'
+
+# mpl.rc('font', **{'family': 'serif', 'serif': ['Computer Modern']})
+# mpl.rc('text', usetex=True)
+
+# plt.rcParams.update(tex_fonts)
+# plt.rcParams['text.usetex'] = True
+# mpl.rc('text', usetex=True)
 # mpl.rcParams['text.latex.preamble'] = [
 #     r'\usepackage{lmodern}', #lmodern: lateX font; tgheros: helvetica font; helvet pour helvetica
 #     r'\usepackage{sansmath}', # math-font matching helvetica
@@ -79,7 +110,7 @@ mpl.rc('text', usetex=True)
 #     r'\sisetup{detect-all}', # force siunitx to use the fonts
 #     ]
 
-mpl.rcParams['text.latex.preamble'] = r'\usepackage{lmodern}'  + r'\usepackage{sansmath}' + r'\sansmath' + r'\usepackage[scientific-notation=false]{siunitx}' + r'\sisetup{detect-all}'
+mpl.rcParams['text.latex.preamble'] = r'\usepackage[scientific-notation=false]{siunitx}' + r'\sisetup{detect-all}' + r'\usepackage{amsmath}'
 
 # plt.rcParams["text.latex.preamble"].join([
 #         r"\usepackage{dashbox}",              
@@ -203,10 +234,10 @@ def joliplot(xlabel, ylabel, xdata, ydata, color = False, fig = False, axes = []
                 
             if dim == 2 :
                 plt.pcolormesh(xdata, ydata, np.flip(np.rot90(table),0), shading = 'auto')
-                cbar = plt.colorbar()
+                # cbar = plt.colorbar()
                 plt.xlabel(xlabel)
                 plt.ylabel(ylabel)
-                cbar.set_label(tcbar)
+                # cbar.set_label(tcbar)
                 plt.grid('off')
                 
             if dim == 3 :
@@ -273,9 +304,9 @@ def joliplot(xlabel, ylabel, xdata, ydata, color = False, fig = False, axes = []
                 y_range = np.linspace(np.min(ydata), np.max(ydata), len(ydata))
                 return sv.data_to_dict([xlabel, ylabel], [x_range, y_range], [xdata, ydata])
             
-            if log != True :
-                plt.ticklabel_format(axis="y", style="sci", scilimits=(0,0))
-                plt.ticklabel_format(axis="x", style="sci", scilimits=(0,0))
+            # if log != True :
+            #     plt.ticklabel_format(axis="y", style="sci", scilimits=(0,0))
+            #     plt.ticklabel_format(axis="x", style="sci", scilimits=(0,0))
 
 
     #pour un subplot

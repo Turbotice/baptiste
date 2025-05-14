@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
 """
+Created on Fri Mar 21 16:37:39 2025
+
+@author: Banquise
+"""
+
+# -*- coding: utf-8 -*-
+"""
 Created on Thu Jan  9 18:16:23 2025
 
 @author: Banquise
@@ -32,8 +39,17 @@ import icewave.tools.matlab2python as m2p
 import icewave.baptiste.Fct_drone_1102 as fd
 
 
+#%% Import transformation
 
+path = "W:\SagWin2024\\Data\\0211\\Drones\\transformations\\"
 
+#Mesange
+file = "mesange_structure.mat"
+params_mesange = fd.open_mat(path, file)
+
+#Bernache
+file = "bernache_structure.mat"
+params_bernache = fd.open_mat(path, file)
 
 
 #%% IMPORT DATA
@@ -71,43 +87,24 @@ T = data['m']["t"] #s
 
 facq = 29.97
 
+#%% Conversion en coordonnées globales
+
+path = "W:\SagWin2024\\Data\\0211\\Drones\\transformations\\"
+
+
+filename = "mesange_structure.mat"
+
+f = h5py.File(path + filename,'r') 
+f = m2p.mat_to_dict(f, f )
+param = f['param_struct']
+
+xxxxxxx = np.array([10,11,12])
+
+fd.drone_pix2real(xxxxxxx,xxxxxxx,xxxxxxx,param)
+
+# fd.drone_real2pix(0,0,0,param)
 
     
-#%% Profile line sur l'image en pixels
-Vz = np.transpose(Vz, (2,1,0)) #Pour passer de s(t,y,x) à s(x,y,t)
-Vz = np.flip(Vz, 1)
-xm = 29
-ym = 39
-d = 7 #pixel
-theta = 3*np.pi/4 #radians
-
-t0 = 839
-dt = 100
-
-x_pix = np.linspace(0,Vz.shape[0]-1, Vz.shape[0])
-y_pix = np.linspace(0,Vz.shape[1]-1, Vz.shape[1])
-
-x0 = int(xm - d * np.sin(theta))
-xf = int(xm + d * np.sin(theta))
-y0 = int(ym - d * np.cos(theta))
-yf = int(ym + d * np.cos(theta))
-
-plt.figure()
-# plt.pcolormesh(np.flip(Vz[t0,:,:], 0))
-disp.joliplot('','',x_pix,y_pix, table = Vz[ :,:, t0])
-plt.plot(xm, ym, 'kx')
-plt.plot([x0,xf], [y0,yf], 'r-')
-plt.axis('equal')
-
-
-plt.figure()
-for t in  range (t0- dt,t0 + dt) :
-    line = profile_line(Vz[:,:,t],[x0,y0], [xf,yf])
-    colors = disp.vcolors( int(( t- (t0 - dt) )  / dt / 2 * 9)) 
-    if t == t0 :
-        plt.plot(line - np.mean(line),'r-', lw = 8)
-    else :   
-        plt.plot(line - np.mean(line),color=colors)
 #%% Vz en zeta  filtre
 from scipy import signal
 facq = 29.97
@@ -133,7 +130,7 @@ eta = np.cumsum(Vz_filt, axis = 2) * dT
 fexc = 0.2
 V_demod = ft.demodulation(T, Vz, fexc)
 
-#%% V demod et angle
+#%% V demod
 save = False
 from scipy.interpolate import RegularGridInterpolator
 
@@ -161,115 +158,6 @@ for i in range (len(f_demod)):
         sv.save_graph(save_path, 'Champ_demod_' + str(fexc) + 'Hz', pdf = False)
 
 
-
-
-#%% Idem avec les trucs de base sans redresser
-
-#prendre un carré carré avec l'interpolation puis faire une fft spatiale du demodulé
-from scipy.interpolate import RegularGridInterpolator
-import icewave.drone.drone_projection as dp
-# field = Vz_filt
-# Fz = RegularGridInterpolator((data['m']['PIXEL']['x_pix'],data['m']['PIXEL']['y_pix']),field)
-
-
-
-t00 = 1300
-t11 = 1800
-
-V_cut = np.zeros(( np.shape(Vz)[1], np.shape(Vz)[2], t11-t00))
-i = t00
-for i in  range (t00, t11):
-    #top-left, top-right, bottom-right, bottom-left
-    x_m = np.array([-58,-3,-3,-58])
-    y_m = np.array([40,40,-15,-15])
-    # points = np.array([[26,61], [88,61], [81,126], [5, 126]], dtype=np.int32)
-    # points = np.concatenate( ([x_m],[y_m])).transpose()
-    # points =  [[-58,20],[-23,20],[-23,-15],[-58,-15]]
-    
-    x0 = data['m']['PIXEL']['x0']
-    y0 = data['m']['PIXEL']['y0']
-    h_drone = data['m']['DRONE']['h_drone']
-    alpha_0 = data['m']['DRONE']['alpha_0']
-    focale = data['m']['DRONE']['focale']
-    
-    x_pix, y_pix = dp.projection_pixel_space(x_m, y_m, x0, y0, h_drone, alpha_0, focale)
-    
-    points = np.concatenate( ([x_pix],[y_pix])).transpose()
-    
-    points  = np.asarray(points / 16, dtype = int)
-    
-    # Créer un masque noir de la même taille que l'image
-    mask = np.zeros(Vz[i,:,:].shape[:2], dtype=np.uint8)
-    
-    # Dessiner le quadrilatère sur le masque (remplir la zone avec la couleur blanche)
-    cv2.fillPoly(mask, [points], 255)
-    
-    # Extraire les pixels de l'image qui se trouvent dans le quadrilatère
-    result = cv2.bitwise_and(Vz[i,:,:], Vz[i,:,:], mask=mask)
-    
-
-    # plt.figure()
-    # disp.joliplot('', '', X, Y, table = result)
-    
-    # X_new = np.transpose(X, (1,0))
-    
-    # Y_new = np.transpose(Y, (1,0))
-    
-    # plt.pcolormesh(X,Y,result, shading = 'auto')
-    # plt.plot(x_m, y_m, 'kx')
-    # plt.axis('equal')    
-    V_cut[:,:,i - t00] = result
-
-# x_m = np.array([-58,-23,-23,-58])
-# y_m = np.array([-15,-15,20,20])
-
-
-
-# points = np.concatenate( ([x_m],[y_m])).transpose()
-
-
-# plt.figure()
-
-# for t in range (0, 1700, 30) :   
-#     disp.joliplot('', '', X, Y, table = np.flip(Vz, 1)[:,:,t])
-#     plt.pause(0.02)
-# plt.plot(x_m, y_m, 'kx')
-    
-    # plt.plot(x_pix/16, y_pix/16, 'kx')
-    # plt.colorbar()
-
-
-
-# V_cut = Fz()
-tt = T[t00:t11]
-fexc = 0.2
-
-plt.figure()
-plt.pcolormesh(X,Y,result, shading = 'auto')
-plt.axis('equal')
-
-
-V_demod = ft.demodulation(tt, V_cut, fexc)
-df1 = 1
-df2 = 2
-
-YY, f1, f2 = ft.fft_bapt(V_demod, df1, df2)
-
-# plt.figure()
-# disp.joliplot('', '', xp, yp, table = V_cut[:,:,10])
-xp = np.linspace(0,V_demod.shape[0]-1, V_demod.shape[0])
-yp = np.linspace(0,V_demod.shape[1]-1, V_demod.shape[1])
-
-plt.figure()
-# disp.joliplot('', '', xp, yp, table = np.real(V_demod))
-plt.pcolormesh(X, Y, np.real(V_demod))
-plt.axis('equal')
-
-
-plt.figure()
-# disp.joliplot('', '', xp, yp, table = np.abs(Y))
-
-plt.pcolormesh(X, Y, np.abs(Y))
 
 #%% Plot line in real space
 

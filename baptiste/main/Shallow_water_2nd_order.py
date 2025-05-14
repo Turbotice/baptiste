@@ -589,6 +589,10 @@ xf = 960
 # x0 = 0
 # xf = 550
 
+#100 / 400 Pour DAP
+#650 / 300 Pour CCCS1
+#1 / 200 pr CCCS2
+
 
 lambda_exp = float(dico[date][nom_exp]['lambda'])
 k_exp = 2 * np.pi / lambda_exp
@@ -1299,36 +1303,39 @@ date = '231122'
 exp = True
 exp_type = 'LAS'
 
-nb_exps = 8
+nb_exps = 6
+l = np.array([0.02192333, 0.0162    , 0.00695415, 0.02272338, 0.0206, 0.03893331, 0.0438713 , 0.03204824, 0.02809459, 0.005135  ])
+nom_exps = ['ECTD9', 'EDTH8', 'NPDP2', 'RLPY3', 'EJCJ6', 'MLO23', 'DMLO1', 'QSC07', 'TNB03', 'CCM03']
+aa = l[2] #Changer a en fonction de l
 
-err = 0.15
+err = 0.024
 # sig = 0.002 #QSC
-sig = 0.00075 #NPDP
+sig = 0.07 #NPDP
 # sig = 0.016 #RLPY
 
-# # NPDP
-x0 = 120    
-xf = 420
-t00 = 10
-tff = 300
+# # NPDP*
+x0 = 170 
+xf = 320
+t00 = 50
+tff = 150
 
 #RLPY
-# t00 = 600
-# tff = 650
-# x0 = 70
+# t00 = 700
+# tff = 800
+# x0 = 50
 # xf = 400
 
 #QSC
 # t00 = 1
 # tff = 150
-# x0 = 20
-# xf = 1350
+# x0 = 320
+# xf = 1150
 
 
 #ECTD
-# t00 = 200
-# tff = 400
-# x0 = 1
+# t00 = 100
+# tff = 500
+# x0 = 50
 # xf = 559
 
 # #MLO
@@ -1338,32 +1345,42 @@ tff = 300
 # xf = 769
 
 # #EJCJ
+#Lk
 # t00 = 300
 # tff = 500
-# x0 = 1
-# xf = 350
+# x0 = 160
+# xf = 250
+
+# #2 Lk
+# t00 = 300
+# tff = 500
+# x0 = 120
+# xf = 290
 
 
 # #TNB
-# t00 = 180
+# t00 = 100
 # tff = 400
-# x0 = 1
-# xf = 1100
+# x0 = 300
+# xf = 800
 
 # #EDTH
 # t00 = 50
 # tff = 150
-# x0 = 1
-# xf = 300
+# x0 = 150
+# xf = 430
 
 # #DMLO
 # t00 = 140
 # tff = 290
-# x0 = 140
-# xf = 750
+# x0 = 300
+# xf = 800
 
 
-a = 30
+
+
+
+
 
 k_maxmax = np.zeros(nb_exps)
 k_minmin = np.zeros(nb_exps)
@@ -1379,37 +1396,39 @@ for j in range (1,nb_exps) :
     if j < 10 :
         nom_exp = 'NPDP' + str(j)
     else : 
-        nom_exp = 'NPD' + str(j)
+        nom_exp = 'ECT' + str(j)
     
     print(nom_exp)        
     
-    # if j == 3:
-    #     t00 = 100
-    #     tff = 200
-    #     # x0 = 1
-    #     # err = 0.06
-    # elif j == 1 :
-    #     t00 = 60
-    #     tff = 150
-    #     # x0 = 1
-    #     # err = 0.08
-    # elif j == 2 :
-    #     t00 = 60
-    #     tff = 150
-    #     # err = 0.07
+    if j == 5:
+        t00 = 200
+        tff = 300
+        xf = 380
+        err = 0.032
+    if j == 3 : # or j == 3 :
+        # t00 = 60
+        # tff = 150
+        # # x0 = 1
+        err = 0.027
+    elif j == 4 :
+        t00 = 250
+        tff = 300
+        err = 0.03
     # else :
-    #     t00 = 20
-    #     tff = 120
-    #     # x0 = 1
-    #     # xf = 300
-    #     # err = 0.07
+    #     # t00 = 20
+    #     # tff = 120
+    #     # # x0 = 1
+    #     # # xf = 300
+    #     err = 0.025
         
-    if j == 10 :
+    if j == 100 :
         pass
     # elif j == 2:
     #     pass
+    # elif j == 1 :
+    #     pass
     else :
-        path_save = 'E:\\Baptiste\\Resultats_exp\\Courbure\\' + date + '_' + nom_exp + '\\'
+        path_save = 'E:\\Baptiste\\Resultats_exp\\Courbure\\' + date + '_RLPY_Lkappa\\' + date + '_' + nom_exp + '\\'
         
         dico, params, loc = ip.initialisation(date, nom_exp, exp = True, display = False)
         if save :
@@ -1453,11 +1472,12 @@ for j in range (1,nb_exps) :
         #mise à l'échelle en m
         data_m = data *  params['mmparpixely'] / 1000
         data_m = data_m / params['grossissement']
+        a = int(aa / params['mmparpixely'] * 1000/2)
         
         #Filtre savgol
         params['savgol'] = False
         params['ordre_savgol'] = 2
-        params['taille_savgol'] = int(a) * 2 + 1
+        params['taille_savgol'] = int(a/4) * 1 + 1
         signalsv = np.zeros(data.shape)
         # for i in range(0,nt):  
         #     signalsv[:,i] = savgol_filter(data_m[:,i], params['taille_savgol'],params['ordre_savgol'], mode = 'nearest')
@@ -1553,6 +1573,9 @@ for j in range (1,nb_exps) :
             disp.figurejolie()    
             plt.plot(x_plotexp[imin], hmin, 'rv')
             plt.plot(x_plotexp[imax], hmax, 'r^')    
+            for ww in range (len(liste_t)) :
+                colors = disp.vcolors( int(ww / len(liste_t) * 9) )
+                plt.plot(x_plotexp,data[x0:xf, liste_t[ww] ] - meann,color=colors)
             for i in range(len(liste_t)) :
                 if not np.isnan(hmin[i]) :
                     xfit = x_plotexp[imin[i]-a:imin[i]+a]
@@ -1565,9 +1588,7 @@ for j in range (1,nb_exps) :
                     
                     
             # Pour visualiser le temps en couleur de courbe
-            for ww in range (len(liste_t)) :
-                colors = disp.vcolors( int(ww / len(liste_t) * 9) )
-                plt.scatter(x_plotexp,data[x0:xf, liste_t[ww] ] - meann,color=colors)
+            
             
             # disp.joliplot(r'x (0 à $\frac{\lambda}{2}$)', 'x (m)', x_plotexp, data[x0:xf, liste_t] - meann, exp = False, color = 14)
             
@@ -1606,6 +1627,10 @@ if save :
 
 #%% Save params
 
+k_maxmax = [0, 34.03295927, 45.74737429, 35.75956076, 28.64479956, 38.97306103]
+
+
+save = True
 if save :
     params['courbure'] = {}
     params['courbure']['k_maxmax'] = k_maxmax
@@ -1807,8 +1832,8 @@ for i in liste_exp : #range (len (dates)) :
 
         
         if display :
-            disp.figurejolie()
-            disp.joliplot(r'x (m)', '$\eta$ (m)', x_plotexp , forme, exp = False, color = 14)
+            disp.figurejolie(width =  8.6 / 3)
+            disp.joliplot(r'x (m)', '$\eta$ (m)', x_plotexp , forme, exp = False, color = 14, width =  8.6 / 2.5)
             if save :
                 plt.savefig(path_save + tools.datetimenow() + 'forme_t_'+ str(p) + '_' + nom_exp + '.pdf')
                 plt.savefig(path_save + tools.datetimenow() + 'forme_t_'+ str(p) + '_' + nom_exp + '.png')
@@ -1818,32 +1843,32 @@ for i in liste_exp : #range (len (dates)) :
         
         #on trace kappa**2(x) brut et lissé (lissage moyen de taille a)
         if display :
-            disp.figurejolie()
-            disp.joliplot('x (m)', r'$\kappa^{2}$ (m$^{-1}$)', x_kappa, popt_x_mean, exp = False, color = 8)
+            disp.figurejolie(width =  8.6 / 2.5)
+            disp.joliplot('x (m)', r'$\kappa^{2}$ (m$^{-1}$)', x_kappa, popt_x_mean, exp = False, color = 8, width =  8.6 / 2.5)
             # disp.joliplot('x (m)', r'$\kappa^{2}$ (m$^{-1}$)', x_kappa, popt_x ** 2, exp = False, color = 2)
-            disp.joliplot('x (m)', r'$\kappa^{2}$ (m$^{-1}$)', x_kappa, popt_x, exp = False, color = 2)
+            disp.joliplot('x (m)', r'$\kappa^{2}$ (m$^{-1}$)', x_kappa, popt_x, exp = False, color = 2, width =  8.6 / 2.5)
             plt.grid('on')
             if save :
                 plt.savefig(path_save + tools.datetimenow() + 'kappa_carre_x_t_'+ str(p) + '_' + nom_exp + '.pdf')
                 plt.savefig(path_save + tools.datetimenow() + 'kappa_carre_x_t_'+ str(p) + '_' + nom_exp + '.png')
-        if axes :
+        # if axes :
 
-            fig, ax1 = plt.subplots()
+        #     fig, ax1 = plt.subplots()
     
-            # Instantiate a second axes that shares the same x-axis
-            ax2 = ax1.twinx()  
+        #     # Instantiate a second axes that shares the same x-axis
+        #     ax2 = ax1.twinx()  
 
-            ax1.plot(x_plotexp, forme, color = '#990000')
-            ax2.plot(x_kappa - 0.003, popt_x_mean, color = disp.vcolors(2))
+        #     ax1.plot(x_plotexp, forme, color = '#990000')
+        #     ax2.plot(x_kappa - 0.003, popt_x_mean, color = disp.vcolors(2))
             
-            ax2.set_ylabel(r'$\kappa$ (m$^{-1}$)', color = disp.vcolors(2))
-            ax1.set_ylabel(r'$\eta$ (m)', color = '#990000') 
-            ax1.set_xlabel(r'$x$ (m)') 
+        #     ax2.set_ylabel(r'$\kappa$ (m$^{-1}$)', color = disp.vcolors(2))
+        #     ax1.set_ylabel(r'$\eta$ (m)', color = '#990000') 
+        #     ax1.set_xlabel(r'$x$ (m)') 
             
-            ax1.ticklabel_format(axis="y", style="sci", scilimits=(0,0))
-            ax1.ticklabel_format(axis='x', style="sci", scilimits=(0,0))
-            ax2.ticklabel_format(axis='y', style="sci", scilimits=(0,0))
-            plt.show()
+        #     ax1.ticklabel_format(axis="y", style="sci", scilimits=(0,0))
+        #     ax1.ticklabel_format(axis='x', style="sci", scilimits=(0,0))
+        #     ax2.ticklabel_format(axis='y', style="sci", scilimits=(0,0))
+        #     plt.show()
         
         
         #on cherche la largeur à mi hauteur
@@ -2096,13 +2121,15 @@ dates = ['231120', '231121', '231122', '231124', '231129', '231129', '231130', '
 nom_exps = ['ECTD9', 'EDTH8', 'NPDP2', 'RLPY3', 'EJCJ6', 'MLO23', 'DMLO1', 'QSC07', 'TNB03', 'CCM03']
 
 save = False
-save_path = 'E:\\Baptiste\\Resultats_exp\\Courbure\\Resultats\\20240528_finalito\\'
+save_path = 'E:\\Baptiste\\Resultats_exp\\Courbure\\Resultats\\20250108_re_finalito\\'
 
 tableau_1 = pandas.read_csv('E:\\Baptiste\\Resultats_exp\\Tableau_params\\Tableau1_Params_231117_240116\\tableau_1.txt', sep = '\t', header = 0)
 tableau_1 = np.asarray(tableau_1)
 
 a30 = False
-best_a = True
+best_a = False
+a_lk = True
+a_2lk = False
 
 #Seuils en amplitude en changeant le critère arbitraire pour le définir
 
@@ -2138,8 +2165,39 @@ if best_a :
             'E:\\Baptiste\\Resultats_exp\\Courbure\\240116_CCM_ttpts\\' + 'CCM_nomexp_A_kappamax_kappath_a30.txt']
     
     
+    
+if a_lk : 
+    path = ['E:\Baptiste\\Resultats_exp\\Courbure\\Mesure_250106\\240109_QSC_Lkappa\\' + '20250106_163255_params_courbure.pkl',
+            'E:\Baptiste\\Resultats_exp\\Courbure\\Mesure_250106\\231120_ECT_Lkappa\\' +'20250106_173652_params_courbure.pkl',
+            'E:\Baptiste\\Resultats_exp\\Courbure\\Mesure_250106\\231122_NPDP_Lkappa\\' +'20250108_121511_params_courbure.pkl',
+            'E:\Baptiste\\Resultats_exp\\Courbure\\Mesure_250106\\231124_RLPY_Lkappa\\' +'20250108_114514_params_courbure.pkl',
+            'E:\Baptiste\\Resultats_exp\\Courbure\\Mesure_250106\\231129_EJCJ_Lkappa\\' +'20250106_153447_params_courbure.pkl', 
+            'E:\Baptiste\\Resultats_exp\\Courbure\\Mesure_250106\\231129_MLO_Lkappa\\' +'20250106_160210_params_courbure.pkl', 
+            'E:\Baptiste\\Resultats_exp\\Courbure\\Mesure_250106\\231130_DMLO_Lkappa\\' +'20250106_161646_params_courbure.pkl',
+            'E:\Baptiste\\Resultats_exp\\Courbure\\Mesure_250106\\240115_TNB_Lkappa\\' +'20250106_172827_params_courbure.pkl',
+            'E:\Baptiste\\Resultats_exp\\Courbure\\Mesure_250106\\231121_EDTH_Lkappa\\' +'20250106_174954_params_courbure.pkl',
+            'E:\\Baptiste\\Resultats_exp\\Courbure\\Mesure_250106\\240116_CCM_Lkappa\\' + '20250107_183751_params_courbure.pkl'
+            ]
+    
+    
+if a_2lk :
+    path = ['E:\Baptiste\\Resultats_exp\\Courbure\\Mesure_250106\\240109_QSC_2Lkappa\\' + '20250106_164016_params_courbure.pkl',
+           'E:\Baptiste\\Resultats_exp\\Courbure\\Mesure_250106\\231120_ECT_2Lkappa\\' +'20250106_174124_params_courbure.pkl',
+           'E:\Baptiste\\Resultats_exp\\Courbure\\Mesure_250106\\231122_NPDP_2Lkappa\\' +'20250106_150924_params_courbure.pkl',
+           'E:\Baptiste\\Resultats_exp\\Courbure\\Mesure_250106\\231124_RLPY_2Lkappa\\' +'20250106_151618_params_courbure.pkl',
+           'E:\Baptiste\\Resultats_exp\\Courbure\\Mesure_250106\\231129_EJCJ_2Lkappa\\' +'20250106_153212_params_courbure.pkl', 
+           'E:\Baptiste\\Resultats_exp\\Courbure\\Mesure_250106\\231129_MLO_2Lkappa\\' +'20250106_160055_params_courbure.pkl', 
+           'E:\Baptiste\\Resultats_exp\\Courbure\\Mesure_250106\\231130_DMLO_2Lkappa\\' +'20250106_161201_params_courbure.pkl',
+           'E:\Baptiste\\Resultats_exp\\Courbure\\Mesure_250106\\240115_TNB_2Lkappa\\' +'20250106_170712_params_courbure.pkl',
+           'E:\Baptiste\\Resultats_exp\\Courbure\\Mesure_250106\\231121_EDTH_2Lkappa\\' +'20250106_174825_params_courbure.pkl',
+           'E:\\Baptiste\\Resultats_exp\\Courbure\\Mesure_250106\\240116_CCM_2Lkappa\\' + '20250107_151741_params_courbure.pkl'
+           ]
+    
+    
 
 index = [7, 0, 2, 3, 4, 5, 6, 8, 1, 9]
+
+index = [7, 0, 2, 3, 4, 5, 6, 8, 1,9]
 a_s = np.zeros(len(path))
 k_s = np.zeros(len(path))
 lambda_s = np.zeros(len(path))
@@ -2148,10 +2206,12 @@ h = np.zeros(len(path))
 D = np.zeros(len(path))
 l_s = np.zeros(len(path))
 l_crack = np.zeros(len(path))
+err_kappa = np.zeros(len(path), dtype = object)
+popt_kappa = np.zeros(len(path), dtype = object)
 
 l = np.array([0.03012138, 0.01904747, 0.01279402, 0.02179882, 0.01237957, 0.04493331, 0.05779294, 0.03804824, 0.02929459, 0.00936516])
 l = np.array([0.02192333, 0.0162    , 0.00695415, 0.02272338, 0.0206, 0.03893331, 0.0438713 , 0.03204824, 0.02809459, 0.005135  ])
-
+nom_exps = ['ECTD9', 'EDTH8', 'NPDP2', 'RLPY3', 'EJCJ6', 'MLO23', 'DMLO1', 'QSC07', 'TNB03', 'CCM03']
 
 
 
@@ -2159,7 +2219,14 @@ l = np.array([0.02192333, 0.0162    , 0.00695415, 0.02272338, 0.0206, 0.03893331
 for i in range (len(path)) :
     nom_expp = tableau_1[index[i],0]
     print(nom_expp)
-    if index[i] == 9 :        
+    print(index[i])
+    
+    if a_2lk or a_lk :
+        params = dic.open_dico(path[i])
+        kmin_QSC = params['courbure']['k_maxmax']
+        hmin_QSC = params['courbure']['amplitude_exp']
+            
+    elif index[i] == 9 :        
         params_k = pandas.read_csv(path[i], header = None, sep = '\t')
         params_k = np.asarray(params_k)
         
@@ -2169,6 +2236,8 @@ for i in range (len(path)) :
         params = {}
         params ['nom_exp'] = 'CCM'
         params['date'] = '240116'
+    
+        
        
     elif index[i] == 1 or index[i] == 8 :
         params = dic.open_dico(path[i])
@@ -2184,20 +2253,27 @@ for i in range (len(path)) :
         hmin_QSC = params['courbure']['h_mimmin']
         
     
+        
+    
     def fit_2(x, a, b) :
         return a * x**2 + b * x
     
     popt, pcov = curve_fit(fit_2, hmin_QSC, kmin_QSC, p0 = [10000000, 10000], bounds = [[0,0], [100000000, 10000000]]) #np.polyfit(hmin_QSC, kmin_QSC,2)
+    err_kappa[i] = pcov
+    popt_kappa[i] = popt
     
     h_tot = np.linspace(np.min(hmin_QSC), np.max(hmin_QSC), 100)
     
-    # disp.figurejolie()
-    # disp.joliplot('A (m)', r'$\kappa$ (m$^{-1}$)', hmin_QSC, kmin_QSC, color = 5)
-    # disp.joliplot('A (m)', r'$\kappa$ (m$^{-1}$)', h_tot, h_tot**2 * popt[0] + h_tot * popt[1], color = 2, exp = False)
+    disp.figurejolie()
+    disp.joliplot('A (m)', r'$\kappa$ (m$^{-1}$)', hmin_QSC, kmin_QSC, color = 5)
+    disp.joliplot('A (m)', r'$\kappa$ (m$^{-1}$)', h_tot, h_tot**2 * popt[0] + h_tot * popt[1], color = 2, exp = False, title = nom_expp)
     
-    L_d[i] = (tableau_1[index[i],2] / 900 / 9.81) ** 0.25
+    if save : 
+        plt.savefig(save_path + 'kappa_A_' + tools.datetimenow() + '.pdf')
+    
+    L_d[i] = (tableau_1[index[i],2] / 1000 / 9.81) ** 0.25
     D[i] = tableau_1[index[i],2]
-    h[i] = tableau_1[index[i],4]
+    h[i] = tableau_1[index[i],4] * 900 / 680
     l_s[i] = l[index[i]]
     l_crack[i] = np.sum(dico[dates[index[i]]][nom_exps[index[i]]]['l_cracks']) / 1000
     
@@ -2276,7 +2352,15 @@ l_fit = lambda_s * popt[0]
 
 disp.joliplot(r'$\lambda$ (m)', r'l (m)', lambda_s, l_fit, color = 8, exp = False)
 
+err_Ac = 0.00025
+err_k_1 = k_s * err_Ac / a_s
+err_k_2 = np.zeros(len(k_s))
 
+
+for i in range (len(a_s)) :
+    aaa = popt_kappa[i][0]
+    bbb = popt_kappa[i][1]
+    err_k_2[i] = (aaa * ( (a_s[i] + err_Ac)**2 - (a_s[i] - err_Ac)**2 ) + bbb * ( (a_s[i] + err_Ac) - (a_s[i] - err_Ac) )) / np.sqrt(2)
 
 
 if save : 
@@ -2323,16 +2407,105 @@ h = np.array([4.34395009e-05, 6.16962733e-05, 7.65625770e-05, 1.56614978e-04,
        7.07629643e-05, 8.62863165e-05]) * 900 / 680
 
 
-disp.joliplot(r'$\lambda$ (m)', r'$\kappa_c^{2}lD / h$ (J.m$^{-2}$)', lambda_s, l_s * k_s**2 * np.mean(D) /np.mean(h), log = False, color = 18, zeros = True)
+
+# disp.joliplot(r'$\lambda$ (m)', r'$\kappa_c^{2}lD / h$ (J.m$^{-2}$)', lambda_s, l_s * k_s**2 * np.mean(D) /np.mean(h), log = False, color = 18, zeros = True)
 # disp.joliplot(r'$\lambda$ (m)', r'$\kappa_c^{2}lD / h$ (J.m$^{-2}$)', D / np.mean(h)**3 * 10, l_s * k_s**2 * D /np.mean(h), log = False, color = 18, zeros = True)
 
+""" GC/E (lambda) """
 
-plt.ylim([0,0.5])
-plt.xlim([0,0.6])
+disp.joliplot(r'$\lambda$ (m)', r'$\frac{\kappa_c^{2}h^{2} l}{12 (1 - \nu^{2} )}$ (m)', lambda_s, l_s * k_s**2 * h **2 / (12 * (1 - 0.4**2)), log = False, color = 18, zeros = True, width = 8.6, title = 'GC/E')
+
+""" GC/E (lambda) hmean """
+
+disp.figurejolie()
+disp.joliplot(r'$\lambda$ (m)', r'$\frac{\kappa_c^{2}h^{2} l}{12 (1 - \nu^{2} )}$ (m)', lambda_s, l_s * k_s**2 * np.mean(h) **2 / (12 * (1 - 0.4**2)), log = False, color = 18, zeros = True, width = 8.6, title = 'GC/E, h mean')
+
+""" kappa2 L h (lambda) """
+
+disp.figurejolie()
+disp.joliplot(r'$\lambda$ (m)', r'$\kappa_c^{2}h l$ (m)', lambda_s, l_s * k_s**2 * np.mean(h), log = False, color = 18, zeros = True, width = 8.6, title = 'k2 h l, h mean')
+
+disp.figurejolie()
+disp.joliplot(r'$\lambda$ (m)', r'$\kappa_c^{2}h l$ (m)', lambda_s, l_s * k_s**2 * h, log = False, color = 18, zeros = True, width = 8.6, title = 'k2 h l')
+
+
+# plt.ylim([0,0.5])
+# plt.xlim([0,0.6])
+
+""" Gc(D) h mean """
+
+disp.figurejolie()
+disp.joliplot(r'$D$ (m)', r'$\kappa_c^{2}lD / h$ (J.m$^{-2}$)', D, l_s * k_s**2 * D /np.mean(h), log = False, color = 18, zeros = True, width = 8.6, title = 'GC, h mean')
+
+
+disp.figurejolie()
+disp.joliplot(r'$D$ (m)', r'$\kappa_c^{2}lD / h$ (J.m$^{-2}$)', D, l_s * k_s**2 * D /np.mean(h), log = True, color = 18, zeros = True, width = 8.6, title = 'GC, h mean')
+
+""" Gc(D)"""
+
+disp.figurejolie()
+disp.joliplot(r'$D$ (m)', r'$\kappa_c^{2}lD / h$ (J.m$^{-2}$)', D,  l_s * k_s**2 * D /h, log = False, color = 18, zeros = True, width = 8.6, title = 'GC')
+
+disp.figurejolie()
+disp.joliplot(r'$D$ (J.m$^{-2}$)', r'$\kappa_c^{2}lD / h$ (J.m$^{-2}$)', D,  l_s * k_s**2 * D /h, log = True, color = 18, zeros = True, width = 8.6, title = 'GC')
+
+""" Gc (D) hmean  """
+
+fits.fit_powerlaw(D,l_s * k_s**2 * D /np.mean(h), display = True, xlabel = r'$D$ (m)', ylabel = r'$\kappa_c^{2}lD / h$ (J.m$^{-2}$)', legend = '', new_fig = True, fit = 'poly', color = False)
+
+""" Gc (D)  """
+
+fits.fit_powerlaw(D,l_s * k_s**2 * D /h, display = True, xlabel = r'$D$ (m)', ylabel = r'$\kappa_c^{2}lD / h$ (J.m$^{-2}$)', legend = '', new_fig = True, fit = 'poly', color = False)
+
+""" Gc (E) """
+
+
+fits.fit_powerlaw(D /h / h * 10,l_s * k_s**2 * D /h, display = True, xlabel = r'$Eh$ (J.m$^{-2}$)', ylabel = r'$\kappa_c^{2}lD /h$ (J.m$^{-2}$)', legend = '', new_fig = True, fit = 'poly', color = False)
+
+""" Gc/D (lambda) """
+
+
+fits.fit_powerlaw(lambda_s,l_s * k_s**2 /h, display = True, xlabel = r'$\lambda$ (m)', ylabel = r'$G_c / D$ (m$^{-2}$)', legend = '', new_fig = True, fit = 'poly', color = False)
+
+""" Gc/D (lambda) """
+
+disp.figurejolie()
+disp.joliplot(r'$\lambda$ (m)', r'$\frac{\kappa_c^{2} l}{h}$ (m)', lambda_s, l_s * k_s**2 /h, log = False, color = 18, zeros = True, width = 8.6, title = 'GC/D')
+
+""" Gc/D (lambda) hmean """
+
+disp.figurejolie()
+disp.joliplot(r'$\lambda$ (m)', r'$\frac{\kappa_c^{2} l}{h}$ (m)', lambda_s, l_s * k_s**2 /np.mean(h), log = False, color = 18, zeros = True, width = 8.6, title = 'GC/D, hmean')
+
+"""kappa h ^2 (1/lc)"""
+
+disp.figurejolie()
+disp.joliplot(r'$1/L_{kappa}$ (m$^{-1}$)', r'$(\kappa_c h)^2$', 1/l_s, k_s**2 * np.mean(h)**2, log = True, color = 18, zeros = True, width = 8.6, title = r'kappa h **2 (1/lc), hmean')
+
+disp.figurejolie()
+disp.joliplot(r'$1/L_{kappa}$ (m$^{-1}$)', r'$(\kappa_c h)^2$', 1/l_s, k_s**2 * h**2, log = True, color = 18, zeros = True, width = 8.6, title = r'kappa h **2 (1/lc)')
+
+fits.fit_powerlaw( (1/l_s),k_s**2 * np.mean(h)**2, display = True, xlabel = r'$1/L_{kappa}$ (m$^{-1}$)', ylabel = r'$(\kappa_c h)^2$', legend = '', new_fig = True, fit = 'poly', color = False)
+
+fits.fit_powerlaw( 2 * np.pi * L_d / lambda_s,k_s**2 * h * l_s, display = True, xlabel = r'$1/L_{kappa}$ (m$^{-1}$)', ylabel = r'$(\kappa_c h)^2$', legend = '', new_fig = True, fit = 'poly', color = False)
+
+
+"""kappa h ^2 (1/lc)"""
+
+# disp.figurejolie()
+# disp.joliplot(r'$1/L_{kappa}$ (m$^{-1}$)', r'$(\kappa_c h)^2$', 1/l_s, k_s**2 * np.mean(h)**2, log = True, color = 18, zeros = True, width = 8.6, title = r'kappa h **2 (1/lc), hmean')
+
+# fits.fit_powerlaw(2 * np.pi * L_d/l_s, (k_s * h)**2, display = True, xlabel = r'$2 \pi L_d /L_{kappa}$ (m$^{-1}$)', ylabel = r'$(\kappa_c h)^2$', legend = '', new_fig = True, fit = 'poly', color = False)
+
+
+
 
 if save : 
     plt.savefig(save_path + 'Gc_lambda_' + tools.datetimenow() + '.pdf')
     plt.savefig(save_path + 'Gc_lambda_png_' + tools.datetimenow() + '.png', dpi = 500)
+
+
+""" Gc (lambda) hmean Dmean  """
 
 disp.figurejolie()
 disp.joliplot(r'$\lambda$ (m)', r'$\kappa_c^{2}lD / h$ (J.m$^{-2}$)', lambda_s, l_s * k_s**2 * np.mean(D) /np.mean(h), log = False, color = 18, zeros = True)
@@ -2364,6 +2537,7 @@ popt, pcov = curve_fit(fct_x, lambda_s, l_s)
 
 l_fit = lambda_s * popt[0]
 
+""" Gc (lambda) hmean Dmean lfit  """
 
 disp.joliplot(r'$\lambda$ (m)', r'$\kappa_c^{2}lD / h$ (J.m$^{-2}$)', lambda_s, l_fit * k_s**2 * np.mean(D) /np.mean(h), log = False, color = 18, zeros = True)
 

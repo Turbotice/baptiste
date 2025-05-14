@@ -462,35 +462,200 @@ disp.joliplot(r'$\lambda$', r'tanh(kH)', lam, np.tanh(k * 0.11), exp = False, co
 
 
 #%% Coeff magique
-disp.figurejolie()
+
 data_coeff = np.loadtxt("D:\Banquise\Baptiste\\Resultats\\Coeff_magique\\coeff_magique.txt", skiprows= 1)
 
-poids_bonbonne = data_coeff[:,0] - data_coeff[:,1]
+pds_in = data_coeff[:,0]
+pds_fi = data_coeff[:,1]
+CM = data_coeff[:,2] 
 
-poids_déposé = poids_bonbonne /data_coeff[:,2] 
+pour_remp_bonbonne = (pds_in) / np.max(pds_in) * 100
+x = np.linspace(0, np.max(pour_remp_bonbonne), 100)
 
+std_cm = np.linspace(np.std(CM), np.std(CM), 100)
+mean_cm = np.linspace(np.mean(CM), np.mean(CM), 100)
 
-disp.joliplot(r'Masse perdue (g)',r'Masse déposée (g)',   poids_déposé, poids_bonbonne, color = 2)
-
-def lin (x,a) :
-    return a * x 
-
-popt, pcov = fits.fit(lin, poids_déposé, poids_bonbonne,  display = True, err = False, nb_param = 1, p0 = [0], bounds = False, 
-        zero = True, th_params = False, xlabel = r'Masse déposée (g)', ylabel = r'Masse perdue (g)', legend_data = r'Experimental Data', legend_fit = 'a = ')
-
-
+disp.figurejolie(width = 6)
+disp.joliplot(r'Remplissage bonbonne (\%)', r'$C_m$', pour_remp_bonbonne, CM, color = 2)
 
 
 
 
 
 
+plt.plot(x,mean_cm, 'k-', linewidth = 1)
+plt.plot(x,mean_cm - std_cm, 'k--', linewidth = 1)
+plt.plot(x,mean_cm + std_cm, 'k--', linewidth = 1)
+plt.xlim(20,100)
+plt.ylim(2.5,5)
 
 
 
 
 
+#%% Homogeneite
 
+from scipy.ndimage import gaussian_filter
+
+path = 'Y:\Banquise\\Baptiste\\Resultats_video\\d221104_PIVA6_PIV_44sur026_facq151Hz_texp5000us_Tmot010_Vmot410_Hw12cm_tacq020s\\references\\transqparence_ref.jpg' 
+
+im1 = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+
+im = np.array(im1[:,:,1])
+
+mmparpixel = 0.19434
+
+I0 = im[111,1340]
+
+X = np.linspace(0, im.shape[0], im.shape[0]) * mmparpixel / 10
+Y = np.linspace(0, im.shape[1], im.shape[1]) * mmparpixel / 10
+
+# disp.figurejolie(width = 12)
+# disp.joliplot('x','y',X,Y,table = im )
+# plt.grid('off')
+# plt.axis('equal')
+# plt.grid('off')
+
+# plt.plot(110 * mmparpixel,1340 * mmparpixel, 'ko')
+
+hmoy = 133 * 900 / 680
+
+Imoy = np.mean(im)
+alpha = 1/hmoy*np.log(Imoy/I0)
+
+im_gauss = gaussian_filter(im, 50)
+
+h = 1/alpha*np.log(im_gauss/I0)
+
+
+disp.figurejolie(width = 4)
+disp.joliplot('X (cm)','Y (cm)',X,Y,table = im_gauss )
+plt.grid()
+plt.axis('equal')
+
+disp.figurejolie(width = 10)
+disp.joliplot('X (cm)','Y (cm)',X,Y,table = h / 1000 )
+plt.colorbar(label = '$h$ (mm)')
+plt.grid()
+plt.axis('equal')
+
+plt.savefig('Y:\Banquise\\Baptiste\\Manuscrit_these\\Figures\\Laboratoire\\Le vernis\\TEST.png', dpi = 500)
+
+
+disp.figurejolie(width = 4)
+# plt.hist(im_gauss, range = (np.min(im_gauss), np.max(im_gauss)), bins = 10)
+
+
+from skimage import exposure
+
+hist = exposure.histogram(h, nbins=40)
+h_x = np.linspace(np.min(h), np.max(h), len(hist[0]))
+
+
+h_hist = hist[0] / np.size(im) * 100
+
+disp.joliplot(r'$h$ ($\mu$m)','\%',h_x, h_hist , exp = False, color = 5)
+
+def gauss_function(x, a, x0, sigma):
+    return a*np.exp(-(x-x0)**2/(2*sigma**2))
+
+
+popt, pcov = curve_fit(gauss_function, h_x, h_hist, p0 = [np.max(h_hist), np.mean(h), np.std(h)])
+
+disp.joliplot(r'$h$ ($\mu$m)','\%',h_x, gauss_function(h_x, popt[0], popt[1], popt[2]), exp = False, color = 8, linewidth= 0.7)
+
+# plt.plot(h_x, gauss_function(h_x, popt[0], popt[1], popt[2]))
+def LMH(x,y) :
+    half_max = np.nanmax(y) * 1/ 2
+    d = np.sign(half_max - y)
+    k = np.array(np.where(d == -1))
+    
+    return x[k[0,-1]] - x[k[0,0]]
+
+u = LMH(h_x, gauss_function(h_x, popt[0], popt[1], popt[2]))
+
+plt.vlines(x=popt[1] - np.std(h),ymin = 0,ymax = 1.67, color = 'k', ls = '--', linewidth = 0.4)
+plt.vlines(x=popt[1],ymin = 0, ymax = 12.8, color = 'k', ls = '-', linewidth = 0.6)
+plt.vlines(x=popt[1] + np.std(h),ymin = 0,ymax = 1.67, ls = '--', color = 'k', linewidth = 0.4)
+
+
+
+#%% Taille de grain
+from sklearn.preprocessing import binarize
+
+path = 'D:\Banquise\\Baptiste\\Resultats_video\\d221024\\d221024_DAP08_LAS_44sur026_facq143Hz_texp6655us_Tmot020_Vmot071_Hw12cm_tacq020s\\image_sequence\\Basler_a2A1920-160ucBAS__40232066__20221024_184243445_0014.tiff'
+im1 = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+im1 = np.array(im1)
+
+loop = 1
+tr = np.zeros(loop)
+display = False
+if loop < 5 :
+    display = True
+d_grain_mean = np.zeros(loop)
+
+for i in range (loop):
+    tr[i] = 10000 + i * 10000
+    im_b = np.array(binarize(im1, threshold=tr[i]), dtype = bool)
+    # plt.figure()
+    # plt.pcolormesh(im_b)
+    
+    im_top = np.zeros(im1.shape)
+    im_top[np.where(im_b == True)[0],np.where(im_b == True)[1] ] = im1[np.where(im_b == True)[0],np.where(im_b == True)[1] ]
+    
+    mmparpixel = 0.19434
+    
+    i_zero_pad = np.zeros((4096,4096))
+    
+    i_zero_pad[:im1.shape[0], :im1.shape[1]] = im1
+    # i_zero_pad[:im_top.shape[0], :im_top.shape[1]] = im_top
+    
+    Y = fft.fft2(i_zero_pad - np.mean(i_zero_pad))
+    # Y = fft.fft2(im1 - np.mean(im1))
+    if display :
+        disp.figurejolie(width = 12)
+        plt.pcolormesh(im_top)
+    
+    # disp.figurejolie()
+    # plt.pcolormesh(np.log(np.abs(Y)))
+    
+    
+    
+    gr = 5.8
+    d_max = Y.shape[0]
+    dy = int(d_max/3)
+    
+    kx = np.linspace(0, 2 * np.pi * 1000 / mmparpixel * Y.shape[0] / im1.shape[0],Y.shape[0]-1)
+    Y_x = np.sum(np.abs(Y[1:d_max,:dy]), axis = 1)
+    # Y_y = np.sum(np.abs(Y[:dy,10:d_max]), axis = 0)
+    
+    if display :
+        disp.figurejolie(width = 12)
+        disp.joliplot('$k_x$ (m$^{-1}$)', 'A(FFT)', kx, Y_x, exp = False, color = 5)
+        
+    # if display :
+    #     disp.figurejolie(width = 12)
+    #     disp.joliplot('$k_y$ (m$^{-1}$)', 'A(FFT)', kx, Y_y, exp = False, color = 5)
+    
+    d_grain_mean[i] = 2 * np.pi / kx[np.argmax(Y_x[:1000])]
+    # d_grain_mean[i] = 2 * np.pi / kx[np.argmax(Y_y[:1000])]
+    
+    if display :
+        print('Taille moyenne de grain : ' + str(d_grain_mean * 1000) + ' mm')
+        
+    if np.mod(i,7)==0:
+        print(str(int(i / loop * 100)) + ' %')
+
+disp.figurejolie(width = 12)
+disp.joliplot('Threshold', r'$d_{grain}$ (mm)', tr[20:], d_grain_mean[20:] * 1000, color = 5, exp = False)
+
+
+# from skimage import exposure
+# hist = exposure.histogram(im1)
+# h_x = np.linspace(np.min(im1), np.max(im1), len(hist[0]))
+# # plt.plot(hist[0])
+# disp.figurejolie()
+# disp.joliplot(r'$h$ ($\mu$m)','nb',h_x, hist[0] / np.size(im1), exp = False, color = 5)
 
 
 

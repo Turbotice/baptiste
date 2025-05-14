@@ -66,144 +66,7 @@ for i in range (len(omega)) :
 # disp.joliplot('long_onde', 'Ordre2 / Ordre 1', long_onde, 3/8*A * k / k**3 / H **3)
 
 
-#%% Graphes pour ordre 2 Stokes
-
-eta1 = np.zeros(len(omega), dtype = object)
-eta2 = np.zeros(len(omega), dtype = object)
-eta3 = np.zeros(len(omega), dtype = object)
-terme1 = np.zeros(len(omega), dtype = float)
-terme2 = np.zeros(len(omega), dtype = float)
-std_eta2 = np.zeros(len(omega), dtype = object)
-t_plot = np.linspace(0,1,500)
-for i in range( len(omega)) :
-    terme1[i] = A[i]**2 * k[i] / 4
-    terme2[i] = 3 * (1 / np.tanh(k[i] * H[i]))**3 - 1/ np.tanh(k[i] * H[i])
-    eta1[i] = A[i] * np.sin(k[i] * x[i] - omega[i] * t[i])
-    eta2[i] = terme1[i] * terme2[i] * np.cos(2 * (k[i] * x[i] - omega[i] * t[i])) #- A[i]**2 * k[i] / 2 / np.sinh(2 * k[i] * H[i]) #+ A[i]**2 * k[i] / 2 / np.sinh(2 * k[i] * H[i])
-    eta3[i] = (1 - 3* A[i]**2 * k[i]**2 / 8) * A[i] * np.cos(k[i] * x[i] - omega[i] * t[i]) + A[i] **2 * k[i] * np.cos(2 * (k[i] * x[i] - omega[i] * t[i])) + 3 * A[i]**3 * k[i] ** 2 * np.cos(3 * (k[i] * x[i] - omega[i] * t[i])) / 8
-    std_eta2[i] = np.std(eta2[i])
-    
-
-disp.figurejolie()
-for i in range (len(omega)) :
-    disp.joliplot('t (0 à T)', 'x (m)', t_plot, eta1[i] + eta2[i] - np.mean(eta1[i] + eta2[i]), exp = False, color = 2)#, legend = '$\eta_1 + \eta_2$')
-    # disp.joliplot('t (0 à T)', 'x (m)', t_plot, eta1[i], exp = False, color = 4)#, legend = '$\eta_1$')
-
-disp.figurejolie()
-for i in range (len(omega)) :
-    disp.joliplot('t (0 à T)', 'x (m)', t_plot, eta1[i] + eta2[i] + eta3[i] - np.mean(eta1[i] + eta2[i] + eta3[i]), exp = False, color = 2)#, legend = '$\eta_1 + \eta_2 + \eta_3$ ')
-    disp.joliplot('t (0 à T)', 'x (m)', t_plot, eta1[i] + eta2[i] - np.mean(eta1[i] + eta2[i]), exp = False, color = 4)#, legend = '$\eta_1 + \eta_2$')
-    disp.joliplot('t (0 à T)', 'x (m)', t_plot, eta1[i], exp = False, color = 12)#, legend = '$\eta_1$')
-
-
-disp.figurejolie()    
-for i in range (len(omega)) :
-    disp.joliplot('t (0 à T)', '$\eta_1$', t_plot, eta1[i], exp = False, color = 4)
-
-    
-disp.figurejolie()
-for i in range (len(omega)) :
-    disp.joliplot('t (0 à T)', '$\eta_2$', t_plot, eta2[i] - np.mean(eta2[i]), exp = False, color = 5)
-    
-disp.figurejolie()
-for i in range (len(omega)) :
-    disp.joliplot('$\lambda$', 'terme2 / A', long_onde, terme2 / A, exp = True, color = 5)
-    
-disp.figurejolie()
-disp.joliplot(r'$\lambda$', r'std($\frac{\eta_2}{A}$)', long_onde, std_eta2 / A)
-
-#%% Graphes pour ordre 2 Stokes stationnaire
-
-eta1 = np.zeros(len(omega), dtype = object)
-eta_1 = np.zeros(len(omega), dtype = object)
-eta2 = np.zeros(len(omega), dtype = object)
-eta_2 = np.zeros(len(omega), dtype = object)
-eta3 = np.zeros(len(omega), dtype = object)
-eta_3 = np.zeros(len(omega), dtype = object)
-terme1 = np.zeros(len(omega), dtype = float)
-terme2 = np.zeros(len(omega), dtype = float)
-std_eta2 = np.zeros(len(omega), dtype = object)
-t_plot = np.linspace(0,1,500)
-for i in range( len(omega)) :
-    terme1[i] = A[i]**2 * k[i] / 4
-    terme2[i] = 3 * (1 / np.tanh(k[i] * H[i]))**3 - 1/ np.tanh(k[i] * H[i])
-    eta1[i] = A[i] * np.sin(k[i] * x[i] - omega[i] * t[i])
-    eta_1[i] = A[i] * np.sin( -k[i] * x[i] - omega[i] * t[i])
-    eta2[i] = terme1[i] * terme2[i] * np.cos(2 * (k[i] * x[i] - omega[i] * t[i])) #- A[i]**2 * k[i] / 2 / np.sinh(2 * k[i] * H[i]) #+ A[i]**2 * k[i] / 2 / np.sinh(2 * k[i] * H[i])
-    eta_2[i] = terme1[i] * terme2[i] * np.cos(2 * (-k[i] * x[i] - omega[i] * t[i]))
-    eta3[i] = (1 - 3* A[i]**2 * k[i]**2 / 8) * A[i] * np.cos(k[i] * x[i] - omega[i] * t[i]) + A[i] **2 * k[i] * np.cos(2 * (k[i] * x[i] - omega[i] * t[i])) + 3 * A[i]**3 * k[i] ** 2 * np.cos(3 * (k[i] * x[i] - omega[i] * t[i])) / 8
-    eta_3[i] = (1 - 3* A[i]**2 * -k[i]**2 / 8) * A[i] * np.cos(-k[i] * x[i] - omega[i] * t[i]) + A[i] **2 * -k[i] * np.cos(2 * (-k[i] * x[i] - omega[i] * t[i])) + 3 * A[i]**3 * -k[i] ** 2 * np.cos(3 * (-k[i] * x[i] - omega[i] * t[i])) / 8
-    
-    
-
-disp.figurejolie()
-for i in range (len(omega)) :
-    disp.joliplot('t (0 à T)', 'x (m)', t_plot, eta1[i] + eta2[i] + eta_1[i] + eta_2[i] - np.mean(eta1[i] + eta2[i]), exp = False, color = 2)#, legend = '$\eta_1 + \eta_2$')
-    # disp.joliplot('t (0 à T)', 'x (m)', t_plot, eta1[i], exp = False, color = 4)#, legend = '$\eta_1$')
-
-disp.figurejolie()    
-for i in range (len(omega)) :
-    disp.joliplot('t (0 à T)', '$\eta_1$', t_plot, eta1[i]+ eta_1[i], exp = False, color = 4)
-    
-    
-disp.figurejolie()
-for i in range (len(omega)) :
-    disp.joliplot('t (0 à T)', 'x (m)', t_plot, eta1[i] + eta2[i] + eta_1[i] + eta_2[i]+ eta3[i] + eta_3[i], exp = False, color = 2)
-
-
-    
-
-    
-
-
-
-#%% test 1 point
-
-H = 0.11
-long_onde = 0.21
-k = 2 * np.pi / long_onde
-A = 0.008
-x = long_onde/2
-omega = np.sqrt(g * k + np.tanh(k * H))
-t = np.linspace(0, 2 * np.pi / omega, 500)
-terme1 = A**2 * k / 4
-terme2 = 3 * (1 / np.tanh(k * H))**3 - 1/ np.tanh(k * H)
-eta1 = A * np.sin(k * x + omega * t)
-eta2 = terme1 * terme2 * np.cos(2 * (k * x - omega * t)) - A * k**2 / 2 / np.sinh(2 * k * H) #+ A[i]**2 * k[i] / 2 / np.sinh(2 * k[i] * H[i])
-
-disp.figurejolie()
-
-disp.joliplot('t', 'eta1 + eta2', t, eta1 + eta2 - np.mean(eta1 + eta2), exp = False, color = 2)
-disp.joliplot('t', 'eta1 + eta2', t, eta2 - np.mean(eta2), exp = False, color = 5)
-disp.joliplot('t', 'eta1 + eta2', t, eta1, exp = False, color = 7)
-#%% DDP retracé avec la nouvelle amp (mauvaise idée)
-
-
-# disp.joliplot(r'$\lambda$', 'amp', long_onde, A, zeros = True, color = 2, legend = 'DDP OG')
-popt_1, pcov_1 = fits.fit_powerlaw(long_onde, A, display = True, legend = 'DDP OG', xlabel =r"$\lambda$ (m)", ylabel = "Amplitude (m)", new_fig= True, color = 2)
-
-#DDP avec min(eta1 + eta2) à la place de A
-A_new = np.zeros(len(omega))
-for i in range (len(omega)) :
-    A_new[i] = np.abs(np.min(eta1[i] + eta2[i] - np.mean(eta1[i] + eta2[i])))
-    
-# disp.joliplot(r'$\lambda$', 'amp', long_onde, A_new, zeros = True, color = 5, legend = 'Amp refaite')
-popt_2, pcov_2 = fits.fit_powerlaw(long_onde, A_new, display = True, legend = 'Amp refaite', xlabel =r"$\lambda$ (m)", ylabel = "Amplitude (m)", new_fig= False, color = 8)
-
-
-disp.figurejolie()
-disp.joliplot(r'$\lambda$ (m)', 'amp (m)', long_onde, A, zeros = True, color = 2, legend = 'DDP OG')
-disp.joliplot(r'$\lambda$ (m)', 'amp (m)', long_onde, A_new, zeros = True, color = 5, legend = 'amp refaite')
-plt.xlim((0, np.max(long_onde) + 0.01))
-plt.ylim((0,np.max(A_new) + 0.0005))
-#%% Courbure
-
-kappa = A* k**2 #* (1 + A * k * terme2)
-kappa_corr = A* k**2 * (1 + A * k * terme2)
-popt_1, pcov_1 = fits.fit_powerlaw(long_onde, kappa, display = True, legend = r'$\kappa = Ak^{2}$ (m$^{-1}$)', xlabel =r"$\lambda$ (m)", ylabel = "$\kappa$ (m$^{-1}$)", new_fig= True, color = 8)
-popt_1, pcov_1 = fits.fit_powerlaw(long_onde, kappa_corr, display = True, legend = r'$\kappa_{corrected}$ (m$^{-1}$)', xlabel =r"$\lambda$ (m)", ylabel = "$\kappa$ (m$^{-1}$)", new_fig= False, color = 2)
-
-
+#%% test 1 poin
 #%% Charge donées exp
 
 date = '240116'
@@ -846,83 +709,27 @@ if save :
 
 #%% Courbure sur tout une exp 
 
-save = True
+save = False
 display = True
-date = '231130'
+date = '240116'
 exp = True
 exp_type = 'LAS'
 
-nb_exps = 12
+nb_exps = 6
 
-err = 0.05
+err = 0.4
 sig = 0.002 #QSC
 sig = 0.00075 #NPDP
 sig = 0.016 #RLPY
 
-# # NPDP
-# x0 = 120    
-# xf = 420
-# t00 = 50
-# tff = 80
-
-#RLPY
-# t00 = 600
-# tff = 650
-# x0 = 70
-# xf = 400
-
-#QSC
-# t00 = 1
-# tff = 150
-# x0 = 20
-# xf = 1350
-
-
-#ECTD
-t00 = 200
-tff = 400
-x0 = 1
-xf = 559
-
-#MLO
-t00 = 150
-tff = 300
-x0 = 1
-xf = 769
-
-#EJCJ
-t00 = 300
-tff = 500
-x0 = 1
-xf = 350
-
-
-#TNB
-t00 = 180
-tff = 400
-x0 = 1
-xf = 1100
-
-#EDTH
-t00 = 50
-tff = 150
-x0 = 1
-xf = 300
-
-#DMLO
-t00 = 140
-tff = 290
-x0 = 140
-xf = 750
-
 #CCM
-t00 =500
-tff = 600
-x0 = 1
-xf = 199
+t00 =254
+tff = 255
+x0 = 2
+xf = 80
 
 
-a = 30
+aa = 0.005135 #Lkappa
 
 k_maxmax = np.zeros(nb_exps)
 k_minmin = np.zeros(nb_exps)
@@ -931,14 +738,14 @@ h_mimmin = np.zeros(nb_exps)
 amplitude_exp = np.zeros(nb_exps)
 k_exp_th = np.zeros(nb_exps)
 
-for j in range (1,nb_exps) :
+for j in range (3,nb_exps) :
     
     '''CHARGE LES DATA'''
     
     if j < 10 :
-        nom_exp = 'DMLO' + str(j)
+        nom_exp = 'CCM0' + str(j)
     else : 
-        nom_exp = 'DML' + str(j)
+        nom_exp = 'CCM' + str(j)
     
     print(nom_exp)        
     
@@ -959,199 +766,191 @@ for j in range (1,nb_exps) :
     #     # tff = 120
     #     # x0 = 1
     #     # xf = 300
-    #     err = 0.07
-        
-    if j == 3 :
-        pass
-    elif j == 2:
-        pass
+
+    path_save = 'E:\\Baptiste\\Resultats_exp\\Courbure\\'+ '240116_CCM_Lkappa\\' + date + '_' + nom_exp + '\\'
+    
+    dico, params, loc = ip.initialisation(date, nom_exp, exp = True, display = False)
+    if save :
+        os.mkdir(path_save)
+    folder_results = params['path_images'][:-15] + "resultats"
+    name_file = "positionLAS.npy"
+    data_originale = np.load(folder_results + "\\" + name_file)
+    data_originale = np.rot90(data_originale)
+    data_originale = np.flip(data_originale, 0)
+    # enleve moyenne moyenne en espace pour chaque temps (pas ouf)
+    # data_originale = data_originale - np.nanmean(data_originale, axis = 0)    
+
+    params['debut_las'] = 1
+    params['fin_las'] = np.shape(data_originale)[0] - 700
+
+    params['t0'] = 1
+    params['tf'] = np.shape(data_originale)[1] - 1
+    
+    lambda_exp = float(dico[date][nom_exp]['lambda'])
+    k_exp = 2 * np.pi / lambda_exp
+    omega_exp = 2 * np.pi * float(dico[date][nom_exp]['fexc'])
+    H_exp = float(dico[date][nom_exp]['Hw'])
+    facq = float(dico[date][nom_exp]['facq'])
+    amp_exp = float(dico[date][nom_exp]['Amp_max'])
+    
+    
+    
+    [nx,nt] = data_originale[params['debut_las']:params['fin_las'],params['t0']:params['tf']].shape
+
+    data = data_originale[params['debut_las']:params['fin_las'],params['t0']:params['tf']]
+    
+    params['im_ref'] = False
+
+    #enlever moyenne pr chaque pixel
+
+    if params['im_ref'] :
+        mean_pixel = np.nanmean(data,axis = 1) #liste avec moyenne en temps de chaque pixel 
+        for i in range (0,nt):
+            data[:,i] = data[:,i] - mean_pixel #pour chaque pixel, on enleve la moyenne temporelle de chaque pixel
+
+    #mise à l'échelle en m
+    data_m = data *  params['mmparpixely'] / 1000
+    data_m = data_m / params['grossissement']
+    a = int(aa / params['mmparpixely'] * 1000/2)
+    
+    #Filtre savgol
+    params['savgol'] = False
+    params['ordre_savgol'] = 2
+    params['taille_savgol'] = int(a) * 2 + 1
+    signalsv = np.zeros(data.shape)
+    # for i in range(0,nt):  
+    #     signalsv[:,i] = savgol_filter(data_m[:,i], params['taille_savgol'],params['ordre_savgol'], mode = 'nearest')
+    #     if np.mod(i,1000)==0:
+    #         print('On processe l image numero: ' + str(i) + ' sur ' + str(nt))
+    # print('Done !')
+
+
+    if params['savgol'] :
+        data = signalsv.copy()
     else :
-        path_save = 'E:\\Baptiste\\Resultats_exp\\Courbure\\' + date + '_' + nom_exp + '\\'
-        
-        dico, params, loc = ip.initialisation(date, nom_exp, exp = True, display = False)
-        if save :
-            os.mkdir(path_save)
-        folder_results = params['path_images'][:-15] + "resultats"
-        name_file = "positionLAS.npy"
-        data_originale = np.load(folder_results + "\\" + name_file)
-        data_originale = np.rot90(data_originale)
-        data_originale = np.flip(data_originale, 0)
-        # enleve moyenne moyenne en espace pour chaque temps (pas ouf)
-        # data_originale = data_originale - np.nanmean(data_originale, axis = 0)    
-    
-        params['debut_las'] = 260
-        params['fin_las'] = np.shape(data_originale)[0] - 700
-    
-        params['t0'] = 1
-        params['tf'] = np.shape(data_originale)[1] - 1
-        
-        lambda_exp = float(dico[date][nom_exp]['lambda'])
-        k_exp = 2 * np.pi / lambda_exp
-        omega_exp = 2 * np.pi * float(dico[date][nom_exp]['fexc'])
-        H_exp = float(dico[date][nom_exp]['Hw'])
-        facq = float(dico[date][nom_exp]['facq'])
-        amp_exp = float(dico[date][nom_exp]['Amp_max'])
+        data = data_m.copy()
         
         
+    data = data - np.nanmean(data)
+    
+    t = np.arange(0,nt)/params['facq']
+    x = np.arange(0,nx)*params['mmparpixelz'] / 1000
+    
+    
+    
+    '''INITIE PARAMS'''
+    
+    
+
+    liste_t = np.linspace(t00,tff,tff-t00, dtype = int)
+    
+    x = np.linspace(-(xf-x0), (xf-x0), (xf-x0)*2)
+    
+    x_plotexp = np.linspace(-(xf-x0) * params['mmparpixel'] / 1000, (xf-x0) * params['mmparpixel'] / 1000, (xf-x0)*2)
+
+    stddd = np.std(data[x0:xf,:], axis = 0)
+    meann = np.mean(data[x0:xf, stddd < sig])
+
+    hmin = np.zeros(np.shape(liste_t))
+    hmax = np.zeros(np.shape(liste_t))
+    popt_min = np.zeros(np.shape(liste_t), dtype = object)
+    popt_max = np.zeros(np.shape(liste_t), dtype = object)
+    err_min = np.zeros(np.shape(liste_t))
+    err_max = np.zeros(np.shape(liste_t))
+    kmin = np.zeros(np.shape(liste_t))
+    kmax = np.zeros(np.shape(liste_t))
+    imin = np.zeros(np.shape(liste_t), dtype = int)
+    imax = np.zeros(np.shape(liste_t), dtype = int)
+   
+
+    for i in range(len( liste_t)) :
+        t0 = liste_t[i]
+        forme = -data[x0:xf, t0] + meann
         
-        [nx,nt] = data_originale[params['debut_las']:params['fin_las'],params['t0']:params['tf']].shape
-    
-        data = data_originale[params['debut_las']:params['fin_las'],params['t0']:params['tf']]
+        forme = np.append(np.flip(forme), forme)
         
-        params['im_ref'] = False
-    
-        #enlever moyenne pr chaque pixel
-    
-        if params['im_ref'] :
-            mean_pixel = np.nanmean(data,axis = 1) #liste avec moyenne en temps de chaque pixel 
-            for i in range (0,nt):
-                data[:,i] = data[:,i] - mean_pixel #pour chaque pixel, on enleve la moyenne temporelle de chaque pixel
-    
-        #mise à l'échelle en m
-        data_m = data *  params['mmparpixely'] / 1000
-        data_m = data_m / params['grossissement']
+        n = forme.shape[0]
+        t = t0 / facq
+   
+        imin[i] = np.argmin(forme[a :-a]) + a
+        imax[i] = np.argmax(forme[a :-a]) + a
         
-        #Filtre savgol
-        params['savgol'] = False
-        params['ordre_savgol'] = 2
-        params['taille_savgol'] = int(a) * 2 + 1
-        signalsv = np.zeros(data.shape)
-        # for i in range(0,nt):  
-        #     signalsv[:,i] = savgol_filter(data_m[:,i], params['taille_savgol'],params['ordre_savgol'], mode = 'nearest')
-        #     if np.mod(i,1000)==0:
-        #         print('On processe l image numero: ' + str(i) + ' sur ' + str(nt))
-        # print('Done !')
-    
-    
-        if params['savgol'] :
-            data = signalsv.copy()
+        hmin[i] = forme[imin[i]]
+        hmax[i] = forme[imax[i]]
+        
+        yfit = forme[imin[i]-a:imin[i]+a]
+        xfit = x_plotexp[imin[i]-a:imin[i]+a]
+        popt_min[i] = np.polyfit(xfit,yfit, 2, full = True)
+        yth = np.polyval(popt_min[i][0], xfit)
+        err_min[i] = np.sqrt(popt_min[i][1][0])/ np.abs(np.max(hmin[i]))
+        if err_min[i] > err :
+            kmin[i] = None
+            err_min[i] = None
+            hmin[i] = None
         else :
-            data = data_m.copy()
+            kmin[i] = popt_min[i][0][0]*2
+        
+        yfit = forme[imax[i]-a:imax[i]+a]
+        xfit = x_plotexp[imax[i]-a:imax[i]+a]
+        
+        popt_max[i] = np.polyfit(xfit,yfit, 2, full = True)
+        popt_max[i]
+        
+        yth = np.polyval(popt_max[i][0], xfit)
+        err_max[i] = np.sqrt(popt_max[i][1][0]) / np.abs(np.max(hmax[i]))
+        if err_max[i] > err :
+            kmax[i] = None
+            err_max[i] = None
+            hmax[i] = None
+        else :
+            kmax[i] = popt_max[i][0][0]*2
             
-            
-        data = data - np.nanmean(data)
-        
-        t = np.arange(0,nt)/params['facq']
-        x = np.arange(0,nx)*params['mmparpixelz'] / 1000
-        
-        
-        
-        '''INITIE PARAMS'''
-        
         
     
-        liste_t = np.linspace(t00,tff,tff-t00, dtype = int)
-        
-        x = np.linspace(1 *lambda_exp / 16, 1*lambda_exp / 16 + lambda_exp * (xf-x0) / (lambda_exp / params['mmparpixel'] * 1000), (xf-x0))
-        
-        x_plotexp = np.linspace(0, (xf-x0) * params['mmparpixel'] / 1000, (xf-x0))
-    
-        stddd = np.std(data[x0:xf,:], axis = 0)
-        meann = np.mean(data[x0:xf, stddd < sig])
-    
-        hmin = np.zeros(np.shape(liste_t))
-        hmax = np.zeros(np.shape(liste_t))
-        popt_min = np.zeros(np.shape(liste_t), dtype = object)
-        popt_max = np.zeros(np.shape(liste_t), dtype = object)
-        err_min = np.zeros(np.shape(liste_t))
-        err_max = np.zeros(np.shape(liste_t))
-        kmin = np.zeros(np.shape(liste_t))
-        kmax = np.zeros(np.shape(liste_t))
-        imin = np.zeros(np.shape(liste_t), dtype = int)
-        imax = np.zeros(np.shape(liste_t), dtype = int)
-    
-    
-    
-    
-        for i in range(len( liste_t)) :
+    if display :
+        disp.figurejolie()    
+        plt.plot(x_plotexp[imin], hmin, 'rv')
+        plt.plot(x_plotexp[imax], hmax, 'r^')    
+        for i in range(len(liste_t)) :
             t0 = liste_t[i]
             forme = -data[x0:xf, t0] + meann
-            n = forme.shape[0]
-            t = t0 / facq
+            forme = np.append(np.flip(forme), forme)
+            colors = disp.vcolors( int(i / len(liste_t) * 9) )
+            plt.plot(x_plotexp,forme,color=colors)
+                
+            if not np.isnan(hmin[i]) :
+                xfit = x_plotexp[imin[i]-a:imin[i]+a]
+                yth = np.polyval(popt_min[i][0], xfit)
+                plt.plot(xfit, yth, 'r-') 
+            if not np.isnan(hmax[i]) :
+                xfit = x_plotexp[imax[i]-a:imax[i]+a]
+                yth = np.polyval(popt_max[i][0], xfit)
+                plt.plot(xfit, yth, 'r-') 
             
-            #QSC
-            imin[i] = np.argmin(forme[int(1.5*n/6):int(7*n/8)]) + int(1.5*n/6)
-            imax[i] = np.argmax(forme[int(1.5*n/6):int(7*n/8)]) + int(1.5*n/6)        
-            #NPDP
-            imin[i] = np.argmin(forme[a + int(2 * n / 9):int(7 * n / 9)]) + a + int(2 * n / 9)
-            imax[i] = np.argmax(forme[a + int(2 * n / 9):int(7 * n / 9)]) + a + int(2 * n / 9)
-            
-            hmin[i] = forme[imin[i]]
-            hmax[i] = forme[imax[i]]
-            
-            yfit = forme[imin[i]-a:imin[i]+a]
-            xfit = x_plotexp[imin[i]-a:imin[i]+a]
-            popt_min[i] = np.polyfit(xfit,yfit, 2, full = True)
-            yth = np.polyval(popt_min[i][0], xfit)
-            err_min[i] = np.sqrt(popt_min[i][1][0])/ np.abs(np.max(hmin[i]))
-            if err_min[i] > err :
-                kmin[i] = None
-                err_min[i] = None
-                hmin[i] = None
-            else :
-                kmin[i] = popt_min[i][0][0]*2
-            
-            yfit = forme[imax[i]-a:imax[i]+a]
-            xfit = x_plotexp[imax[i]-a:imax[i]+a]
-            
-            popt_max[i] = np.polyfit(xfit,yfit, 2, full = True)
-            popt_max[i]
-            
-            yth = np.polyval(popt_max[i][0], xfit)
-            err_max[i] = np.sqrt(popt_max[i][1][0]) / np.abs(np.max(hmax[i]))
-            if err_max[i] > err :
-                kmax[i] = None
-                err_max[i] = None
-                hmax[i] = None
-            else :
-                kmax[i] = popt_max[i][0][0]*2
         
-        if display :
-            disp.figurejolie()    
-            plt.plot(x_plotexp[imin], hmin, 'rv')
-            plt.plot(x_plotexp[imax], hmax, 'r^')    
-            for i in range(len(liste_t)) :
-                if not np.isnan(hmin[i]) :
-                    xfit = x_plotexp[imin[i]-a:imin[i]+a]
-                    yth = np.polyval(popt_min[i][0], xfit)
-                    plt.plot(xfit, yth, 'r-') 
-                if not np.isnan(hmax[i]) :
-                    xfit = x_plotexp[imax[i]-a:imax[i]+a]
-                    yth = np.polyval(popt_max[i][0], xfit)
-                    plt.plot(xfit, yth, 'r-') 
-                    
-                    
-            # Pour visualiser le temps en couleur de courbe
-            # for ww in range (len(liste_t)) :
-            #     colors = disp.vcolors( int(ww / len(liste_t) * 9) )
-            #     plt.scatter(x_plotexp,-data[x0:xf, liste_t[ww] ] + meann,color=colors)
-            
-            disp.joliplot(r'x (0 à $\frac{\lambda}{2}$)', 'x (m)', x_plotexp, -data[x0:xf, liste_t] + meann, exp = False, color = 14)
-            
-            
-            if save :
-                plt.savefig(path_save + 'exp+fitcourbure_' + tools.datetimenow() + '.pdf')
+        if save :
+            plt.savefig(path_save + 'exp+fitcourbure_' + tools.datetimenow() + '.pdf')
+    
+        disp.figurejolie()    
+        disp.joliplot(r'$\frac{\eta - \eta_{min}}{\eta_{max}}$' ,r'$\kappa$ (m$^{-1}$)', (-hmin - np.nanmin(-hmin)) / (np.nanmax(-hmin)- np.nanmin(-hmin)), kmin, exp = True, color = 8, legend = 'Curvature at minimum')
+        plt.errorbar((-hmin - np.nanmin(-hmin)) / (np.nanmax(-hmin)- np.nanmin(-hmin)), kmin, yerr = err_min, fmt = 'none',capsize = 5, ecolor = 'black',elinewidth = 3)
+        disp.joliplot(r'$\frac{\eta - \eta_{min}}{\eta_{max}}$' ,r'$\kappa$ (m$^{-1}$)', (hmax - np.nanmin(hmax)) / (np.nanmax(hmax)- np.nanmin(hmax)), -kmax, exp = True, color = 2, legend = 'Curvature at maximum')
+        plt.errorbar((hmax - np.nanmin(hmax)) / (np.nanmax(hmax)- np.nanmin(hmax)), -kmax, yerr = err_max, fmt = 'none',capsize = 5, ecolor = 'red',elinewidth = 3)
         
-            disp.figurejolie()    
-            disp.joliplot(r'$\frac{\eta - \eta_{min}}{\eta_{max}}$' ,r'$\kappa$ (m$^{-1}$)', (-hmin - np.nanmin(-hmin)) / (np.nanmax(-hmin)- np.nanmin(-hmin)), kmin, exp = True, color = 8, legend = 'Curvature at minimum')
-            plt.errorbar((-hmin - np.nanmin(-hmin)) / (np.nanmax(-hmin)- np.nanmin(-hmin)), kmin, yerr = err_min, fmt = 'none',capsize = 5, ecolor = 'black',elinewidth = 3)
-            disp.joliplot(r'$\frac{\eta - \eta_{min}}{\eta_{max}}$' ,r'$\kappa$ (m$^{-1}$)', (hmax - np.nanmin(hmax)) / (np.nanmax(hmax)- np.nanmin(hmax)), -kmax, exp = True, color = 2, legend = 'Curvature at maximum')
-            plt.errorbar((hmax - np.nanmin(hmax)) / (np.nanmax(hmax)- np.nanmin(hmax)), -kmax, yerr = err_max, fmt = 'none',capsize = 5, ecolor = 'red',elinewidth = 3)
-            
-            h_plot = np.linspace(0,1,100)
-            kappa_th = np.zeros(100) + amp_exp * k_exp**2
-            disp.joliplot(r'$\frac{\eta - \eta_{min}}{\eta_{max} - \eta_{min}}$' ,r'$\kappa$ (m$^{-1}$)', h_plot, kappa_th, color = 14, legend = r'$\kappa_{th}$', exp = False)
-            
-            if save :
-                plt.savefig(path_save + 'Courburemax_courburemin_courburetherique_0a1' + tools.datetimenow() + '.pdf')
-    
-    
-        k_maxmax[j] = np.nanmax(np.abs(kmax))
-        k_minmin[j] = np.nanmax(np.abs(kmin))
-        h_maxmax[j] = np.nanmax(np.abs(hmax))
-        h_mimmin[j] = np.nanmax(np.abs(hmin))
-        amplitude_exp[j] = amp_exp
-        k_exp_th[j] = k_exp
+        h_plot = np.linspace(0,1,100)
+        kappa_th = np.zeros(100) + amp_exp * k_exp**2
+        disp.joliplot(r'$\frac{\eta - \eta_{min}}{\eta_{max} - \eta_{min}}$' ,r'$\kappa$ (m$^{-1}$)', h_plot, kappa_th, color = 14, legend = r'$\kappa_{th}$', exp = False)
+        
+        if save :
+            plt.savefig(path_save + 'Courburemax_courburemin_courburetherique_0a1' + tools.datetimenow() + '.pdf')
+
+
+    k_maxmax[j] = np.nanmax(np.abs(kmax))
+    k_minmin[j] = np.nanmax(np.abs(kmin))
+    h_maxmax[j] = np.nanmax(np.abs(hmax))
+    h_mimmin[j] = np.nanmax(np.abs(hmin))
+    amplitude_exp[j] = amp_exp
+    k_exp_th[j] = k_exp
 
 courbure_th = amplitude_exp * k_exp_th**2
 disp.figurejolie()
@@ -1161,6 +960,12 @@ disp.joliplot('A (m)', r'$\kappa$ (m$^{-1}$)', amplitude_exp, amplitude_exp * k_
 if save :
     plt.savefig(path_save[:-13] + date + '_' + nom_exp[:3] + '_couburemax_courburemin_courburetheorique_A_' + tools.datetimenow() + '.pdf')
 #%% Save params
+
+save = True
+k_maxmax = [44.27773927225495, 55.40932769409098, 70.57614854066883, 74.7173706837188]
+h_maxmax = [0.00264763, 0.00306854, 0.00349946, 0.0035007931898662255]
+amplitude_exp = [0.00264763, 0.00306854, 0.00349946, 0.0035007931898662255]
+
 
 if save :
     params['courbure'] = {}

@@ -320,9 +320,9 @@ save = False
 #Moyenne temporelle amp aux moments interessants, et avec le temps
 longueur_donde = int( float(dico[date][nom_exp]['lambda']) / params['mmparpixel'] * 1000 / 2) * 2
 
-params['t0_A'] = 10
-params['x0_A'] = 800
-params['plage_x'] = 1 #longueur_donde
+params['t0_A'] = 50
+params['x0_A'] = 600
+params['plage_x'] = 400 #longueur_donde
 fexc = params['fexc']
 strobo = int(params['facq']/fexc) + 1
 
@@ -332,7 +332,7 @@ strobo = int(params['facq']/fexc) + 1
 
 amp_1periode = []
 t_amp = []
-periodes = 1 #nb de periodes par pt de mesure
+periodes = 2 #nb de periodes par pt de mesure
 img_par_periode = (int((params['facq']/fexc) * periodes) + 1)
 nb_periode = int((nt - params['t0_A'])/img_par_periode) #nb de pts où on moyenne l'amplitude
 for j in range (nb_periode):

@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 from math import floor
 
-def fit_powerlaw(x,y, display = False, xlabel = '', ylabel = '', legend = '', new_fig = True, fit = 'poly', color = False):
+def fit_powerlaw(x,y, display = False, xlabel = '', ylabel = '', legend = '', new_fig = True, fit = 'poly', color = False, width = 8.6):
     
     x_sort, y_sort = tools.sort_listes(x,y)
     xscale = np.linspace(np.min(x_sort), np.max(x_sort), 200)
@@ -30,14 +30,14 @@ def fit_powerlaw(x,y, display = False, xlabel = '', ylabel = '', legend = '', ne
 
         if display :
             if new_fig :
-                disp.figurejolie()
+                disp.figurejolie(width = width)
             
             if color != False :
-                disp.joliplot(xlabel, ylabel,x_sort, y_sort, legend=legend, color = color, log = True)
-                disp.joliplot(xlabel, ylabel, xscale, np.exp(popt[1]) * xscale ** popt[0], exp = False, color = color, legend = 'Slope : ' + str(round(popt[0],2)), log = True)
+                disp.joliplot(xlabel, ylabel,x_sort, y_sort, legend=legend, color = color, log = True, width = width)
+                disp.joliplot(xlabel, ylabel, xscale, np.exp(popt[1]) * xscale ** popt[0], exp = False, color = color, legend = 'Slope : ' + str(round(popt[0],2)), log = True, width = width)
             else : 
-                disp.joliplot(xlabel, ylabel,x_sort, y_sort, legend=legend, color = 2, log = True)
-                disp.joliplot(xlabel, ylabel, xscale, np.exp(popt[1]) * xscale ** popt[0], exp = False, color = 8, legend = 'Slope : ' + str(round(popt[0],2)), log = True)
+                disp.joliplot(xlabel, ylabel,x_sort, y_sort, legend=legend, color = 2, log = True, width = width)
+                disp.joliplot(xlabel, ylabel, xscale, np.exp(popt[1]) * xscale ** popt[0], exp = False, color = 8, legend = 'Slope : ' + str(round(popt[0],2)), log = True, width = width)
                 
                 
             plt.xlim( (10**(floor(np.min(logx)/ np.log(10)))) , 10**(floor(np.max(logx)/ np.log(10)) + 1 ) )
@@ -50,11 +50,11 @@ def fit_powerlaw(x,y, display = False, xlabel = '', ylabel = '', legend = '', ne
         model_robust, inliers, outliers = fit_ransac(logx, logy, display = False)
         if display :
             if new_fig :
-                disp.figurejolie()
-            disp.joliplot(xlabel, ylabel,x_sort[inliers], y_sort[inliers], legend=legend, color = 4, log = False)
+                disp.figurejolie(width = width)
+            disp.joliplot(xlabel, ylabel,x_sort[inliers], y_sort[inliers], legend=legend, color = 4, log = False, width = width)
             if np.mean(outliers) != 0.0 :
-                disp.joliplot(xlabel, ylabel, x_sort[outliers], y_sort[outliers], legend = 'Outlier data', color = 7, log = True)
-            disp.joliplot(xlabel, ylabel, xscale, np.exp(model_robust.predict_y(np.log(xscale))), exp = False, color = 2, legend = 'Pente : ' + str(round(model_robust.params[1][1],2)), log = False)
+                disp.joliplot(xlabel, ylabel, x_sort[outliers], y_sort[outliers], legend = 'Outlier data', color = 7, log = True, width = width)
+            disp.joliplot(xlabel, ylabel, xscale, np.exp(model_robust.predict_y(np.log(xscale))), exp = False, color = 2, legend = 'Pente : ' + str(round(model_robust.params[1][1],2)), log = False, width = width)
         
         return model_robust, inliers, outliers
 

@@ -51,7 +51,7 @@ loc = 'D:\Banquise\Baptiste\Resultats_video\\d' + date + '\\'
 
 g = 9.81
 tension_surface = 50E-3
-rho = 900
+rho = 680
 
 
 m = (226.93-188.24)/3.1
@@ -88,7 +88,7 @@ err_k = 0
 #%%
 data = np.stack((k,omega), axis = -1)  
 
-
+rho = 1000
 
 
 blbl, inliers, outliers = fits.fit_ransac(np.log(k), np.log(omega), display = False)
