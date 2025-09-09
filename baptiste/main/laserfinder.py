@@ -27,8 +27,8 @@ import baptiste.files.dictionaries as dic
 import baptiste.tools.tools as tools
 
 
-date = '231130'
-nom_exp = 'DMLOR'
+date = '231117'
+nom_exp = 'TMFR1'
 exp = True
 exp_type = 'LAS'
 
@@ -43,24 +43,27 @@ dico, params, loc = ip.initialisation(date, nom_exp, exp = True, display = False
 
     
 # param_complets = ["Paramètres d'adimensionnement :",  "lambda_vague = " + str(lambda_vague) , "Ampvague = " + str(Ampvague) ,  "Paramètres d'analyse : ", "debut = " + str(debut) ,"kernel_size = " + str(kernel_size), "kernel_iteration = " + str(kernel_iteration) ,"nbframe = " + str(nbframe) ,"maxsize = " + str(maxsize) , "minsize = " + str(minsize) , "threshold = " + str(threshold) , "sepwb = " + str(sepwb) , "size_crop = " + str(size_crop) , "bordersize = " + str(bordersize), "mmparpixel = " + str(mmparpixel), "Paramètres experimentaux : ", "facq = " + str(facq) , "texp = " + str(texp) , "Tmot = " + str(Tmot) , "Vmot = " + str(Vmot), "Hw = " + str(Hw), "Larg_ice = " + str(Larg_ice), "Long_ice = " + str(Long_ice), "tacq = " + str(tacq), "type_exp = " + str(type_exp)]
+ip.import_angle(date, nom_exp, loc, display = True)
+
 
 
 #%%PARAMETRES
 
 
-MODE = "go"
+MODE = "test"
 # MODE = "go"
 params['nbframe'] = 20000
 params['med_size'] = 20
 params['debut'] = 0
-params['bas_LAS'] = 0#500 CCCS2#570 # 380#180 RBT01
-params['haut_LAS'] = 600#700 CCCS2#820 #RCSC1 780 CCCS1#260 RBT01
-params['x_0'] = 170
-params['x_f'] = 1200 #crop
+params['bas_LAS'] = 200#500 CCCS2#570 # 380#180 RBT01
+params['haut_LAS'] = 700#700 CCCS2#820 #RCSC1 780 CCCS1#260 RBT01
+params['x_0'] = 150
+params['x_f'] = 1600 #crop
 
 display = True
-display_result_only = True
-
+display_result_only = False
+save_fig = False
+save_path = "Y:\Banquise\\Baptiste\\Manuscrit_these\\Figures\\Caractérisation au labo\\Propagation d'ondes\\"
 
 gradient = False
 maximum = True
@@ -70,14 +73,14 @@ convconv = True
 moyenner = False    #faire un moyennage local (convolve2d)
 medfilter = False    #mettre un filtre médian et dilate horizontal
 
-save = True
+save = False
 saveplot = False
 
 
 if MODE == "test" :
     display = True
     save = False
-    params['nbframe'] = 3
+    params['nbframe'] = 1
     
 if MODE == "go" :
     display = False
@@ -121,13 +124,13 @@ if False :
 
 im = cv2.imread(params['path_images'] + params['liste_images'][0])
 im_2 = im[params['bas_LAS']:params['haut_LAS'],:,2]
-y = np.zeros((len(params['liste_images']),(np.shape(im_2)[1])))
+y = np.zeros((len(params['liste_images']),(np.shape(im_2)[1])), dtype = float)
 
 
 
 
 #%%TRAITEMENT PRINCIPAL
-for i in range (params['debut'], len (params['liste_images']), int(len(params['liste_images'])/ params['nbframe'] )) :
+for i in [470]:#range (params['debut'], len (params['liste_images']), int(len(params['liste_images'])/ params['nbframe'] )) :
     
     #Ouverture image et choix du canal Rouge
     
@@ -154,6 +157,8 @@ for i in range (params['debut'], len (params['liste_images']), int(len(params['l
     if display and not display_result_only :
         disp.figurejolie()
         disp.joliplot('', '', (), (), image = im_red, title = "Image rouge")
+        if save_fig :
+            plt.savefig(save_path + "img_rouge.png", dpi = 2000)
     
     im_las = np.zeros(((np.shape(im_red)[0]),(np.shape(im_red)[1])), dtype = np.uint8)
     im_las_base = np.zeros(((np.shape(im_red)[0]),(np.shape(im_red)[1])), dtype = np.uint8)
@@ -188,6 +193,8 @@ for i in range (params['debut'], len (params['liste_images']), int(len(params['l
         if display and not display_result_only:
             disp.figurejolie()
             disp.joliplot('', '', (), (), image = im_red_traitee, title = "Image filtre denoise " + str (param1) + " " + str (param2) + " "+ str (param3))
+            if save_fig :
+                plt.savefig(save_path + "img_denoise.png", dpi = 2000)
      
     [nx,ny] = np.shape(im_red_traitee)
     
@@ -196,13 +203,15 @@ for i in range (params['debut'], len (params['liste_images']), int(len(params['l
     
     # DETECTION MAX GRADIENT
         if convconv : 
-            xXxtentacion = np.arange(0,nx)
+            xXxtentacion = np.arange(0,nx) * params['mmparpixel'] / 10
             im_conv = np.convolve(im_red_traitee[:,k], fconv, mode = 'same' )
             
             if display and  (k == 200 or k == 700 or k == 1500) and not display_result_only :
-                disp.figurejolie()
-                disp.joliplot('', '', xXxtentacion, im_red_traitee[:,k], title = "Convolve avec profil " + str(k) + ' ieme colonne', exp =False) 
-                disp.joliplot('', '', xXxtentacion, im_conv, title = "Convolve avec profil " + str(k) + ' ieme colonne', exp = False)                
+                disp.figurejolie(width = 8.6*4/5)
+                # disp.joliplot('$Y$ (cm)', '', xXxtentacion,tools.normalize(im_red_traitee[:,k]) , title = "Convolve avec profil " + str(k) + ' ieme colonne', exp =False, cm = 3) 
+                disp.joliplot('$Y$ (cm)', 'Convolution normalisée (UA)', xXxtentacion, tools.normalize(im_conv) , title = "Convolve avec profil " + str(k) + ' ieme colonne', exp = False, cm = 4)        
+                if save_fig :
+                    plt.savefig(save_path + "res_convolution.png", dpi = 2000)
                  
         if maximum :
             
@@ -245,20 +254,35 @@ for i in range (params['debut'], len (params['liste_images']), int(len(params['l
                 
                 
     #      MONTRE LA DETECTION EN DIRECTE SUPERPOSEE A L'IMAGE BRUTE  
-    if display:  #length(x)<11
-        im_display = np.zeros(im.shape, dtype = np.uint8)
-        im_display[:,:,2] = im[:,:,2]   #Image de base
-        im_display[:,:,1] = im_las_base #Laser detecté
-        im_display[:,:,0] = im_las      #Laser detecté subpixellaire
-        if display :
-            disp.figurejolie()
-            disp.joliplot('', '', (), (), image = im_display, title = "Image " + str(i) + " / " + str(len(params['liste_images']) ))
-            plt.axis()
+    # if display:  #length(x)<11
+    #     im_display = np.zeros(im.shape, dtype = np.uint8)
+    #     im_display[:,:,2] = im[:,:,2]   #Image de base
+    #     # im_display[:,:,1] = im_las_base #Laser detecté
+    #     im_display[:,:,0] = im_las      #Laser detecté subpixellaire
+    #     if display :
+    #         disp.figurejolie()
+    #         disp.joliplot('', '', (), (), image = im_display, title = "Image " + str(i) + " / " + str(len(params['liste_images']) ))
+    #         plt.axis()
+    #         if save_fig :
+    #             plt.savefig(save_path + "img_finale.png", dpi = 2000)
         
-        if save :
-            plt.imsave(params['path_images'][:-15] + "resultats" + "/image_superposée_wow.tiff" , im_display)   
-
-    
+    #     if save :
+    #         plt.imsave(params['path_images'][:-15] + "resultats" + "/image_superposée_wow.tiff" , im_display)  
+            
+    if display :
+        disp.figurejolie(width = 12)
+        xxx = np.linspace(0, nx-1, nx) * params['mmparpixel'] / 10
+        yyy = np.linspace(0, ny-1, ny) * params['mmparpixel'] / 10
+        disp.joliplot('$X$ (cm)', '$Y$ (cm)', [], [], image = im_red_traitee)# np.rot90(np.flip(im[:,:,2],1)))
+        # plt.clim(0, 1000)
+        
+        disp.joliplot('$X$ (cm)', '$Y$ (cm)', np.linspace(0, ny-1, ny), np.argmax(im_las, axis = 0), color = 2, exp = True, width = 1.1)
+        plt.axis('equal')
+        plt.grid()
+        
+        plt.savefig('Y:\Banquise\\Baptiste\\Manuscrit_these\\Figures\\Caracterisation au labo\\Caracterisation\\' + "img_las_trouve_og.png", dpi = 3000)
+        
+        
     if np.mod(i,100)==0:
         print('On processe l image numero: ' + str(i) + ' sur ' + str(len(params['liste_images'])))
     

@@ -26,8 +26,337 @@ import baptiste.files.dictionaries as dic
 import baptiste.tools.tools as tools
 
 
-
 dico = dic.open_dico()
+
+
+
+
+#%% Profils auto similaires
+
+dates = ['231120', '231121', '231122', '231124', '231129', '231129', '231130', '240109', '240115', '240116' ]
+nom_exps = ['ECTD9', 'EDTH8', 'NPDP2', 'RLPY3', 'EJCJ6', 'MLO23', 'DMLO1', 'QSC10', 'TNB03', 'CCM03']
+# nom_exps = ['ECTD9', 'EDTH8', 'NPDP2', 'RLPY3', 'EJCJ6', 'MLO23', 'DMLO1', 'QSC10', 'TNB03', 'CCM03']
+l = np.array([0.02192333, 0.0162    , 0.00695415, 0.02272338, 0.0206, 0.03893331, 0.0438713 , 0.03204824, 0.02809459, 0.005135  ])
+t0s = [800, 500, 300, 1000, 600, 350, 400, 280, 500, 600]
+x0s = [400, 390, 150, 270, 260, 550, 630, 420, 670, 50]
+xfs = [600, 570, 680, 500, 480, 880, 950, 1020, 920, 200]
+
+t0s = [200, 145, 150, 500, 300, 170, 150, 10, 270, 510]
+x0s = [200, 270, 220, 120, 260, 250, 330, 420, 350, 40]
+xfs = [800, 720, 630, 800, 580, 1300, 1350, 1520, 1270, 250]
+
+def open_laser_file(date, nom_exp, t0, x0, xf, T = 200, savgol = True):
+    dico, params, loc = ip.initialisation(date, nom_exp, exp = True, display = False)
+    
+    params['lambda_exp'] = float(dico[date][nom_exp]['lambda'])
+    k_exp = 2 * np.pi / params['lambda_exp']
+    omega_exp = 2 * np.pi * float(dico[date][nom_exp]['fexc'])
+    H_exp = float(dico[date][nom_exp]['Hw'])
+    facq = float(dico[date][nom_exp]['facq'])
+    
+    folder_results = params['path_images'][:-15] + "resultats"
+    name_file = "positionLAS.npy"
+    data_originale = np.load(folder_results + "\\" + name_file)
+
+    data_originale = np.rot90(data_originale)
+    data_originale = np.flip(data_originale, 0)
+    
+    data_originale = data_originale# - np.nanmean(data_originale) 
+    params['debut_las'] = x0
+    params['fin_las'] = xf
+
+    
+    params['t0'] = t0
+    params['tf'] = t0 + T
+    
+    [nx,nt] = data_originale[params['debut_las']:params['fin_las'],params['t0']:params['tf']].shape
+    
+    data = data_originale[params['debut_las']:params['fin_las'],params['t0']:params['tf']]
+    
+    #mise à l'échelle en m
+    data_m = data *  params['mmparpixely'] / 1000
+    data_m = data_m / params['grossissement']
+    
+    if savgol :
+        params['savgol'] = True
+        params['ordre_savgol'] = 2
+        params['taille_savgol'] = 50
+        signalsv = np.zeros(data.shape)
+        for w in range(0,nt):  
+            signalsv[:,w] = savgol_filter(data_m[:,w], params['taille_savgol'],params['ordre_savgol'], mode = 'nearest')
+            if np.mod(w,1000)==0:
+                print('On processe l image numero: ' + str(w) + ' sur ' + str(nt))
+        print('Done !')
+
+        
+
+        data_m = signalsv.copy()
+    
+    return params, data_m, nx, nt
+
+lambda_tot = np.zeros(10)
+A_tot = np.zeros(10)
+H_tot = np.zeros(10)
+profils_max = np.zeros(10, dtype = object)
+for i in range(10):
+    date = dates[i]
+    nom_exp = nom_exps[i]
+    t0 = t0s[i]    
+    x0 = x0s[i]
+    xf = xfs[i] -100
+    
+    params, data, nx, nt = open_laser_file(date, nom_exp, t0, x0, xf, T = 200)
+    
+    # plt.figure()
+    # disp.joliplot('x','t', np.linspace(0,nx,nx), np.linspace(0,nt,nt), table =data)
+    # plt.title(nom_exp)
+    
+    xmax = np.where(np.nanmax(data) == data)[0][0]
+    tmax = np.where(np.nanmax(data) == data)[1][0]
+    T = int(params['facq'] / params['fexc'])
+    
+    if nom_exp == 'CCM03': 
+        lambda_px = int(params['lambda_exp'] / params['mmparpixely'] * 1000 / 6)
+        data_adim = data[: xmax + lambda_px,tmax]
+        data_adim = np.append(np.flip(data[: xmax + lambda_px,tmax])[:21], data[: xmax + lambda_px,tmax])
+
+
+    
+    else :
+        lambda_px = int(params['lambda_exp'] / params['mmparpixely'] * 1000 / 6)
+        data_adim = data[xmax - lambda_px: xmax + lambda_px,tmax]# - np.mean(data[xmax - lambda_px: xmax + lambda_px,tmax])
+    lambda_tot[i] = params['lambda_exp']
+    data_adim = (data_adim - np.nanmin(data_adim)) / (np.nanmax(data_adim) - np.nanmin(data_adim)) - 0.5
+    profils_max[i] = data_adim
+    
+    tmaxs = np.array(np.linspace(tmax, tmax+5, 6), dtype = int)
+    
+    if nom_exp == 'QSC10' :
+        print(tmax)
+        loulilou = tmaxs
+        x00 = 300
+        xff = 1470
+        t00 = 10
+        params, data, nx, nt = open_laser_file(date, nom_exp, t00, x00, xff, T = 1000)
+        data_ed = (data - np.mean(data))
+        facq_edth8 = params['facq']
+        disp.figurejolie(width = 8.6*4/5)
+        x_plott = np.linspace(0, xff-x00-1, xff-x00) * params['mmparpixel'] / 1000
+        for i in range (len(tmaxs)):
+            disp.joliplot('$x$ (m)', r'$\eta$ (cm)', x_plott, data_ed[:,tmaxs[i]] * 100, cm = int(i*10/7), exp = False)
+    
+    A_tot[i] = dico[date][nom_exp]['Amp_max']
+    H_tot[i] = dico[date][nom_exp]['Hw']
+        
+    # plt.figure()
+    # disp.joliplot(r'x / $\lambda$',r'A / Amax', np.linspace(0, 1, profils_max[i].shape[0]), profils_max[i], exp = False, color = i + 1)
+    # plt.title(nom_exp)
+
+"""COLORBAR"""  
+# disp.figurejolie(width = 8.6*4/5)
+# bl = np.zeros((2,2))
+# bl[0,0] = 0# (np.min(tmaxs) + 145) / facq_edth8
+# bl[0,1] = 0#(np.min(tmaxs) + 145) / facq_edth8
+# bl[1,0] = np.max(tmaxs) / facq_edth8 #(np.max(tmaxs) + 145) / facq_edth8
+# bl[1,1] = np.max(tmaxs) / facq_edth8  #(np.max(tmaxs) + 145) / facq_edth8
+# plt.pcolormesh(bl, cmap = 'ma_cm')
+# plt.colorbar()
+    
+# disp.figurejolie()  
+# for i in range(10):
+#     disp.joliplot('',r'$\eta$ / Amax', np.linspace(0, 1, profils_max[i].shape[0]), profils_max[i], exp = False, color = 2)
+#     plt.xticks([0,0.5,1], [r'$\lambda/3$', r'$\lambda/2$', r'$2\lambda/3$'])
+
+
+"""Colapse"""
+# a, b = tools.sort_listes(lambda_tot, profils_max, reverse = False)
+
+# bl = np.zeros((2,10))
+# disp.figurejolie(width = 8.6/1.25)  
+# for i in range(10):
+#     colors = disp.mcolors( int(a[i] / np.max(a) * 9))
+#     bl[0,i] = a[i]
+#     plt.scatter(np.linspace(0, 1, b[i].shape[0]), b[i], color = colors, marker = 'x', s = 0.14, linewidths= 3.6)
+    
+#     disp.joliplot('',r'$\eta$ / Amax', [], [], exp = False, color = 2)
+#     plt.xticks([0,0.5,1], [r'$\lambda/3$', r'$\lambda/2$', r'$2\lambda/3$'])
+    
+    
+#     disp.joliplot('',r'$\eta$ / Amax',xxx, auto_colapse, color = 8, width = 15, exp = False)
+#     # disp.joliplot('',r'$\eta$ / Amax',xxx[int(aa):-int(aa)], tools.normalize(popt_x)/2 - 0.5, 'r-')
+#     # x_lkappa1 = 0.5-lkappa/2
+#     # x_lkappa2 = 0.5+lkappa/2
+#     # plt.vlines(x_lkappa1, np.min(auto_colapse), auto_colapse[int(x_lkappa1 * 1000)], 'r')
+#     # plt.vlines(x_lkappa2, np.min(auto_colapse), auto_colapse[int(x_lkappa2 * 1000)], 'r')
+    
+    
+# disp.figurejolie(width = 8.6/2.5)
+# plt.pcolormesh(bl, cmap = 'ma_cm')
+# plt.colorbar()
+
+# from scipy.interpolate import interp1d
+
+
+# xxx = np.linspace(0, 1, 1000)
+# u = np.zeros(10, dtype = object)
+# for i in range (10):
+#     u[i] = interp1d(np.linspace(0, 1, b[i].shape[0]), b[i])
+#     u[i] = u[i](xxx)
+
+# auto_colapse = np.mean(u, axis = 0)
+
+# plt.figure()
+# plt.plot(xxx, auto_colapse)
+
+# '''SYMETRIQUE'''
+# # auto_colapse[:500] = np.flip(auto_colapse[500:])
+# plt.plot(xxx, auto_colapse)
+
+# def LMH(x,y) :
+#     half_max = np.nanmax(y) * 1/ 2
+#     d = np.sign(half_max - y)
+#     k = np.array(np.where(d == -1))
+    
+#     return x[k[0,-1]] - x[k[0,0]], k
+
+# aa = 100
+# popt_x = np.zeros(len(xxx) - int(2 * aa), dtype = float)
+# for j in range (len(xxx) - int(2 * aa)) :
+#     yfit = auto_colapse[j: j + 2*aa]
+#     xfit = xxx[j:j + 2*aa] 
+#     popt = np.polyfit(xfit,yfit, 2)
+
+#     popt_x[j] = -popt[0] * 2
+    
+# plt.figure()
+# plt.plot(xxx[int(aa):-int(aa)], popt_x)
+
+# lkappa, kk = LMH(xxx[int(aa):-int(aa)], np.abs(popt_x))
+
+# print('LMH (lambda)', lkappa / 3)
+
+
+# disp.figurejolie(width = 8.6 / 5 * 4)
+# disp.joliplot('',r'$\eta$ / Amax',xxx, auto_colapse, cm = 3, exp = False)
+# plt.xticks([0,0.5,1], [r'$\lambda/3$', r'$\lambda/2$', r'$2\lambda/3$'])
+# disp.figurejolie(width = 8.6 / 5 * 4)
+# disp.joliplot('',r'$\kappa / \kappa_{max}$',xxx[int(aa):-int(aa)], popt_x / np.max(popt_x), cm = 3, exp = False)
+# x_lkappa1 = 0.5-lkappa/2
+# x_lkappa2 = 0.5+lkappa/2
+# # plt.vlines(x_lkappa1, np.min(auto_colapse), auto_colapse[int(x_lkappa1 * 1000)], 'r')
+# # plt.vlines(x_lkappa2, np.min(auto_colapse), auto_colapse[int(x_lkappa2 * 1000)], 'r')
+# plt.plot(x_lkappa1, 0.5,  'rx')
+# plt.plot(x_lkappa2, 0.5, 'rx')
+# plt.xticks([0,0.5,1], [r'$\lambda/3$', r'$\lambda/2$', r'$2\lambda/3$'])
+
+
+"""mesure kappa"""
+
+disp.figurejolie(width = 8.6*4/5)
+disp.joliplot('$x$ (m)', r'$\eta$ (cm)', x_plott, data_ed[:,177] * 100, cm = 2, exp = False)
+
+
+#%% Mesure d'erreur kappa
+
+dates = ['231120', '231121', '231122', '231124', '231129', '231129', '231130', '240109', '240115', '240116' ]
+nom_exps = ['ECTD9', 'EDTH8', 'NPDP2', 'RLPY3', 'EJCJ6', 'MLO23', 'DMLO1', 'QSC07', 'TNB03', 'CCM03']
+
+
+def open_laser_file(date, nom_exp, t0, x0, xf, T = 200, savgol = True):
+    dico, params, loc = ip.initialisation(date, nom_exp, exp = True, display = False)
+    
+    params['lambda_exp'] = float(dico[date][nom_exp]['lambda'])
+    k_exp = 2 * np.pi / params['lambda_exp']
+    omega_exp = 2 * np.pi * float(dico[date][nom_exp]['fexc'])
+    H_exp = float(dico[date][nom_exp]['Hw'])
+    facq = float(dico[date][nom_exp]['facq'])
+    
+    folder_results = params['path_images'][:-15] + "resultats"
+    name_file = "positionLAS.npy"
+    data_originale = np.load(folder_results + "\\" + name_file)
+
+    data_originale = np.rot90(data_originale)
+    data_originale = np.flip(data_originale, 0)
+    
+    data_originale = data_originale# - np.nanmean(data_originale) 
+    params['debut_las'] = x0
+    params['fin_las'] = xf
+
+    
+    params['t0'] = t0
+    params['tf'] = t0 + T
+    
+    [nx,nt] = data_originale[params['debut_las']:params['fin_las'],params['t0']:params['tf']].shape
+    
+    data = data_originale[params['debut_las']:params['fin_las'],params['t0']:params['tf']]
+    
+    #mise à l'échelle en m
+    data_m = data *  params['mmparpixely'] / 1000
+    data_m = data_m / params['grossissement']
+    
+    if savgol :
+        params['savgol'] = True
+        params['ordre_savgol'] = 2
+        params['taille_savgol'] = 50
+        signalsv = np.zeros(data.shape)
+        for w in range(0,nt):  
+            signalsv[:,w] = savgol_filter(data_m[:,w], params['taille_savgol'],params['ordre_savgol'], mode = 'nearest')
+            if np.mod(w,1000)==0:
+                print('On processe l image numero: ' + str(w) + ' sur ' + str(nt))
+        print('Done !')
+
+        
+
+        data_m = signalsv.copy()
+    
+    return params, data_m, nx, nt
+
+erreur_kappa = np.zeros(10)
+err_kap_mes = np.zeros(10)
+err_A = np.zeros(10)
+err_Lcrack = np.zeros(10)
+
+for i in range(10):
+    date = dates[i]
+    nom_exp = nom_exps[i]
+
+    
+    params, data, nx, nt = open_laser_file(date, nom_exp, 0, 0, 0, T = 0, savgol = False)
+    
+    erreur_kappa[i] = 2 * params['mmparpixel'] /1000/ params['grossissement'] / np.sqrt(8) / (l_s[i])**2
+    
+    err_kap_mes[i] = 2 * params['mmparpixel'] /1000/ params['grossissement'] / np.sqrt(8) / (0.006*2)**2 #lors de la mesure de Lk
+    
+    err_A[i] = params['mmparpixel'] /1000/ params['grossissement'] / np.sqrt(8)
+    err_Lcrack[i] =  params['mmparpixel'] /1000
+   
+# err_kap_mes = 0.6 #m-1, pour Lkappa
+
+err_lkappa = np.sqrt(2) * err_kap_mes * l_s / k_s
+
+
+err_kappa_fit = np.zeros(10)
+
+for i in range (10):
+    err_kappa_fit[i] = np.sqrt( (np.sqrt(np.diag(err_kappa[i]))[0] / popt_kappa[i][0])**2)# + (np.sqrt(np.diag(err_kappa[i]))[1] / popt_kappa[i][1])**2)
+    # print(np.sqrt(np.diag(err_kappa[i]))[1] / popt_kappa[i][1])
+    print(np.sqrt(np.diag(err_kappa[i]))[0] / popt_kappa[i][0])
+    if err_kappa_fit[i]  > 10000 :
+        err_kappa_fit[i] = 0
+plt.figure()
+plt.plot(lambda_s, k_s, 'kx')
+plt.errorbar(lambda_s, k_s, err_kappa_fit * k_s, fmt = 'None')
+
+#Erreur D et Ld
+
+uuu = pandas.read_csv('E:\Baptiste\\Resultats_exp\\Tableau_params\\Tableau1_Params_231117_240116\\' + 'tableau_1.txt', sep = '\t')
+
+uuu = np.asarray(uuu)
+
+erreur_Ld = (np.mean(uuu[:,3] / uuu[:,2] / 4))
+erreur_E = (14/65/3)
+erreur_hh = np.sqrt((14/65/3)**2 + (np.mean(uuu[:,3] / uuu[:,2] / 4) * 4/3)**2)
+
 
 #%% Importation params utiles
 save = False
@@ -57,6 +386,7 @@ for i in range (len(omega)) :
     
 # disp.figurejolie()
 # disp.joliplot('long_onde', 'Ordre2 / Ordre 1', long_onde, 3/8*A * k / k**3 / H **3)
+
 
 
 #%% Graphes pour ordre 2 Stokes
@@ -1299,25 +1629,26 @@ if save :
 
 save = False
 display = True
-date = '231122'
+date = '240109'
 exp = True
 exp_type = 'LAS'
 
-nb_exps = 6
-l = np.array([0.02192333, 0.0162    , 0.00695415, 0.02272338, 0.0206, 0.03893331, 0.0438713 , 0.03204824, 0.02809459, 0.005135  ])
+nb_exps = 21
+l = np.array([0.03204824, 0.02192333, 0.00695415, 0.02272338, 0.0206    ,  0.03893331, 0.0438713 , 0.02809459, 0.0162    , 0.005135  ])
 nom_exps = ['ECTD9', 'EDTH8', 'NPDP2', 'RLPY3', 'EJCJ6', 'MLO23', 'DMLO1', 'QSC07', 'TNB03', 'CCM03']
-aa = l[2] #Changer a en fonction de l
+# nom_exps = ['ECTD9', 'EDTH8', 'NPDP2', 'RLPY3', 'EJCJ6', 'MLO23', 'DMLO1', 'QSC10', 'TNB03', 'CCM03']
+aa = l[7] #Changer a en fonction de l
 
-err = 0.024
-# sig = 0.002 #QSC
-sig = 0.07 #NPDP
+err = 0.2
+sig = 0.002 #QSC
+# sig = 0.07 #NPDP
 # sig = 0.016 #RLPY
 
 # # NPDP*
-x0 = 170 
-xf = 320
-t00 = 50
-tff = 150
+# x0 = 170 
+# xf = 320
+# t00 = 50
+# tff = 150
 
 #RLPY
 # t00 = 700
@@ -1326,10 +1657,22 @@ tff = 150
 # xf = 400
 
 #QSC
-# t00 = 1
-# tff = 150
-# x0 = 320
-# xf = 1150
+t00 = 1
+tff = 150
+x0 = 320
+xf = 1150
+
+#POUR MANUSCRIT (moins de t, plus de x) QSC10
+t00 = 87
+tff = 88
+x0 = 150
+xf = 1320
+
+#POUR MANUSCRIT (moins de t, plus de x) QSC07
+# t00 = 57
+# tff = 58
+# x0 = 150
+# xf = 1320
 
 
 #ECTD
@@ -1389,31 +1732,31 @@ h_mimmin = np.zeros(nb_exps)
 amplitude_exp = np.zeros(nb_exps)
 k_exp_th = np.zeros(nb_exps)
 
-for j in range (1,nb_exps) :
+for j in [7]:# (1,nb_exps) :
     
     '''CHARGE LES DATA'''
     
     if j < 10 :
-        nom_exp = 'NPDP' + str(j)
+        nom_exp = 'QSC0' + str(j)
     else : 
-        nom_exp = 'ECT' + str(j)
+        nom_exp = 'QSC' + str(j)
     
     print(nom_exp)        
     
-    if j == 5:
-        t00 = 200
-        tff = 300
-        xf = 380
-        err = 0.032
-    if j == 3 : # or j == 3 :
-        # t00 = 60
-        # tff = 150
-        # # x0 = 1
-        err = 0.027
-    elif j == 4 :
-        t00 = 250
-        tff = 300
-        err = 0.03
+    # if j == 5:
+    #     t00 = 200
+    #     tff = 300
+    #     xf = 380
+    #     err = 0.032
+    # if j == 3 : # or j == 3 :
+    #     # t00 = 60
+    #     # tff = 150
+    #     # # x0 = 1
+    #     err = 0.027
+    # elif j == 4 :
+    #     t00 = 250
+    #     tff = 300
+    #     err = 0.03
     # else :
     #     # t00 = 20
     #     # tff = 120
@@ -1444,7 +1787,7 @@ for j in range (1,nb_exps) :
         params['debut_las'] = 150
         params['fin_las'] = np.shape(data_originale)[0] - 1
     
-        params['t0'] = 111
+        params['t0'] = 100
         params['tf'] = np.shape(data_originale)[1] - 1
         
         lambda_exp = float(dico[date][nom_exp]['lambda'])
@@ -1475,15 +1818,15 @@ for j in range (1,nb_exps) :
         a = int(aa / params['mmparpixely'] * 1000/2)
         
         #Filtre savgol
-        params['savgol'] = False
+        params['savgol'] = True
         params['ordre_savgol'] = 2
         params['taille_savgol'] = int(a/4) * 1 + 1
         signalsv = np.zeros(data.shape)
-        # for i in range(0,nt):  
-        #     signalsv[:,i] = savgol_filter(data_m[:,i], params['taille_savgol'],params['ordre_savgol'], mode = 'nearest')
-        #     if np.mod(i,1000)==0:
-        #         print('On processe l image numero: ' + str(i) + ' sur ' + str(nt))
-        # print('Done !')
+        for i in range(0,nt):  
+            signalsv[:,i] = savgol_filter(data_m[:,i], params['taille_savgol'],params['ordre_savgol'], mode = 'nearest')
+            if np.mod(i,1000)==0:
+                print('On processe l image numero: ' + str(i) + ' sur ' + str(nt))
+        print('Done !')
     
     
         if params['savgol'] :
@@ -1536,8 +1879,8 @@ for j in range (1,nb_exps) :
             imin[i] = np.argmin(forme[int(1.5*n/6):int(7*n/8)]) + int(1.5*n/6)
             imax[i] = np.argmax(forme[int(1.5*n/6):int(7*n/8)]) + int(1.5*n/6)        
             #NPDP
-            imin[i] = np.argmin(forme[a + int(2 * n / 9):int(7 * n / 9)]) + a + int(2 * n / 9)
-            imax[i] = np.argmax(forme[a + int(2 * n / 9):int(7 * n / 9)]) + a + int(2 * n / 9)
+            # imin[i] = np.argmin(forme[a + int(2 * n / 9):int(7 * n / 9)]) + a + int(2 * n / 9)
+            # imax[i] = np.argmax(forme[a + int(2 * n / 9):int(7 * n / 9)]) + a + int(2 * n / 9)
             
             hmin[i] = forme[imin[i]]
             hmax[i] = forme[imax[i]]
@@ -1570,21 +1913,24 @@ for j in range (1,nb_exps) :
                 kmax[i] = popt_max[i][0][0]*2
         
         if display :
-            disp.figurejolie()    
-            plt.plot(x_plotexp[imin], hmin, 'rv')
-            plt.plot(x_plotexp[imax], hmax, 'r^')    
+            disp.figurejolie(width = 8.6*4/3, height = 8.6*2/3)    
+            disp.joliplot(r'$x$ (m)', r'$\eta$ (cm)',x_plotexp[imin], hmin*100, cm = 6)
+            disp.joliplot(r'$x$ (m)', r'$\eta$ (cm)',x_plotexp[imax], hmax*100, cm = 6)    
             for ww in range (len(liste_t)) :
-                colors = disp.vcolors( int(ww / len(liste_t) * 9) )
-                plt.plot(x_plotexp,data[x0:xf, liste_t[ww] ] - meann,color=colors)
+                colors = disp.mcolors( int(ww / len(liste_t) * 9) )
+                disp.joliplot(r'$x$ (m)', r'$\eta$ (cm)',x_plotexp,(data[x0:xf, liste_t[ww] ] - meann) *100, marker_cm= 'x', cm = 3, width = 5)
+                # disp.joliplot(r'$x$ (m)', r'$\eta$ (cm)',x_plotexp[620:760],(data[x0:xf, liste_t[ww] ][620:760] - meann), marker_cm= 'x', cm = 3, width = 5)
             for i in range(len(liste_t)) :
                 if not np.isnan(hmin[i]) :
                     xfit = x_plotexp[imin[i]-a:imin[i]+a]
                     yth = np.polyval(popt_min[i][0], xfit)
-                    plt.plot(xfit, yth, 'r-') 
+                    disp.joliplot(r'$x$ (m)', r'$\eta$ (cm)', xfit, yth*100, cm = 6, exp = False) 
                 if not np.isnan(hmax[i]) :
                     xfit = x_plotexp[imax[i]-a:imax[i]+a]
                     yth = np.polyval(popt_max[i][0], xfit)
-                    plt.plot(xfit, yth, 'r-') 
+                    disp.joliplot(r'$x$ (m)', r'$\eta$ (cm)', xfit, yth*100, cm = 6, exp = False, width = 15)
+
+            # plt.ylim(0.0134,0.015)
                     
                     
             # Pour visualiser le temps en couleur de courbe
@@ -1616,6 +1962,11 @@ for j in range (1,nb_exps) :
         h_mimmin[j] = np.nanmax(np.abs(hmin))
         amplitude_exp[j] = amp_exp
         k_exp_th[j] = k_exp
+        
+
+            
+        
+        
 
 courbure_th = amplitude_exp * k_exp_th**2
 disp.figurejolie()
@@ -1624,6 +1975,56 @@ disp.joliplot('A (m)', r'$\kappa$ (m$^{-1}$)', amplitude_exp, k_minmin, legend =
 disp.joliplot('A (m)', r'$\kappa$ (m$^{-1}$)', amplitude_exp, amplitude_exp * k_exp_th**2, legend = 'Courbure théorique', color = 14)
 if save :
     plt.savefig(path_save[:-13] + date + '_' + nom_exp[:3] + '_couburemax_courburemin_courburetheorique_A_' + tools.datetimenow() + '.pdf')
+    
+
+#Lk pour QSC10 (87) /07 (58)/08 (183)
+
+data_QSC = data_ed[:,177]
+
+x_plotexp = np.linspace(0, (xf-x0) * params['mmparpixel'] / 1000, (xf-x0))
+disp.figurejolie(width = 8.6*4/3, height = 8.6*2/3)   
+disp.joliplot(r'$x$ (m)', r'$\eta$ (cm)',x_plotexp, data_QSC*100, cm = 3, width = 10, exp = False)
+
+
+forme = data_QSC
+a= int (0.005682618942194225 * 1000 / params['mmparpixel'] *2)
+
+popt_x  = np.zeros(len(forme))
+
+for j in range (len(forme) - 2*a) :
+    yfit = forme[j: j + 2*a]
+    xfit = x_plotexp[j:j + 2*a] 
+    popt = np.polyfit(xfit,yfit, 2)
+
+    popt_x[j+a] = -popt[0] * 2
+
+    # b_x[j] = popt[1]
+    
+
+def filtre_mean(data, n) :
+    result = np.zeros(len(data))
+    for i in range (len(data)) :
+        result[i] = np.mean(data[i - n: i + n])
+    return result
+
+
+disp.figurejolie(width = 8.6*4/3, height = 8.6*2/3)   
+popt_x_mean = filtre_mean(popt_x, int(a/2))
+popt_x_mean[np.where(popt_x_mean < 0)] = 0
+disp.joliplot(r'$x$ (m)', r'$\kappa$ (m$^{-1}$)',x_plotexp, popt_x_mean, cm = 3, width = 10, exp = False)
+
+
+popt_x_mean[np.where(popt_x_mean < 0)] = 0
+
+def LMH(x,y) :
+    half_max = np.nanmax(y) * 1/ 2
+    d = np.sign(half_max - y)
+    k = np.array(np.where(d == -1))
+    
+    return x[k[0,-1]] - x[k[0,0]]
+
+print(LMH(x_plotexp,popt_x_mean ))
+
 
 #%% Save params
 
@@ -1663,14 +2064,20 @@ if save :
 path_save = 'E:\Baptiste\\Resultats_exp\\Courbure\\Resultats\\20240527_l_lmabda_a6_complet\\'
 
 save = False
-display = False
-axes = True
+display = True
+axes = False
 
 dates = ['231120', '231121', '231122', '231124', '231129', '231129', '231130', '240109', '240115', '240116' ]
 nom_exps = ['ECTD9', 'EDTH8', 'NPDP2', 'RLPY3', 'EJCJ6', 'MLO23', 'DMLO1', 'QSC07', 'TNB03', 'CCM03']
+# nom_exps = ['ECTD9', 'EDTH8', 'NPDP2', 'RLPY3', 'EJCJ6', 'MLO23', 'DMLO1', 'QSC10', 'TNB03', 'CCM03']
 t0s = [800, 500, 300, 1000, 600, 350, 400, 280, 500, 600]
 x0s = [400, 390, 150, 270, 260, 500, 630, 120, 670, 50]
 xfs = [600, 570, 680, 500, 480, 880, 950, 1520, 920, 200]
+
+
+# t0s = [800, 500, 300, 1000, 600, 350, 400, 93, 500, 600]
+# x0s = [400, 390, 150, 270, 260, 500, 630, 300, 670, 50]
+# xfs = [600, 570, 680, 500, 480, 880, 950, 1470, 920, 200]
 
 # x0s = [400, 390, 220, 270, 260, 500, 630, 120, 670, 50]
 # xfs = [600, 570, 570, 500, 480, 880, 950, 1520, 920, 200]
@@ -1678,10 +2085,12 @@ xfs = [600, 570, 680, 500, 480, 880, 950, 1520, 920, 200]
 # x0s = [400, 390, 360, 270, 260, 500, 630, 170, 670, 50]
 # xfs = [600, 570, 460, 500, 480, 880, 950, 1420, 920, 200]
 
+
+
 a = 6 # mm
 liste_exp = [0,1,2,3,4,5,6,7,8,9]
 
-liste_exp = [2]
+liste_exp = [7]
 
 def filtre_mean(data, n) :
     result = np.zeros(len(data))
@@ -1696,7 +2105,13 @@ def LMH(x,y) :
     
     return x[k[0,-1]] - x[k[0,0]]
 
-nb_t = 2
+
+
+
+
+
+
+nb_t = 10
 nb_exp = 10
       
 l = np.zeros(nb_exp, dtype = float)
@@ -1704,7 +2119,7 @@ l_exp = np.zeros(nb_exp, dtype = object)
 long_onde = np.zeros(nb_exp)
 kappa = np.zeros(nb_exp, dtype = object)
 
-
+erreur_lkappa = np.zeros(10)
 
 for i in liste_exp : #range (len (dates)) :
     
@@ -1765,7 +2180,7 @@ for i in liste_exp : #range (len (dates)) :
     else :
         data = data_m.copy() - np.nanmean(data_m)
 
-    if display :
+    if False :
         disp.figurejolie()
         # plt.pcolormesh(t, x, data,shading='auto')
         plt.pcolormesh(data,shading='auto')
@@ -1793,6 +2208,16 @@ for i in liste_exp : #range (len (dates)) :
             peaks_x.append(np.nanmax(data[x0:xf, bl]))
         
     
+    if display :
+        disp.figurejolie()
+        # plt.pcolormesh(t, x, data,shading='auto')
+        plt.pcolormesh(data[x0:xf,t0:],shading='auto')
+        plt.xlabel("Temps (frames)")
+        plt.ylabel("X (pixel)")
+        cbar = plt.colorbar()
+        cbar.set_label('Amplitude (m)')
+        # plt.clim(-0.01,0.01)
+    
     xs,ts = tools.sort_listes(peaks_x, peaks_t)
     
     
@@ -1817,6 +2242,7 @@ for i in liste_exp : #range (len (dates)) :
             yfit = forme[a + j: a + j + 2*a]
             xfit = x_plotexp[a +j:a +j + 2*a] 
             popt = np.polyfit(xfit,yfit, 2)
+
             popt_x[j] = -popt[0] * 2
             if axes :
                 popt_x[j] = -popt[0] 
@@ -1976,6 +2402,394 @@ for i in liste_exp : #range (len (dates)) :
     #         l_exp[i] = [l_t[2],l_t[4],l_t[6],l_t[7],l_t[8]]
     #         l[i] = np.mean(l_exp[i])     
             
+    erreur_lkappa[i] = np.std(l_t)
+    if display : 
+        disp.figurejolie()
+        disp.joliplot( r'$\kappa$ (m$^{-1}$)', r'l (m)', kappa_max, l_t, color = 2)
+        disp.joliplot( r'$\kappa$ (m$^{-1}$)', r'l (m)', kappa_max[:len(l_exp[i])], l_exp[i], color = 1)
+        if save :
+            plt.savefig(path_save + tools.datetimenow() + 'l_kappa_' + nom_exp + '.pdf')
+            plt.savefig(path_save + tools.datetimenow() + 'l_kappa_png_' + nom_exp + '.png')
+
+
+#%% l (lambda) BIS
+
+# aa = [4,5,6,7]
+# disp.figurejolie()
+# for ll in range(len(aa)) :
+#     a = int(aa[ll])
+
+path_save = 'E:\Baptiste\\Resultats_exp\\Courbure\\Resultats\\20240527_l_lmabda_a6_complet\\'
+
+save = False
+display = False
+axes = True
+
+dates = ['231120', '231121', '231122', '231124', '231129', '231129', '231130', '240109', '240115', '240116' ]
+nom_exps = ['ECTD9', 'EDTH8', 'NPDP2', 'RLPY3', 'EJCJ6', 'MLO23', 'DMLO1', 'QSC07', 'TNB03', 'CCM03']
+t0s = [800, 500, 300, 1000, 600, 350, 400, 280, 500, 600]
+x0s = [400, 390, 150, 270, 260, 500, 630, 120, 670, 50]
+xfs = [600, 570, 680, 500, 480, 880, 950, 1520, 920, 200]
+
+# x0s = [400, 390, 220, 270, 260, 500, 630, 120, 670, 50]
+# xfs = [600, 570, 570, 500, 480, 880, 950, 1520, 920, 200]
+
+# x0s = [400, 390, 360, 270, 260, 500, 630, 170, 670, 50]
+# xfs = [600, 570, 460, 500, 480, 880, 950, 1420, 920, 200]
+
+a = 6 # mm
+liste_exp = [0,1,2,3,4,5,6,7,8,9]
+
+liste_exp = [2]
+
+def filtre_mean(data, n) :
+    result = np.zeros(len(data))
+    for i in range (len(data)) :
+        result[i] = np.mean(data[i - n: i + n])
+    return result
+
+def LMH(x,y) :
+    half_max = np.nanmax(y) * 1/ 2
+    d = np.sign(half_max - y)
+    k = np.array(np.where(d == -1))
+    
+    return x[k[0,-1]] - x[k[0,0]]
+
+
+nb_t = 10
+nb_exp = 10
+      
+l = np.zeros(nb_exp, dtype = float)
+l_exp = np.zeros(nb_exp, dtype = object)
+long_onde = np.zeros(nb_exp)
+kappa = np.zeros(nb_exp, dtype = object)
+
+
+for i in liste_exp : #range (len (dates)) :
+    
+    #import les data laser
+    date = dates[i]
+    nom_exp = nom_exps[i]
+    
+    if nom_exp == 'CCM03' :
+        a = 2
+
+    dico, params, loc = ip.initialisation(date, nom_exp, exp = True, display = False)
+    
+    lambda_exp = float(dico[date][nom_exp]['lambda'])
+    k_exp = 2 * np.pi / lambda_exp
+    omega_exp = 2 * np.pi * float(dico[date][nom_exp]['fexc'])
+    H_exp = float(dico[date][nom_exp]['Hw'])
+    facq = float(dico[date][nom_exp]['facq'])
+    
+    folder_results = params['path_images'][:-15] + "resultats"
+    name_file = "positionLAS.npy"
+    data_originale = np.load(folder_results + "\\" + name_file)
+
+    data_originale = np.rot90(data_originale)
+    data_originale = np.flip(data_originale, 0)
+    
+    data_originale = data_originale - np.nanmean(data_originale) 
+    params['debut_las'] = 1
+    params['fin_las'] = np.shape(data_originale)[0] - 1
+    if nom_exp == 'CCM03' :
+        params['fin_las'] = np.shape(data_originale)[0] - 1600
+        # a = 3
+    
+    params['t0'] = 1
+    params['tf'] = np.shape(data_originale)[1] - 1
+    
+    [nx,nt] = data_originale[params['debut_las']:params['fin_las'],params['t0']:params['tf']].shape
+    
+    data = data_originale[params['debut_las']:params['fin_las'],params['t0']:params['tf']]
+    
+    #mise à l'échelle en m
+    data_m = data *  params['mmparpixely'] / 1000
+    data_m = data_m / params['grossissement']
+    
+    #filtre de la taille 2 * a pour diminuer le bruit
+    params['savgol'] = True
+    params['ordre_savgol'] = 2
+    params['taille_savgol'] = int( a / params['mmparpixel']*2)
+    signalsv = np.zeros(data.shape)
+    for w in range(0,nt):  
+        signalsv[:,w] = savgol_filter(data_m[:,w], params['taille_savgol'],params['ordre_savgol'], mode = 'nearest')
+        if np.mod(w,1000)==0:
+            print('On processe l image numero: ' + str(w) + ' sur ' + str(nt))
+    print('Done !')
+
+    
+    if params['savgol'] :
+        data = signalsv.copy()
+    else :
+        data = data_m.copy() - np.nanmean(data_m)
+
+    if False :
+        disp.figurejolie()
+        # plt.pcolormesh(t, x, data,shading='auto')
+        plt.pcolormesh(data,shading='auto')
+        plt.xlabel("Temps (frames)")
+        plt.ylabel("X (pixel)")
+        cbar = plt.colorbar()
+        cbar.set_label('Amplitude (m)')
+        # plt.clim(-0.01,0.01)
+    
+    x0 = x0s[i]
+    xf = xfs[i]
+    t0 = t0s[i]
+    
+    #On selectionne les 10 temps avec la plus forte amplitude
+    peaks_x = []
+    peaks_t = []
+    
+    if nom_exp == 'RLPY3' :
+        for bl in range(520,t0) :
+            peaks_t.append(bl)
+            peaks_x.append(np.nanmax(data[x0:xf, bl]))
+    else :
+        for bl in range(t0) :
+            peaks_t.append(bl)
+            peaks_x.append(np.nanmax(data[x0:xf, bl]))
+        
+    
+    if True :
+        disp.figurejolie()
+        # plt.pcolormesh(t, x, data,shading='auto')
+        plt.pcolormesh(data[x0:xf,t0:],shading='auto')
+        plt.xlabel("Temps (frames)")
+        plt.ylabel("X (pixel)")
+        cbar = plt.colorbar()
+        cbar.set_label('Amplitude (m)')
+        # plt.clim(-0.01,0.01)
+    
+    xs,ts = tools.sort_listes(peaks_x, peaks_t)
+    
+    
+    ts = np.array(ts, dtype = int)
+    liste_t = ts[-nb_t:]
+    kappa_max = np.zeros(nb_t)
+    l_t = np.zeros(nb_t)
+    #dans ces 10 temps, on regarde kappa (x)
+    for p in range (len(liste_t)) :
+    
+        forme = data[x0:xf,liste_t[p]]
+        
+        x_kappa = np.linspace(a / 1000 , (xf-x0 - a/ params['mmparpixel']) * params['mmparpixel'] / 1000, xf-x0 - int(2 * a/ params['mmparpixel']) )
+        popt_x = np.zeros(len(x_kappa))
+        popt_x_complet = np.zeros(len(x_kappa))
+        lala = np.zeros(len(x_kappa))
+        b_x = np.zeros(len(x_kappa))
+        x_plotexp = np.linspace(0, (xf-x0) * params['mmparpixel'] / 1000, (xf-x0) )
+        
+        kappa_exact = np.zeros(len(x_kappa))
+        forme_kappa = forme[int(a/ params['mmparpixel']) +1 :-int(a/ params['mmparpixel'])]
+        for ii in range(1, len(x_kappa) - 1):
+            dx = x_kappa[ii+1] - x_kappa[ii-1]
+            dy = forme_kappa[ii+1] - forme_kappa[ii-1]
+            d1 = dy / dx  # f'(x)
+        
+            dd = forme_kappa[ii+1] - 2*forme_kappa[ii] + forme_kappa[ii-1]
+            dx2 = (x_kappa[ii+1] - x_kappa[ii]) ** 2  # suppose espacement régulier
+            d2 = dd / dx2  # f''(x)
+            i
+        
+            # Courbure
+            kappa_exact[ii] = np.abs(d2) / (1 + d1**2)**(1.5)
+    
+        # fit d'un polynome sur tt les pts et on en extrait la courbure en fct de x
+        for j in range (len(forme) - int(2 * a/ params['mmparpixel'])) :
+            yfit = forme[a + j: a + j + 2*a]
+            xfit = x_plotexp[a +j:a +j + 2*a] 
+            popt = np.polyfit(xfit,yfit, 2)
+
+
+            a_x, b_x, c_x = popt
+            popt_x[j] = np.abs(a_x * 2)
+            popt_x_complet[j] = np.abs(a_x * 2) / (1 + (2*a_x*xfit[a] + b_x)**2)**(3/2)
+            
+            lala[j] = (1 + (2*a_x*xfit[a] + b_x)**2)**(3/2)
+            if axes :
+                popt_x[j] = -popt[0] 
+            # b_x[j] = popt[1]
+            # yth = np.polyval(popt, xfit)
+            # disp.joliplot('x (m)', r'$\kappa$ (m$^{-1}$)', xfit, yth, exp = False, color = 5)
+        # if nom_exp == 'MLO23' or nom_exp == 'ECTD9' or nom_exp == 'DMLO1' or nom_exp == 'TNB03' or nom_exp == 'NPDP2' or nom_exp == 'EJCJ6' or nom_exp == 'EDTH8' :
+        #     popt_x[np.where(popt_x < 0)] = 0
+        
+        # popt_x_mean = filtre_mean(popt_x ** 2, int(a / 2 / params['mmparpixel']))
+        print(np.max(lala))
+        popt_x_mean = filtre_mean(popt_x, int(a / 2 / params['mmparpixel']))
+        popt_x_mean_complet = filtre_mean(popt_x_complet, int(a / 2 / params['mmparpixel']))
+
+        
+        if False :
+            disp.figurejolie(width =  8.6 )
+            disp.joliplot(r'x (m)', '$\eta$ (m)', x_plotexp , forme, exp = False, color = 14, width =  8.6 / 2.5)
+            if save :
+                plt.savefig(path_save + tools.datetimenow() + 'forme_t_'+ str(p) + '_' + nom_exp + '.pdf')
+                plt.savefig(path_save + tools.datetimenow() + 'forme_t_'+ str(p) + '_' + nom_exp + '.png')
+        # if display :
+        #     disp.figurejolie()
+        #     disp.joliplot(r'x (m)', '$b$ (m-1)', x_kappa , b_x, exp = False, color = 14)
+        
+        #on trace kappa(x) brut et lissé (lissage moyen de taille a)
+        if True :
+            # disp.figurejolie(width =  8.6 / 2.5)
+            # disp.joliplot('x (m)', r'$\kappa^{2}$ (m$^{-1}$)', x_kappa, popt_x_mean, exp = False, color = 8, width =  8.6 / 2.5)
+            # # disp.joliplot('x (m)', r'$\kappa^{2}$ (m$^{-1}$)', x_kappa, popt_x ** 2, exp = False, color = 2)
+            # disp.joliplot('x (m)', r'$\kappa^{2}$ (m$^{-1}$)', x_kappa, popt_x, exp = False, color = 2, width =  8.6 / 2.5)
+            # plt.grid('on')
+            # if save :
+            #     plt.savefig(path_save + tools.datetimenow() + 'kappa_carre_x_t_'+ str(p) + '_' + nom_exp + '.pdf')
+            #     plt.savefig(path_save + tools.datetimenow() + 'kappa_carre_x_t_'+ str(p) + '_' + nom_exp + '.png')
+                
+                
+            # disp.figurejolie(width =  8.6 / 2.5)
+            # disp.joliplot('x (m)', r'$\kappa^{2}$ (m$^{-1}$)', x_kappa, popt_x_mean_complet, exp = False, color = 8, width =  8.6 / 2.5)
+            # # disp.joliplot('x (m)', r'$\kappa^{2}$ (m$^{-1}$)', x_kappa, popt_x ** 2, exp = False, color = 2)
+            # disp.joliplot('x (m)', r'$\kappa^{2}$ (m$^{-1}$)', x_kappa, popt_x_complet, exp = False, color = 2, width =  8.6 / 2.5)
+            # plt.grid('on')
+            
+            
+            disp.figurejolie(width =  8.6 )
+            # disp.joliplot('x (m)', r'$\kappa^{2}$ (m$^{-1}$)', x_kappa, popt_x_mean_complet, exp = False, color = 8, width =  8.6 / 2.5)
+            # disp.joliplot('x (m)', r'$\kappa^{2}$ (m$^{-1}$)', x_kappa, popt_x ** 2, exp = False, color = 2)
+            disp.joliplot('x (m)', r'$\kappa^{2}$ (m$^{-1}$)', x_kappa, popt_x_mean, exp = False, color = 2, width =  8.6 / 2.5)
+            # disp.joliplot('x (m)', r'$\kappa^{2}$ (m$^{-1}$)', x_kappa, lala, exp = False, color = 12, width =  8.6 / 2.5)
+            # disp.joliplot('x (m)', r'$\kappa^{2}$ (m$^{-1}$)', x_kappa, kappa_exact, exp = False, color = 2, width =  8.6 / 2.5)
+            plt.grid('on')
+            
+            # disp.figurejolie(width =  8.6 )
+            # disp.joliplot('x (m)', r'$\kappa^{2}$ (m$^{-1}$)', x_kappa, lala, exp = False, color = 8, width =  8.6 / 2.5)
+            # disp.joliplot('x (m)', r'$\kappa^{2}$ (m$^{-1}$)', x_kappa, kappa_exact, exp = False, color = 2, width =  8.6 / 2.5)
+            # disp.joliplot('x (m)', r'$\kappa^{2}$ (m$^{-1}$)', x_kappa, popt_x_mean, exp = False, color = 2, width =  8.6 / 2.5)
+            # plt.grid('on')
+        # if axes :
+            
+
+        #     fig, ax1 = plt.subplots()
+    
+        #     # Instantiate a second axes that shares the same x-axis
+        #     ax2 = ax1.twinx()  
+
+        #     ax1.plot(x_plotexp, forme, color = '#990000')
+        #     ax2.plot(x_kappa - 0.003, popt_x_mean, color = disp.vcolors(2))
+            
+        #     ax2.set_ylabel(r'$\kappa$ (m$^{-1}$)', color = disp.vcolors(2))
+        #     ax1.set_ylabel(r'$\eta$ (m)', color = '#990000') 
+        #     ax1.set_xlabel(r'$x$ (m)') 
+            
+        #     ax1.ticklabel_format(axis="y", style="sci", scilimits=(0,0))
+        #     ax1.ticklabel_format(axis='x', style="sci", scilimits=(0,0))
+        #     ax2.ticklabel_format(axis='y', style="sci", scilimits=(0,0))
+        #     plt.show()
+        
+        
+        #on cherche la largeur à mi hauteur
+        l_t[p] = LMH(x_kappa, popt_x_mean )
+        kappa_max[p] = np.nanmax(popt_x_mean)
+    
+    #Tri des résultats : si la taille trouvée fait  lambda /2 ou plus on enleve, c'est qu'il y a dautres maximums sur les cotés et ca fausse la mesure de la lmh  
+    l_exp[i] = l_t[np.where(l_t < x_kappa[-1] / 2)]
+    l[i] = np.mean(l_exp[i])
+    kappa[i] = np.mean(kappa_max[np.where(l_t < x_kappa[-1] / 2)])
+    long_onde[i] = lambda_exp
+        
+    if nom_exp == 'MLO23' :
+        if a == 10 :
+            l_exp[i] = l_t[np.where(l_t < 0.04)]
+            l[i] = np.mean(l_exp[i])
+            kappa[i] = np.mean(kappa_max[np.where(l_t < 0.04)])
+        if a == 6 :
+            l_exp[i] = [l_t[6],l_t[7], l_t[9]]
+            l[i] = np.mean(l_exp[i])
+            
+    if nom_exp == 'EDTH5' :
+        l_exp[i] = l_t[np.where(l_t < 0.028)]
+        l[i] = np.mean(l_exp[i])
+        kappa[i] = np.mean(kappa_max[np.where(l_t < 0.028)])
+    if nom_exp == 'EDTH8' :
+        if a == 6 :
+            '''MESURE A LA MAIN 2024/05/24'''
+            l_t[0] = 0.01438
+            l_t[1] = 0.01471
+            l_t[2] = 0.01785
+            l_t[3] = 0.01794
+            l_t[6] = 0.01689
+            l_t[9] = 0.01543
+            l_exp[i] = [l_t[0],l_t[1],l_t[2],l_t[3],l_t[6],l_t[9]]
+            l[i] = np.mean(l_exp[i])
+        
+    if nom_exp == 'QSC07' :
+        
+        if a == 6 :
+            l_exp[i] = [l_t[0],l_t[3],l_t[5]]
+            l[i] = np.mean(l_t[np.where(l_t < 0.05)])
+            l[i] = np.mean(l_exp[i])
+        kappa[i] = np.mean(kappa_max[np.where(l_t < 0.05)])
+
+    if nom_exp == 'CCM03' :
+        if a ==2 :
+            "MESURE A LA MAIN 2024/05/27"
+            l_t[1] = 0.00512
+            l_t[3] = 0.00529
+            l_t[7] = 0.00504
+            l_t[8] = 0.00509
+            l_exp[i] = [l_t[1],l_t[3],l_t[7],l_t[8]]
+            l[i] = np.mean(l_exp[i])
+        if a == 6 :
+            l_exp[i] = l_t[np.where(l_t < 0.012)]
+            l[i] = np.mean(l_exp[i])
+            kappa[i] = np.mean(kappa_max[np.where(l_t < 0.012)])
+    if nom_exp == 'ECTD9' :
+        if a == 6 :
+            '''MESURE A LA MAIN 2024/05/24'''
+            l_t[0] = 0.0212
+            l_t[1] = 0.0199
+            l_t[4] = 0.02127
+            l_t[6] = 0.02464
+            l_t[8] = 0.02243
+            l_t[9] = 0.0221
+            l_exp[i] = [l_t[0],l_t[1],l_t[4],l_t[6],l_t[8],l_t[9]]
+            l[i] = np.mean(l_exp[i])
+    if nom_exp == 'TNB03' :
+        if a == 10 :
+            l_exp[i] = [l_t[3],l_t[6],l_t[7],l_t[8],l_t[9]]
+            l[i] = np.mean(l_exp[i])
+        if a == 6 :
+            '''MESURE A LA MAIN 2024/05/16'''
+            l_t[3] = 0.0265
+            l_t[6] = 0.0289
+            l_t[7] = 0.0277
+            l_t[9] = 0.0294
+            l_exp[i] = [l_t[2],l_t[3],l_t[6],l_t[7],l_t[9]]
+            l[i] = np.mean(l_exp[i])     
+    if nom_exp == 'DMLO1' :
+        if a == 6 :
+            l_exp[i] = [l_t[2]]
+            l[i] = np.mean(l_exp[i])
+    if nom_exp == 'EJCJ6' :
+        if a == 6 :
+            '''MESURE A LA MAIN 2024/05/27'''
+            l_t[0] = 0.0199
+            l_t[1] = 0.0260
+            l_t[2] = 0.0224
+            l_t[6] = 0.0162
+            l_t[7] = 0.0160
+            l_t[9] = 0.0231
+            l_exp[i] = [l_t[0],l_t[1],l_t[2],l_t[6],l_t[7],l_t[9]]
+            l[i] = np.mean(l_exp[i])     
+    if nom_exp == 'RLPY3' :
+        if a == 6 :
+            '''MESURE A LA MAIN 2024/05/27'''
+            l_t[7] = 0.0252
+            l_exp[i] = [l_t[0],l_t[7],l_t[8],l_t[9]]
+            l[i] = np.mean(l_exp[i])     
+    # if nom_exp == 'NPDP2' :
+    #     if a == 6 :
+    #         l_exp[i] = [l_t[2],l_t[4],l_t[6],l_t[7],l_t[8]]
+    #         l[i] = np.mean(l_exp[i])     
+            
             
     if display : 
         disp.figurejolie()
@@ -1985,18 +2799,6 @@ for i in liste_exp : #range (len (dates)) :
             plt.savefig(path_save + tools.datetimenow() + 'l_kappa_' + nom_exp + '.pdf')
             plt.savefig(path_save + tools.datetimenow() + 'l_kappa_png_' + nom_exp + '.png')
     
-#%%
-
-# popt_x_mean
-# forme
-# x_kappa
-
-disp.figurejolie()
-disp.joliplot(r'$x$ (mm)', '$\eta$ (mm)', x_plotexp*1000, forme*1000, color = 18, exp = False)
-
-
-
-
 #%% Plot results and save params
 
 disp.figurejolie()
@@ -2208,8 +3010,10 @@ l_s = np.zeros(len(path))
 l_crack = np.zeros(len(path))
 err_kappa = np.zeros(len(path), dtype = object)
 popt_kappa = np.zeros(len(path), dtype = object)
+err_kappa_proche = np.zeros(len(path), dtype = object)
+err_kappa_profilproche = np.zeros(len(path), dtype = object)
 
-l = np.array([0.03012138, 0.01904747, 0.01279402, 0.02179882, 0.01237957, 0.04493331, 0.05779294, 0.03804824, 0.02929459, 0.00936516])
+# l = np.array([0.03012138, 0.01904747, 0.01279402, 0.02179882, 0.01237957, 0.04493331, 0.05779294, 0.03804824, 0.02929459, 0.00936516]) version avec taille de fit random
 l = np.array([0.02192333, 0.0162    , 0.00695415, 0.02272338, 0.0206, 0.03893331, 0.0438713 , 0.03204824, 0.02809459, 0.005135  ])
 nom_exps = ['ECTD9', 'EDTH8', 'NPDP2', 'RLPY3', 'EJCJ6', 'MLO23', 'DMLO1', 'QSC07', 'TNB03', 'CCM03']
 
@@ -2225,13 +3029,18 @@ for i in range (len(path)) :
         params = dic.open_dico(path[i])
         kmin_QSC = params['courbure']['k_maxmax']
         hmin_QSC = params['courbure']['amplitude_exp']
+        
+        if nom_expp == "QSC0R" :
+            uu = kmin_QSC
+            uuu = hmin_QSC
+        
             
     elif index[i] == 9 :        
         params_k = pandas.read_csv(path[i], header = None, sep = '\t')
         params_k = np.asarray(params_k)
         
-        kmin_QSC = params_k[:,2]
-        hmin_QSC = params_k[:,1]
+        kmin_QSC = np.append(0,params_k[:,2])
+        hmin_QSC = np.append(0,params_k[:,1])
         
         params = {}
         params ['nom_exp'] = 'CCM'
@@ -2251,22 +3060,25 @@ for i in range (len(path)) :
         params = dic.open_dico(path[i])
         kmin_QSC = params['courbure']['k_minmin']
         hmin_QSC = params['courbure']['h_mimmin']
+        if nom_expp == "QSC0R" :
+            uu = kmin_QSC
+            uuu = hmin_QSC
         
     
         
     
     def fit_2(x, a, b) :
-        return a * x**2 + b * x
+        return (a * x**2) + b * x
     
     popt, pcov = curve_fit(fit_2, hmin_QSC, kmin_QSC, p0 = [10000000, 10000], bounds = [[0,0], [100000000, 10000000]]) #np.polyfit(hmin_QSC, kmin_QSC,2)
     err_kappa[i] = pcov
     popt_kappa[i] = popt
     
-    h_tot = np.linspace(np.min(hmin_QSC), np.max(hmin_QSC), 100)
+    h_tot = np.linspace(0, np.max(hmin_QSC), 200)
     
-    disp.figurejolie()
-    disp.joliplot('A (m)', r'$\kappa$ (m$^{-1}$)', hmin_QSC, kmin_QSC, color = 5)
-    disp.joliplot('A (m)', r'$\kappa$ (m$^{-1}$)', h_tot, h_tot**2 * popt[0] + h_tot * popt[1], color = 2, exp = False, title = nom_expp)
+    disp.figurejolie(width = 8.6*4/5)
+    disp.joliplot('A (m)', r'$\kappa$ (m$^{-1}$)', hmin_QSC, kmin_QSC, cm = 2)
+    disp.joliplot('A (cm)', r'$\kappa$ (m$^{-1}$)', h_tot,fit_2(h_tot, popt[0], popt[1]), cm = 5, exp = False, title = nom_expp)
     
     if save : 
         plt.savefig(save_path + 'kappa_A_' + tools.datetimenow() + '.pdf')
@@ -2278,13 +3090,28 @@ for i in range (len(path)) :
     l_crack[i] = np.sum(dico[dates[index[i]]][nom_exps[index[i]]]['l_cracks']) / 1000
     
     kloug = np.where(nom_expp == exppps)[0][0]
-    a_s[i] = seuil_lcrack_0[kloug]        # L_crack = 0
+    a_s[i] = seuil_lcrack_0[kloug]        # L_crack = 0t
     # a_s[i] = seuil_lcrack_lambda[kloug]   # Lcrack = lambda
     # a_s[i] = tableau_1[index[i], 9]       # L_crack = lambda / 2 
     
-    k_s[i] = a_s[i]**2 * popt[0] + a_s[i] * popt[1]
+    
+    
+    k_s[i] = fit_2(a_s[i], popt[0], popt[1])
+
     lambda_s[i] = tableau_1[index[i], 6]
     plt.plot(a_s[i], k_s[i], 'ko')
+    
+    i_min = np.argmin(np.abs(hmin_QSC - a_s[i]))
+    err_kappa_profilproche[i] = np.abs(k_s[i] - kmin_QSC[i_min])
+    
+    err_kappa_proche[i] = np.min(np.abs(kmin_QSC - k_s[i]))
+    
+    if nom_expp == "TNB0R":
+        print('kappa =', k_s[i])
+        print('lambda = ', lambda_s[i])
+    
+
+    
     # plt.title(str(tableau_1[i,0]))
     # if save :    
     #     plt.savefig('E:\\Baptiste\\Resultats_exp\\Courbure\\Resultats\\240429_seuil_kappa_all\\' + params['date']  + '_' + params['nom_exp'][:3] + '_' + 'fitcourbure_seuil_' + titre + tools.datetimenow() + '.pdf')#, dpi = 500)
@@ -2391,6 +3218,27 @@ disp.joliplot(r'$\lambda$ (m)', r'$l_{crack}$ (m)', lambda_s, l_crack, color = 1
 
 fits.fit_powerlaw(lambda_s, l_s * k_s**2 * np.mean(D) / np.mean(h), display = True, xlabel = '$\lambda$ (m)', ylabel = r'$\kappa_c^{2}lD / h$')
 
+
+disp.figurejolie(width = 8.6/5*4)
+
+for i in range(len(uu)) :
+    if uuu[i] == 0 :
+        uu[i] = 0
+print(k_s[7])
+popt, pcov = curve_fit(fit_2, uuu, uu, p0 = [10000000, 10000], bounds = [[0,0], [100000000, 10000000]])
+h_tot = np.linspace(0, np.max(uuu), 200)
+
+kappaaaaaa = fit_2(a_s[7], popt[0], popt[1])
+
+disp.figurejolie(width = 8.6*4/5)
+
+disp.joliplot('A (m)', r'$\kappa$ (m$^{-1}$)', h_tot * 100,fit_2(h_tot, popt[0], popt[1]), cm = 5, exp = False)
+disp.joliplot('$A$ (cm)', '$\kappa$ (m$^{-1}$)', uuu*100, uu, cm = 2)
+
+
+plt.plot(a_s[7]*100, kappaaaaaa, 'ko')
+print(k_s[7])
+# plt.plot(a_s[7]*100, k_s[7], 'kx')
 #%%Graphs finaux
 save = False
 #l_s redefini avec le fit linéaire

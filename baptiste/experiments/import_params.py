@@ -15,7 +15,22 @@ import os
 import baptiste.files.dictionaries as dic
 import baptiste.display.display_lib as disp
 
+def import_images(loc, nom_exp, exp_type, nom_fich = "\image_sequence\\"):
+    fichiers = []                             
+    liste_images = []
 
+    fichiers = os.listdir(loc)        
+
+    for j in range (len (fichiers)):
+        if nom_exp == fichiers[j][8:13] :
+            if exp_type in fichiers[j]:
+                titre_exp = fichiers[j]
+                path_images = str(loc + fichiers [j] + nom_fich)
+
+    liste_images = os.listdir(path_images)
+
+    print (path_images)
+    return path_images, liste_images, titre_exp
 
 def import_param (titre_exp,date, exp_type = "TT"):
     """
@@ -102,9 +117,9 @@ def import_angle (date, nom_exp, loc, display = False):
     
     if display :
         
-        disp.figurejolie()
-        disp.joliplot("Distance horizontale au laser (mm)", "Hauteur laser (mm)", dx,dh, color = 8)
-        disp.joliplot("Distance horizontale au laser (mm)", "Hauteur laser (mm)", xxx, hprime[0] * xxx + hprime[1], color = 5, exp = False)
+        disp.figurejolie(width = 6)
+        disp.joliplot("Distance horizontale au laser (mm)", "Hauteur laser (mm)", dx,dh, color = 18)
+        disp.joliplot("Distance horizontale au laser (mm)", "Hauteur laser (mm)", xxx, hprime[0] * xxx + hprime[1], color = 8, exp = False)
     
     tab_angles = np.arctan(dh_prime/dx) * 180 / np.pi
 
@@ -336,7 +351,10 @@ def initialisation(date, nom_exp = '', exp = False, exp_type = "LAS", display = 
     params = {}
     params['date'] = date
     
-    if exp :
+    if exp_type == 'IND':
+        pass
+    
+    elif exp :
         params['exp_type'] = exp_type
         params['nom_exp'] = nom_exp
 

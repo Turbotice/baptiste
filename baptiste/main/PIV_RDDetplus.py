@@ -26,19 +26,32 @@ import time
 from PIL import Image
 from datetime import datetime
 from scipy.optimize import minimize
-%run Functions_FSD.py
-%run parametres_FSD.py
-%run display_lib_gld.py
+
+
+import baptiste.display.display_lib as disp
+import baptiste.experiments.import_params as ip
+import baptiste.files.file_management as fm
+import baptiste.image_processing.image_processing
+import baptiste.files.dictionaries as dic
+import baptiste.tools.tools as tools
+import baptiste.math.RDD as rdd
+import baptiste.math.fits as fits
+import baptiste.signal_processing.fft_tools as ft
 
 
 loc_h = 'D:\Banquise\Baptiste\Resultats_video\d221104\d221104_PIVA6_PIV_44sur026_facq151Hz_texp5000us_Tmot010_Vmot410_Hw12cm_tacq020s/'
 loc_h = 'W:\Banquise\\Data_DD_UQAR\\'
 
+
+date = '221104'
+
+dico = dic.open_dico()
+
 import scipy.io as io
-titre_exp = 'CCCS1'
-mmparpixel = import_calibration(titre_exp, date)
-mmparpixel = 1
-facq = 1
+titre_exp = 'PIVA6'
+mmparpixel = ip.import_calibration(titre_exp, date)
+# mmparpixel = 1
+# facq = 1
 
 """
                                                     HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH
@@ -59,8 +72,8 @@ display = True
 save_param = False
 save = False
   
-facq = 30 #151
-ratio_PIV = 8
+facq = 29.97 #151 #
+ratio_PIV = 16
 mmparpixel_PIV = mmparpixel * ratio_PIV
 
 
@@ -91,11 +104,16 @@ data = data_u
 data = np.transpose(data, (2,1,0)) #Pour passer de s(t,y,x) à s(x,y,t)
 data = np.flip(data, 1)
 
+crop = 3
+
+data = data[crop:-crop,crop:-crop,:]
+
+
 [nx,ny,nt] = data.shape
 
-x = np.linspace(0, nx * mmparpixel_PIV , nx)  #Taille X en pixel
-y = np.linspace(0, ny * mmparpixel_PIV , ny)  #Taille Y en pixel
-t = np.linspace(0, nt /facq, nt)       
+x = np.linspace(0, (nx-1) * mmparpixel_PIV / 1000 , nx)  #Taille X en pixel
+y = np.linspace(0, (ny-1) * mmparpixel_PIV / 1000 , ny)  #Taille Y en pixel
+t = np.linspace(0, (nt-1) /facq, nt)       
 
 
 #On enleve la moyenne temporelle pour chaque pixel
@@ -106,7 +124,7 @@ for j in range(data.shape[1]):
 #%% Interpolation et affichage
         
         
-                                                            """INTERPOLATION"""
+"""INTERPOLATION"""
 
 interp = False 
 """
@@ -141,7 +159,7 @@ if interp :
 
 display_video = False
 if display_video :
-    figurejolie()
+    disp.figurejolie()
     plt.pcolormesh(y*100, x*100, data[:,:,0], shading='auto')
     plt.xlabel("Y (cm)")
     plt.ylabel("X (cm)")
@@ -149,7 +167,7 @@ if display_video :
     cbar.set_label("Champ u")
     plt.axis("equal")
     for mmm in range (1,10):
-        figurejolie()
+        disp.figurejolie()
         plt.pcolormesh(y*100, x*100, data[:,:,mmm], shading='auto')
         plt.pause(0.01)
         cbar = plt.colorbar()
@@ -157,27 +175,41 @@ if display_video :
 
 # Affichage du champ de vitesse de la première image
 if display :
-    figurejolie()
-    plt.pcolormesh(y*100, x*100, data[:,:,80], shading='auto')
-    plt.xlabel("Y (cm)")
-    plt.ylabel("X (cm)")
+    disp.figurejolie(width = 8.6 * 5 / 4)
+    # disp.joliplot("X (cm)", "Y (cm)", x*100, y*100, table = data[:,:,80], div = True)
+    plt.pcolormesh(y*100, x*100, data[:,:,80], shading='auto', cmap = 'RdBu')
+    plt.ylabel("$Y$ (cm)")
+    plt.xlabel("$X$ (cm)")
     cbar = plt.colorbar()
-    cbar.set_label("Champ u")
+    cbar.set_label(r"$u$ (x,y)")
     plt.axis("equal")
-    plt.clim(-1,1)      
+    plt.clim(-0.3,0.3)     
+    
+# disp.figurejolie(width = 8.6 * 5 / 4)
+# blbl = np.zeros((20,20))
+# blbl[2,2] = -0.35
+# blbl[1,1] = 0.35
+
+# y_blbl = np.linspace(0, np.max(x) * 100,20)
+# x_blbl = np.linspace(0, np.max(y) * 100,20)
+
+# disp.joliplot("X (cm)", "Y (cm)", x_blbl, y_blbl, table = blbl, div = True)
+# plt.axis('equal')
+# plt.colorbar()
+
 
 #%%MOUVEMENT D'UN PIXEL
 x_pixel = 20
 y_pixel = 33
 
-plt.plot(x_pixel* mmparpixel_PIV *100 ,y_pixel* mmparpixel_PIV *100, 'mo')
-figurejolie()
+plt.plot(x_pixel* mmparpixel_PIV /10 ,y_pixel* mmparpixel_PIV /10, 'kd')
+disp.figurejolie()
 data_pixel = data[x_pixel,y_pixel,:]
 plt.plot(t, data_pixel)
 plt.title('pos pixel en fct du tps')
-fft_1 = fft.fft(data_pixel)
+fft_1 = fft.fft(data_pixel - np.mean(data_pixel))
 
-figurejolie()
+disp.figurejolie()
 f = np.linspace(0,facq,nt)
 plt.plot(f,np.abs(fft_1))
 plt.title('fft de ce mvt')
@@ -188,21 +220,23 @@ def demodulation(t,s, fexc):
     return c
 
 
-f_exc = 0.28
+f_exc = 0.4
 
 demod = demodulation(t,data,f_exc)
 
 demod[np.isnan(demod)] = 0 * demod[np.isnan(demod)] #on met les points nan à 0
 
 if display :
-    figurejolie()
-    plt.pcolormesh(y * 100, x * 100, (np.real(demod)), shading = 'auto')
-    plt.axis('equal')
+    disp.figurejolie(width = 8.6 * 5 / 4)
+    # disp.joliplot("X (cm)", "Y (cm)", x*100, y*100, table = data[:,:,80], div = True)
+    plt.pcolormesh(y*100, x*100, (np.real(demod)), shading='auto', cmap = 'RdBu')
+    plt.ylabel("$Y$ (cm)")
+    plt.xlabel("$X$ (cm)")
     cbar = plt.colorbar()
-    plt.xlabel("Y (cm)")
-    cbar.set_label("Champ u démodulé à " + str(f_exc) + "Hz")
-    plt.ylabel("X (cm)")
-    # plt.clim(vmin = -0.03, vmax = 0.03)
+    cbar.set_label(r"$u$ (x,y)")
+    plt.axis("equal")
+    # plt.clim(-0.04,0.04)     
+    
 
 #%%RDD
 data[np.isnan(data)] = 0 #met les nan à 0
@@ -211,26 +245,28 @@ ff = np.linspace(0,facq,nt)
 kky = np.linspace(0,mmparpixel_PIV,ny)
 kkx = np.linspace(0,mmparpixel_PIV,nx)
 YY = fft.fft2(data - np.nanmean(data))
-figurejolie()
+disp.figurejolie()
 plt.pcolormesh( np.log(np.abs(fft.fftshift(YY[0,:,:]))))
 cbar = plt.colorbar()
 #%%
 # 2) Demoduler pour angle
-fmin = 0.01
-fmax = 1.4
-nb_f = 500
+fmin = 0.1
+fmax = 0.8
+nb_f = 50
 
-padding = 9    #puissance de 2 pour le 0 padding
+padding = 8    #puissance de 2 pour le 0 padding
 k_xx = []
 k_yy = []
 kk = []
 theta = []
 fff = []
 
-mparpixel = 0.07988064791133845 * ratio_PIV #mesuré avec la taille du bateau...
+# mparpixel = 0.07988064791133845 * ratio_PIV #mesuré avec la taille du bateau...
+mparpixel = mmparpixel_PIV / 1000
 
 
-plotplot = False
+
+plotplot = True
 
 def cart2pol(x, y):
     rho = np.sqrt(x**2 + y**2)
@@ -251,13 +287,15 @@ for i in np.linspace(fmin, fmax, nb_f) :
     
     #zone kx>0 et ky <0 :
     # [int(nx_FFT/2):,:int(nx_FFT/2)]
-    max_fft = np.asarray([(np.where(np.max(np.abs(Y_FFT[int(nx_FFT/2):,:int(ny_FFT/2)])) == np.abs(Y_FFT[int(nx_FFT/2):,:int(ny_FFT/2)]))[0][0])/ nx_FFT,
-                          (np.where(np.max(np.abs(Y_FFT[int(nx_FFT/2):,:int(ny_FFT/2)])) == np.abs(Y_FFT[int(nx_FFT/2):,:int(ny_FFT/2)]))[1][0] - ny_FFT/2) / ny_FFT]) /mparpixel * 2 * np.pi
+    # max_fft = np.asarray([(np.where(np.max(np.abs(Y_FFT[int(nx_FFT/2):,:int(ny_FFT/2)])) == np.abs(Y_FFT[int(nx_FFT/2):,:int(ny_FFT/2)]))[0][0])/ nx_FFT,
+    #                       (np.where(np.max(np.abs(Y_FFT[int(nx_FFT/2):,:int(ny_FFT/2)])) == np.abs(Y_FFT[int(nx_FFT/2):,:int(ny_FFT/2)]))[1][0] - ny_FFT/2) / ny_FFT]) /mparpixel * 2 * np.pi
     
-    nx_FFT = np.shape(Y_FFT)[0]
-    ny_FFT = np.shape(Y_FFT)[1]
+    
+    max_fft = ((np.asarray([(np.where(np.max(np.abs(Y_FFT)) == np.abs(Y_FFT))[0][0]), (np.where(np.max(np.abs(Y_FFT)) == np.abs(Y_FFT))[1][0])] )) - nx_FFT/2) / nx_FFT /mparpixel* 2 * np.pi
+    
     k_x = np.linspace(-2*np.pi/(2* mparpixel), 2*np.pi/(mparpixel* 2), nx_FFT)
     k_y = np.linspace(-2*np.pi/(2* mparpixel), 2*np.pi/(mparpixel* 2), ny_FFT)
+
     
     k_xx.append(max_fft[0])
     k_yy.append(max_fft[1])
@@ -266,10 +304,13 @@ for i in np.linspace(fmin, fmax, nb_f) :
     fff.append(i)
     
     if plotplot :
-        figurejolie()
-        plt.pcolormesh(k_y,k_x, np.abs(Y_FFT),shading='auto')
-        plt.plot(k_yy[-1],k_xx[-1], 'ro', label = 'MAX FFT')
-        plt.legend()
+        disp.figurejolie(width = 8.6)
+        plt.pcolormesh(k_y,k_x, np.abs(Y_FFT),shading='auto', cmap = 'ma_cm')
+        # plt.pcolormesh(np.abs(Y_FFT),shading='auto', cmap = 'ma_cm')
+        # plt.plot(k_yy[-1],k_xx[-1], 'ro', label = 'MAX FFT')
+        plt.xlabel(r'$k_x$ (m$^{-1}$)' )
+        plt.ylabel(r'$k_y$ (m$^{-1}$)' )
+        # plt.legend()
  
 k_xx = np.asarray(k_xx)
 k_yy = np.asarray(k_yy)
@@ -277,21 +318,91 @@ kk = np.asarray(kk)
 theta = np.asarray(theta)
 fff = np.asarray(fff)
 
+from numpy.linalg import lstsq, LinAlgError
+def fit_quadratic_subpixel(img, window=11):
+    """
+    Ajuste un polynôme quadratique 2D autour du maximum
+    et renvoie la position sub-pixel.
+    """
+    # Position max entier
+    iy, ix = np.unravel_index(np.argmax(img), img.shape)
+    half = window // 2
+
+    # Extraire fenêtre centrée
+    y0 = max(0, iy-half)
+    y1 = min(img.shape[0], iy+half+1)
+    x0 = max(0, ix-half)
+    x1 = min(img.shape[1], ix+half+1)
+    sub = img[y0:y1, x0:x1]
+
+    # Coordonnées locales
+    yy, xx = np.indices(sub.shape)
+    X = xx.ravel().astype(float)
+    Y = yy.ravel().astype(float)
+    Z = sub.ravel().astype(float)
+
+    # Modèle : a x² + b y² + c x y + d x + e y + f0
+    A = np.vstack([X**2, Y**2, X*Y, X, Y, np.ones_like(X)]).T
+    p, *_ = lstsq(A, Z, rcond=None)
+    a, b, c, d, e, f0 = p
+
+    # Résolution du gradient = 0
+    M = np.array([[2*a, c],
+                  [c, 2*b]])
+    rhs = -np.array([d, e])
+    try:
+        sol = np.linalg.solve(M, rhs)
+    except LinAlgError:
+        sol = np.array([ix - x0, iy - y0])
+
+    x_peak_sub, y_peak_sub = sol
+
+    # Conversion en coordonnées image
+    x_peak_img = x0 + x_peak_sub
+    y_peak_img = y0 + y_peak_sub
+
+    # Valeur au sommet estimée
+    z_peak = a*x_peak_sub**2 + b*y_peak_sub**2 + c*x_peak_sub*y_peak_sub \
+             + d*x_peak_sub + e*y_peak_sub + f0
+
+    # return {
+    #     "integer_max": (iy, ix),
+    #     "subpixel_peak": (y_peak_img, x_peak_img),
+    #     "subpixel_peak_local": (y_peak_sub, x_peak_sub),
+    #     "z_peak": float(z_peak),
+    #     "fit_params": (a, b, c, d, e, f0),
+    #     "window_slice": (y0, y1, x0, x1)
+    # }
+
+    return x_peak_img, y_peak_img, float(z_peak)
+
+
+x_pic, y_pic, val_max = fit_quadratic_subpixel(np.abs(Y_FFT), window = 8) 
+
+ky_pic = (y_pic - ny_FFT/2) / ny_FFT /mparpixel* 2 * np.pi
+kx_pic = (x_pic - nx_FFT/2) / nx_FFT /mparpixel* 2 * np.pi
+
+disp.joliplot(r'$k_x$ (m$^{-1}$)' , r'$k_y$ (m$^{-1}$)', kx_pic, ky_pic, color = 2)
+
+plt.xlim(-80,80)
+plt.ylim(-270,270)
+
+print('k = ' + str(cart2pol(kx_pic,ky_pic)[0]))
 
 #%% Affichage :
-figurejolie()
-# joliplot('f(Hz)', 'angle (radian)',fff,theta, exp = False)
-joliplot('f(Hz)', 'angle (degrés)',fff,theta * 180 / np.pi, exp = False, color = 5)
-figurejolie()
-# joliplot('f(Hz)', r'K (m$^{-1}$)', fff*2, kk, color = 4)
-joliplot('f(Hz)', r'K (m$^{-1}$)', fff, kk, color = 6)
-# joliplot('f(Hz)', r'K (m$^{-1}$)', fff*2/3, kk, color = 9)
+disp.figurejolie()
+# disp.joliplot('f(Hz)', 'angle (radian)',fff,theta, exp = False)
+disp.joliplot('f(Hz)', 'angle (degrés)',fff,theta * 180 / np.pi, exp = False, color = 5)
+disp.figurejolie()
+# disp.joliplot('f(Hz)', r'K (m$^{-1}$)', fff*2, kk, color = 4)
+disp.joliplot('f(Hz)', r'K (m$^{-1}$)', fff, kk, color = 6)
+# disp.joliplot('f(Hz)', r'K (m$^{-1}$)', fff*2/3, kk, color = 9)
 
-# figurejolie()
+# disp.figurejolie()
 # plt.pcolormesh(np.abs(Y_FFT),shading='auto')
 
 
-# figurejolie()
+# disp.figurejolie()
 # plt.pcolormesh(np.real(demod),shading='auto')
 #%%Fit RDD :
     
@@ -309,18 +420,18 @@ logk = np.log(kk)
 
 popt, pcov = curve_fit(RDD, logk, logomega)
 
-figurejolie()
-joliplot(r'log(k)', r'log($\omega$)', logk, logomega, color= 13, exp = True)
+disp.figurejolie()
+disp.joliplot(r'log(k)', r'log($\omega$)', logk, logomega, color= 13, exp = True)
 
 popt1, pcov1 = curve_fit(RDD, logk[:59], logomega[:59])
-popt2, pcov2 = curve_fit(RDD, logk[78:160], logomega[78:160])
-popt3, pcov3 = curve_fit(RDD, logk[165:230], logomega[165:230])
+# popt2, pcov2 = curve_fit(RDD, logk[78:160], logomega[78:160])
+# popt3, pcov3 = curve_fit(RDD, logk[165:230], logomega[165:230])
 
-joliplot(r'log(k)', r'log($\omega$)', logk[:59], RDD(logk[:59], popt1[0], popt1[1]), color= 3, exp = False, legend = r'coeff = ' + str(round(popt1[0],2)))
+disp.joliplot(r'log(k)', r'log($\omega$)', logk[:59], RDD(logk[:59], popt1[0], popt1[1]), color= 3, exp = False, legend = r'coeff = ' + str(round(popt1[0],2)))
 
-joliplot(r'log(k)', r'log($\omega$)', logk[78:160], RDD(logk[78:160], popt2[0], popt2[1]), color= 5, exp = False, legend = r'coeff = ' + str(round(popt2[0],2)))
+# disp.joliplot(r'log(k)', r'log($\omega$)', logk[78:160], RDD(logk[78:160], popt2[0], popt2[1]), color= 5, exp = False, legend = r'coeff = ' + str(round(popt2[0],2)))
 
-joliplot(r'log(k)', r'log($\omega$)', logk[165:230], RDD(logk[165:230], popt3[0], popt3[1]), color= 8, exp = False, legend = r'coeff = ' + str(round(popt3[0],2)))
+# disp.joliplot(r'log(k)', r'log($\omega$)', logk[165:230], RDD(logk[165:230], popt3[0], popt3[1]), color= 8, exp = False, legend = r'coeff = ' + str(round(popt3[0],2)))
 
 #%% RANSAC pour le fit :
     
@@ -345,11 +456,11 @@ xx = logk[15:59]
 
 yy = model_robust.predict_y(xx)
 
-figurejolie()
+disp.figurejolie()
 
-joliplot(r'log(k)', r'log($\omega$)',data1[inliers, 0], data1[inliers, 1], legend='Inlier data 1', color = 3)
-joliplot(r'log(k)', r'log($\omega$)',data1[outliers, 0], data1[outliers, 1], color = 7)
-joliplot(r'log(k)', r'log($\omega$)', xx, yy, exp = False, color = 2)
+disp.joliplot(r'log(k)', r'log($\omega$)',data1[inliers, 0], data1[inliers, 1], legend='Inlier data 1', color = 3)
+disp.joliplot(r'log(k)', r'log($\omega$)',data1[outliers, 0], data1[outliers, 1], color = 7)
+disp.joliplot(r'log(k)', r'log($\omega$)', xx, yy, exp = False, color = 2)
 
 plt.annotate('Pente : ' + str(round(model_robust.params[1][1],2)),(logk[25],logomega[17]))
 
@@ -357,18 +468,18 @@ plt.legend(loc='lower left')
 
 g = np.exp(2 * data2[inliers2,1] - data2[inliers2,0])
    
-    
+    # 
 model_robust, inliers2 = ransac(data2, LineModelND, min_samples=2,
-                               residual_threshold=0.05, max_trials=2000)
+                                residual_threshold=0.05, max_trials=2000)
 outliers = (inliers2 == False)
 
 xx = logk[78:160]
 
 yy = model_robust.predict_y(xx)
 
-joliplot(r'log(k)', r'log($\omega$)',data2[inliers2, 0], data2[inliers2, 1], legend='Inlier data 2', color = 16)
-joliplot(r'log(k)', r'log($\omega$)',data2[outliers, 0], data2[outliers, 1], color = 7)
-joliplot(r'log(k)', r'log($\omega$)', xx, yy, exp = False, color = 2)
+disp.joliplot(r'log(k)', r'log($\omega$)',data2[inliers2, 0], data2[inliers2, 1], legend='Inlier data 2', color = 16)
+disp.joliplot(r'log(k)', r'log($\omega$)',data2[outliers, 0], data2[outliers, 1], color = 7)
+disp.joliplot(r'log(k)', r'log($\omega$)', xx, yy, exp = False, color = 2)
 
 plt.annotate('Pente : ' + str(round(model_robust.params[1][1],2)),(logk[105],logomega[78]))
 
@@ -376,23 +487,23 @@ g = np.mean(np.exp(2 * data2[inliers2,1] - data2[inliers2,0]))
 print('g = ' + str(round(g,3)))
 
 plt.legend(loc='lower right')
-   
+   # 
 model_robust, inliers = ransac(data3, LineModelND, min_samples=2,
-                               residual_threshold=0.05, max_trials=2000)
+                                residual_threshold=0.05, max_trials=2000)
 outliers = (inliers == False)
 
 xx = logk[161:275]
 
 yy = model_robust.predict_y(xx)
 
-joliplot(r'log(k)', r'log($\omega$)',data3[inliers, 0], data3[inliers, 1], legend='Inlier data 3', color = 12)
-joliplot(r'log(k)', r'log($\omega$)',data3[outliers, 0], data3[outliers, 1], legend='Outlier', color = 7)
-joliplot(r'log(k)', r'log($\omega$)', xx, yy, legend ='Robust line model', exp = False, color = 2)
+disp.joliplot(r'log(k)', r'log($\omega$)',data3[inliers, 0], data3[inliers, 1], legend='Inlier data 3', color = 12)
+disp.joliplot(r'log(k)', r'log($\omega$)',data3[outliers, 0], data3[outliers, 1], legend='Outlier', color = 7)
+disp.joliplot(r'log(k)', r'log($\omega$)', xx, yy, legend ='Robust line model', exp = False, color = 2)
 
 plt.annotate('Pente : ' + str(round(model_robust.params[1][1],2)),(logk[241],logomega[111]))
 
 no_use_data = (no_use_data == False)
-joliplot(r'log(k)', r'log($\omega$)', logk[no_use_data], logomega[no_use_data], color= 11, exp = True, legend = 'Data without fit')
+disp.joliplot(r'log(k)', r'log($\omega$)', logk[no_use_data], logomega[no_use_data], color= 11, exp = True, legend = 'Data without fit')
 
 plt.legend(loc='lower right')
 plt.show()    
@@ -401,12 +512,12 @@ plt.show()
 save = False
 if save :
     parametres = []
-    figurejolie()
-    # joliplot('f(Hz)', 'angle (radian)',fff,theta, exp = False)
-    joliplot('f(Hz)', 'angle (degrés)',fff,theta * 180 / np.pi, exp = False, color = 5)
+    disp.figurejolie()
+    # disp.joliplot('f(Hz)', 'angle (radian)',fff,theta, exp = False)
+    disp.joliplot('f(Hz)', 'angle (degrés)',fff,theta * 180 / np.pi, exp = False, color = 5)
     plt.savefig()
-    figurejolie()
-    joliplot('f(Hz)', r'K (m$^{-1}$)', fff, kk, color = 4)
+    disp.figurejolie()
+    disp.joliplot('f(Hz)', r'K (m$^{-1}$)', fff, kk, color = 4)
     plt.savefig()
     parametres.extend(["facq = " + str(facq), "ratio_PIV = " + str(ratio_PIV), "mparpixel = " + str(mparpixel)])
     parametres.extend(["facq = " + str(facq), "ratio_PIV = " + str(ratio_PIV), "mparpixel = " + str(mparpixel)])
@@ -426,7 +537,7 @@ X_interet = np.linspace(zone_dinteret_x[0],zone_dinteret_x[1],zone_dinteret_x[1]
 Y_interet = np.linspace(zone_dinteret_y[0],zone_dinteret_y[1],zone_dinteret_y[1]-zone_dinteret_y[0] ) 
 
 if display :
-    figurejolie()
+    disp.figurejolie()
     plt.pcolormesh(Y_interet, X_interet, (np.real(demod[zone_dinteret_x[0]:zone_dinteret_x[1],zone_dinteret_y[0]:zone_dinteret_y[1]])), shading = 'auto')
     plt.axis('equal')
     cbar = plt.colorbar()
@@ -457,7 +568,7 @@ k_x = np.linspace(-.5, .5, nx_FFT)
 k_y = np.linspace(-.5, .5, ny_FFT)
     
 if display :
-    figurejolie()
+    disp.figurejolie()
     plt.pcolormesh(k_y , k_x, np.abs(Y_FFT), shading = 'auto')
     plt.xlabel(r"$k_y (m^{-1})$")
     plt.ylabel(r"$k_x (m^{-1})$")
@@ -543,9 +654,9 @@ else :
 y_new_moinsx[ax:bx,ay:by] = Y_FFT[ax:bx,ay:by]
 
 if display :
-    figurejolie()
+    disp.figurejolie()
     plt.pcolormesh(np.abs(y_new_x))
-    figurejolie()
+    disp.figurejolie()
     plt.pcolormesh(np.abs(y_new_moinsx))
 
 
@@ -554,11 +665,11 @@ demod_stat_x = fft.ifft2(y_new_x)
 demod_stat_moinsx = fft.ifft2(y_new_moinsx)
 
 if display :
-    figurejolie()
+    disp.figurejolie()
     plt.pcolormesh(y , x ,np.real(demod_stat_x))
     plt.title("FFT inverse sens de propagation")
     
-    figurejolie()
+    disp.figurejolie()
     plt.pcolormesh(y , x, np.abs(demod_stat_moinsx))
     plt.title("FFT inverse onde réflechie")
 
@@ -573,7 +684,7 @@ for j in x_ATT:
     uuu = uuu[10:-10]
     profil_amp_x.append(np.mean(uuu))
 
-figurejolie()
+disp.figurejolie()
 plt.semilogy(profil_amp_x)
 profil_amp_x = np.asarray(profil_amp_x)
 profil_amp_x = profil_amp_x**2
@@ -584,7 +695,7 @@ for j in x_ATT:
     uuu = uuu[10:-10]
     profil_amp_moinsx.append(np.mean(uuu))
 
-figurejolie()
+disp.figurejolie()
 plt.semilogy(profil_amp_moinsx)
 profil_amp_moinsx = np.asarray(profil_amp_moinsx)
 profil_amp_moinsx = profil_amp_x**2
@@ -597,16 +708,16 @@ def exppp(x, a, b):
 attenuation_x = np.polyfit(x_ATT, np.log(profil_amp_x), 1)
 attenuation_moinsx = np.polyfit(x_ATT, np.log(profil_amp_moinsx), 1)
 
-figurejolie()
-joliplot(r"x (cm)", r"I", x_ATT, profil_amp_x, color = 3, exp = False, log = True, legend = r"f = " + str(int(f_exc) ) + " Hz")
-joliplot(r"x (cm)", r"I", x_ATT, x_ATT * attenuation_x[0] + attenuation_x[1], color = 5, exp = False, log = True, legend = r"fit, on trouve $\kappa = $" + str(round(attenuation_x[1],4)))
+disp.figurejolie()
+disp.joliplot(r"x (cm)", r"I", x_ATT, profil_amp_x, color = 3, exp = False, log = True, legend = r"f = " + str(int(f_exc) ) + " Hz")
+disp.joliplot(r"x (cm)", r"I", x_ATT, x_ATT * attenuation_x[0] + attenuation_x[1], color = 5, exp = False, log = True, legend = r"fit, on trouve $\kappa = $" + str(round(attenuation_x[1],4)))
 plt.xscale('linear')
 plt.yscale('log')
 
 
-figurejolie()
-joliplot(r"x (cm)", r"I", x_ATT, profil_amp_moinsx, color = 3, exp = False, log = True, legend = r"f = " + str(int(f_exc) ) + " Hz")
-joliplot(r"x (cm)", r"I", x_ATT, x_ATT * attenuation_moinsx[0] + attenuation_moinsx[1], color = 5, exp = False, log = True, legend = r"fit, on trouve $\kappa = $" + str(round(attenuation_x[1],4)))
+disp.figurejolie()
+disp.joliplot(r"x (cm)", r"I", x_ATT, profil_amp_moinsx, color = 3, exp = False, log = True, legend = r"f = " + str(int(f_exc) ) + " Hz")
+disp.joliplot(r"x (cm)", r"I", x_ATT, x_ATT * attenuation_moinsx[0] + attenuation_moinsx[1], color = 5, exp = False, log = True, legend = r"fit, on trouve $\kappa = $" + str(round(attenuation_x[1],4)))
 plt.xscale('linear')
 plt.yscale('log')
 
@@ -678,7 +789,7 @@ champ_k = kextraction(demod_stat_x, fit_length, 1)
 k_tot = np.transpose(champ_k[:-fit_length,:-fit_length])
 #AFFICHAGE CHAMP K
 k_tot = medfilt2d(k_tot, kernel_size=5)
-figurejolie()
+disp.figurejolie()
 plt.pcolormesh(k_tot**(5/3))
 plt.title('champ k, démodulé à ' + str(f_exc) + " Hz")
 cbar = plt.colorbar()

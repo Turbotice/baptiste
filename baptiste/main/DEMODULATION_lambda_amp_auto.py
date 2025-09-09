@@ -48,8 +48,8 @@ import baptiste.math.RDD as rdd
 import baptiste.math.fits as fits
 
 
-date = '221212'
-nom_exp = 'CCCS2'
+date = '221024'
+nom_exp = 'DAP10'
 exp = True
 exp_type = 'LAS'
 
@@ -59,12 +59,12 @@ dico, params, loc = ip.initialisation(date, nom_exp, exp = True, display = False
 
 #%%Paramètre de traitement
 
-params['fexc'] = 9.88
+params['fexc'] = 5.0
 
-save = True
+save = False
 kappa_only = False
-display = False
-savefig = True
+display = True
+savefig = False
 
 
 fichiers = os.listdir(loc)
@@ -111,8 +111,9 @@ fichiers = [params['path_images'][:-15]]
 liste_u = [1,2]
 
 #%% Selectionner tous les RDD qu'on veut
-save = True
-date_min = 240114
+save = False
+date_min = 221021
+date_max = 221026
 root_D = 'D:\\Banquise\\Baptiste\\Resultats_video\\d'
 root_E = 'E:\\Baptiste\\Resultats_video\\d'
 fichiers = []
@@ -120,29 +121,33 @@ fichiers = []
 for date in dico :
     if date.isdigit() :
 
-        if float(date) > date_min and float(date) < 240101 :
+        if float(date) > date_min and float(date) < date_max :
             print(date)
             
             for nom_exp in dico[np.str(date)] :
                 
-                if 'D' in dico[date][nom_exp] :
-                    pass                
-                else :
-                    if nom_exp[-1] == 'R' :
-                        dico, params, loc = ip.initialisation(date, nom_exp, exp = True, display = False)
-                        fichiers.append(params['path_images'][:-15])
+                # if 'D' in dico[date][nom_exp] :
+                #     pass                
+                # else :
+                #     if nom_exp[-1] == 'R' :
+                #         dico, params, loc = ip.initialisation(date, nom_exp, exp = True, display = False)
+                #         fichiers.append(params['path_images'][:-15])
                         
-        if float(date) > date_min and float(date) > 240101 :
-            print(date)
+                if nom_exp[0] == 'D' :
+                    dico, params, loc = ip.initialisation(date, nom_exp, exp = True, display = False)
+                    fichiers.append(params['path_images'][:-15])
+                        
+        # if float(date) > date_min and float(date) < date_max :
+        #     print(date)
             
-            for nom_exp in dico[np.str(date)] :
+        #     for nom_exp in dico[np.str(date)] :
                 
-                if 'D' in dico[date][nom_exp] :
-                    pass                
-                else :
-                    if nom_exp[-1] == 'R' :
-                        dico, params, loc = ip.initialisation(date, nom_exp, exp = True, display = False)
-                        fichiers.append(params['path_images'][:-15])
+        #         if 'D' in dico[date][nom_exp] :
+        #             pass                
+        #         else :
+        #             if nom_exp[-1] == 'R' :
+        #                 dico, params, loc = ip.initialisation(date, nom_exp, exp = True, display = False)
+        #                 fichiers.append(params['path_images'][:-15])
 
 
 
@@ -549,8 +554,9 @@ for file in fichiers :
  
 
 #%% Save dico
-
-dico = dic.add_dico(dico,date,nom_exp,'D', params['D'])
-dico = dic.add_dico(dico,date,nom_exp,'err_D', params['err_D'] )
-dico = dic.add_dico(dico,date,nom_exp,'rho_utilise', rho)
-dic.save_dico(dico)
+save_dicoo = False
+if save_dicoo :
+    dico = dic.add_dico(dico,date,nom_exp,'D', params['D'])
+    dico = dic.add_dico(dico,date,nom_exp,'err_D', params['err_D'] )
+    dico = dic.add_dico(dico,date,nom_exp,'rho_utilise', rho)
+    dic.save_dico(dico)

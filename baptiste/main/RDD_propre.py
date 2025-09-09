@@ -88,14 +88,14 @@ err_k = 0
 #%%
 data = np.stack((k,omega), axis = -1)  
 
-rho = 1000
+rho = 680
 
 
 blbl, inliers, outliers = fits.fit_ransac(np.log(k), np.log(omega), display = False)
 # inliers[25] = True
-width = 6.3 #8.6*4/5
+width = 8.6*4.4/5 #8.6*4/5
 disp.figurejolie(width = width)
-disp.joliplot(r'k (m$^{-1}$)',r"$\omega$ (m)", data[inliers, 0], data[inliers, 1], log = True, color = 14, width = width)
+disp.joliplot(r'k (m$^{-1}$)',r"$\omega$ (m)", data[inliers, 0], data[inliers, 1], log = True, cm = 6, width = 8.6, legend = 'Profilométrie 1D')
 
 # disp.joliplot(r'k (m$^{-1}$)',r"$\omega$ (m)", data[outliers, 0], data[outliers, 1], log = True, color = 15)
 
@@ -108,10 +108,115 @@ disp.joliplot(r'$k$ (m$^{-1}$)',r"$\omega$ (m)", k_lin, omega_cap, exp = False, 
 popt = fits.fit(rdd.RDD_flexion, data[inliers, 0], data[inliers, 1], display = False)
 
 disp.joliplot(r'$k$ (m$^{-1}$)',r"$\omega$ (s$^{-1}$)", k_lin, rdd.RDD_flexion(k_lin, popt[0][0]), exp = False, log = True, color = 2)
-plt.ylim([10, 5000])
+plt.ylim([20, 3000])
+plt.xlim (50 , 800)
 
-plt.savefig('Y:\Banquise\\Baptiste\\Articles\\Interaction ondes banquise laboratoire\\figures\\Figures_240617\\RDD_v4.svg')
+# plt.savefig('Y:\Banquise\\Baptiste\\Articles\\Interaction ondes banquise laboratoire\\figures\\Figures_240617\\RDD_v4.svg')
 
+#%% Ajout PIVA6
+
+path_PIVA6 = 'D:\Banquise\\Baptiste\\Resultats_video\\d221104\\d221104_PIVA6_PIV_44sur026_facq151Hz_texp5000us_Tmot010_Vmot410_Hw12cm_tacq020s\\resultats\\lambda_err_fexc221104_PIVA6.txt'
+
+
+data_PIVA6 = np.loadtxt(path_PIVA6)
+
+lambda_PIVA = data_PIVA6[:,0]
+f_PIVA = data_PIVA6[:,2]
+
+
+disp.joliplot(r'k (m$^{-1}$)',r"$\omega$ (m)",2 * np.pi / lambda_PIVA, 2 * np.pi * f_PIVA, log = True, cm = 3, width = 8.6, legend = 'DIC')
+
+#%% ALL RDD
+
+folder_path = "E:\Baptiste\\Resultats_exp\\All_RDD\\RDD_finales\\"
+
+
+
+k = []
+omega = []
+k_adim = []
+omega_adim = []
+ld_tot = []
+u= 0
+
+disp.figurejolie(width= 8.6*4.4/5)
+
+for filename in os.listdir(folder_path):
+    if filename.endswith(".txt"):
+        file_path = os.path.join(folder_path, filename)
+        
+        # Charger le fichier (adapté pour colonnes séparées par espaces ou tabulations)
+        try:
+            data = np.loadtxt(file_path)
+        except Exception as e:
+            print(f"Impossible de lire {filename} : {e}")
+            continue
+        
+        # Vérification qu'il y a au moins 3 colonnes
+        # if data.shape[1] < 3:
+        #     print(f"{filename} ne contient pas assez de colonnes.")
+        #     continue
+        
+        # Choix des colonnes
+        if filename.startswith("long"):
+            pass
+            # x = data[:, 0]
+            # y = data[:, 1]
+        else:
+            u+=1
+            
+            k_exp = 2 * np.pi / data[:, 0]
+            omega_exp = 2 * np.pi * data[:, 2]
+            
+            k = np.append(k, 2 * np.pi /  data[:, 0])
+            omega = np.append(omega, 2 * np.pi * data[:, 2])
+            
+            popt, pcov = curve_fit(rdd.RDD_flexion, k_exp, omega_exp) 
+            ld = (popt * 680 / 1000 / g) ** 0.25
+            ld_tot = np.append( ld_tot, ld)
+            g = 9.81
+            k_adim = np.append(k_adim, k_exp * ld )
+            omega_adim =np.append(omega_adim, omega_exp / np.sqrt(g / ld) )
+            
+            disp.joliplot(r'$k L_d$', r'$ \frac{ \omega }{ \sqrt{ g / L_d } }$',  k_exp * ld, omega_exp / np.sqrt(g / ld), cm = int( (ld - 0.002718783732938615) / (0.007465099823376279 - 0.002718783732938615)* 9) , alpha = 0.7, marker_cm= 'x', log = True)
+            
+disp.joliplot(r'$k L_d$', r'$ \frac{ \omega }{ \sqrt{ g / L_d } }$',  k_lin, k_lin**0.5, color = 8, exp = False, log = True)
+
+disp.joliplot(r'$k L_d$', r'$ \frac{ \omega }{ \sqrt{ g / L_d } }$',  k_lin, k_lin**2.5, color = 2, exp = False, log = True)
+plt.xlim(3e-1, 5)
+plt.ylim(3e-1,1e2) 
+           
+disp.figurejolie(width= 8.6)
+blbl = np.zeros((2,2))
+blbl[0,0] = 0.002718783732938615 * 1000
+blbl[1,1] = 0.007465099823376279 * 1000
+plt.pcolormesh(blbl, cmap = 'ma_cm')
+
+cbar = plt.colorbar()
+cbar.set_label("$L_d$ (mm)")
+
+           
+
+disp.figurejolie(width = 8.6)       
+k = np.array(k)
+omega = np.array(omega)
+disp.joliplot('$k$ (m$^{-1}$)', '$\omega$ (s$^{-1}$)',  k, omega, cm = 5, alpha = 0.5)
+
+
+
+disp.figurejolie(width =8.6*4.4/5)
+disp.joliplot(r'$k L_d$', r'$ \frac{ \omega }{ \sqrt{ g / L_d } }$',  k_adim, omega_adim, cm = 3, alpha = 0.7, marker_cm= 'x', log = True)
+k_lin = np.linspace(np.min(k_adim)*0.9, np.max(k_adim)*1.1, 300)
+def f(x, a,b) :
+    return np.sqrt( a * x + b * x**5)
+
+poptt, pcovv = curve_fit(f, k_adim, omega_adim)
+
+disp.joliplot(r'$k L_d$', r'$ \frac{ \omega }{ \sqrt{ g / L_d } }$',  k_lin, k_lin**0.5, color = 8, exp = False, log = True)
+
+disp.joliplot(r'$k L_d$', r'$ \frac{ \omega }{ \sqrt{ g / L_d } }$',  k_lin, k_lin**2.5, color = 2, exp = False, log = True)
+plt.xlim(3e-1, 5)
+plt.ylim(3e-1,1e2) 
 
 
 

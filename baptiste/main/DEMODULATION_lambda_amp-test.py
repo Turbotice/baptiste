@@ -46,8 +46,8 @@ import baptiste.files.dictionaries as dic
 import baptiste.tools.tools as tools
 
 
-date = '240109'
-nom_exp = 'QSC10'
+date = '221024'
+nom_exp = 'DAP08'
 exp = True
 exp_type = 'LAS'
 
@@ -66,28 +66,27 @@ display = True
 
 
 
-
 folder_results = params['path_images'][:-15] + "resultats"
 name_file = "positionLAS.npy"
 data_originale = np.load(folder_results + "\\" + name_file)
 
 if True : #cam_dessus :
     data_originale = np.rot90(data_originale)
-    data_originale = np.flip(data_originale, 0)
+    # data_originale = np.flip(data_originale, 0)
    
 
     
 data_originale = data_originale - np.nanmean(data_originale, axis = 0)    
 
 
-params['debut_las'] = 150
-params['fin_las'] = np.shape(data_originale)[0] - 420
+params['debut_las'] = 100
+params['fin_las'] = np.shape(data_originale)[0] - 400
 #100 / 400 Pour DAP
 #650 / 300 Pour CCCS1
 #1 / 200 pr CCCS2
 
-params['t0'] = 100
-params['tf'] = np.shape(data_originale)[1] - 1
+params['t0'] = 1 #0 (QSC10)
+params['tf'] = np.shape(data_originale)[1] - 1 #352 QSC10
 
 
 [nx,nt] = data_originale[params['debut_las']:params['fin_las'],params['t0']:params['tf']].shape
@@ -107,19 +106,22 @@ if False:
 # dim1=position (en pixel), dim2=temps (en frame) et valeur=position
 # verticale du laser en pixel.50#%% Pre-traitement
 
-params['savgol'] = True
-params['im_ref'] = False
+params['savgol'] = False
+params['im_ref'] = True
 
 params['minus_mean'] = True
 
 params['ordre_savgol'] = 2
-params['taille_savgol'] = 31
+params['taille_savgol'] = 21
 params['size_medfilt'] = 51
 
 
+# for i in range (nt-1) :
+#     for j in range (nx-1) :
+#         if data[j,i]*100 > data[j+1,i+1]*100 + 0.001 :
+#             data[j,i] = data[j+1,i+1]
 
-
-
+# data[:,19] = data[:,20]
 
 #enlever moyenne pr chaque pixel
 
@@ -155,35 +157,67 @@ if params['savgol'] :
 else :
     data = data_m.copy()
     
-if display:
-    disp.figurejolie()
-    # plt.pcolormesh(t, x, data,shading='auto')
-    plt.pcolormesh(data,shading='auto')
-    plt.xlabel("Temps (frames)")
-    plt.ylabel("X (pixel)")
-    cbar = plt.colorbar()
-    cbar.set_label('Amplitude (m)')
-    plt.clim(-0.01,0.01)
+    
+
 
     
+if False:
+    disp.figurejolie(width = 8.6/5*4 * 2.5, height  = 8.6 * 4 / 5)
+    # plt.pcolormesh(t, x, data,shading='auto')
+    plt.pcolormesh(t,x,data*100,shading='auto', cmap='RdBu')
+    plt.xlabel(r"$t$ (s)")
+    plt.ylabel(r"$x$ (m)")
+    # cbar = plt.colorbar()
+    # cbar.set_label(r'$\eta$ (cm)')
+    # plt.clim(-1,1)
+    # plt.colorbar()
+    # plt.savefig('Y:\Banquise\\Baptiste\\Manuscrit_these\\Figures\\fracture au labo\\4.caracterisation des ondes stationnaires\\spatio_png.png',dpi = 3000)
+    
+    
+    
+"""COLORBAR"""
+# disp.figurejolie(width = 8.6/5*4 * 2.5, height  = 8.6 * 4 / 5)
+
+# nnnn = 10
+# xxxx = np.append(0,list( np.max(x) / range(nnnn,0,-1)))
+# tttt = np.append(0,list( np.max(t) / range(nnnn,0,-1)))
+
+
+# blbl = np.zeros((nnnn,nnnn))
+# blbl[0,0] = np.max(data*1000)
+# blbl[0,1] = np.min(data*1000)
+
+# plt.pcolormesh(tttt, xxxx, blbl,shading='auto', cmap='RdBu')
+# plt.xlabel(r"$t$ (s)")
+# plt.ylabel(r"$x$ (m)")
+# cbar = plt.colorbar()
+# cbar.set_label(r'$\eta$ (mm)')
+
+
+
 #%% Analyse d'un signal temporel
+
+PP1 = np.zeros((nx, int(nt/2)))
 if True:
     
     #On prend un point qcq en x, et on regarde le signal au cours du temps.
-    disp.figurejolie()
-    i = 200
-    
+    disp.figurejolie(width = 8.6*2/3)
+    for i in range(nx):    
     # On va regarder la periode sur signal.
     
-    Y1 = fft.fft(data[i,:]- np.mean(data[i,:]))
-    
-    P2 = abs(Y1/nt)
-    P1 = P2[1:int(nt/2+1)]
-    P1[2:-1] = 2*P1[2:-1]
-    
-    
-    f = params['facq'] * np.arange(0,int(nt/2)) / nt 
-    disp.joliplot('f (Hz)', '|P1(f)|', f, P1, title = 'Single-Sided Amplitude Spectrum of X(t)', exp = False)
+        Y1 = fft.fft(data[i,:]- np.mean(data[i,:]))
+        
+        P2 = abs(Y1/nt)
+        P1 = P2[1:int(nt/2+1)]
+        P1[2:-1] = 2*P1[2:-1]
+        
+        PP1[i-200,:] = P1
+        
+        f = params['facq'] * np.arange(0,int(nt/2)) / nt 
+        
+        
+    disp.joliplot('f (Hz)', '|P1(f)|', f, np.mean(PP1, axis = 0), exp = False, cm = 4)
+    plt.ylim(0,1e-6)
     
     print('f = ', f[np.where(np.abs(P1) == np.max(np.abs(P1)))][0], 'Hz')
     
@@ -359,8 +393,8 @@ save = False
 
 #%% AMPLITUDE V2
 
-params['t0_A'] = 20
-params['x0_A'] = 50
+params['t0_A'] = 0
+params['x0_A'] = 0
 params['larg_fit_a'] = 2
 
 display_all = True
@@ -375,18 +409,18 @@ T_max = np.zeros(nx - params['x0_A'], dtype = int)
 Amp_moy = np.zeros(nx - params['x0_A'])
 
 t_pix = np.linspace(params['t0_A'], nt, nt-params['t0_A'])
-x_pix = np.linspace(params['x0_A'], nx, nx - params['x0_A'])
+x_pix = x# np.linspace(params['x0_A'], nx, nx - params['x0_A'])
 
-t_plot = np.linspace(0, (nt-params['t0_A']) / params['facq'], nt-params['t0_A'])
+t_plot = t# np.linspace(0, (nt-params['t0_A']) / params['facq'], nt-params['t0_A'])
 
 distance = int(params['facq']/ params['fexc']) - 4
 
 for i in range(params['x0_A'], nx,1) : #pour chaque pixel
     pix = data[i, params['t0_A']:]
     
-    if display_all and i == params['x0_A'] :
-        disp.figurejolie()
-        disp.joliplot("t (s)", r"$\eta$ (m)", t_plot, pix, exp = False, color = 5) #mvt du pixel en fct du tps
+    if display_all and i == 855 : # i == params['x0_A'] :
+        disp.figurejolie(width = 8.6/5*4 * 2.5, height  = 8.6 * 4 / 5)
+        disp.joliplot("t (s)", r"$\eta$ (cm)", t_plot, pix*100, exp = False, color = 5, cm = 2) #mvt du pixel en fct du tps
     
     peaks_max_0 = find_peaks(pix, distance = distance)
     
@@ -428,11 +462,12 @@ for i in range(params['x0_A'], nx,1) : #pour chaque pixel
     Amp_t["peaks_min"][str(i)] = peaks_min
     Amp_t["peaks_max"][str(i)] = peaks_max
 
-    if display_all and i == int((nx- params['x0_A'])/2):  
-        disp.figurejolie()
-        disp.joliplot("t", "Amp", peaks_max[:len(Amp_t_x)], Amp_t_x)
+    if display_all and i == 855 :# i == int((nx- params['x0_A'])/2):  
+        disp.figurejolie(width = 8.6 * 4/5)
+        disp.joliplot(r"$t$ (s)", r"$A$ (cm)", peaks_max[:len(Amp_t_x)]/params['facq'], Amp_t_x * 100/2, cm = 5, width = 6)
+        uuuuu = Amp_t_x * 100/2
     
-    Amp_max[i - params['x0_A']] = np.max(Amp_t_x)
+    Amp_max[i - params['x0_A']] = np.quantile(Amp_t_x[:20] , 0.94)
     T_max[i - params['x0_A']] = int(np.where(np.max(Amp_t_x) == Amp_t_x)[0][0])
     Amp_moy[i - params['x0_A']] = np.mean(Amp_t_x[T_max[i - params['x0_A']]:])
     
@@ -448,9 +483,9 @@ print('amp max =', Amp_t['Amp_max'], 'm')
 print('amp moy =', Amp_t['Amp_moy'], 'm')
 
 if display :
-    disp.figurejolie()
-    disp.joliplot('x', 'Amp', x_pix, savgol_filter(Amp_t['Amp_max_x'], params['taille_savgol'],params['ordre_savgol'], mode = 'nearest'), exp = False, color = 1, legend = 'Amp max')
-    disp.joliplot('x', 'Amp', x_pix, savgol_filter(Amp_t['Amp_moy_x'], params['taille_savgol'],params['ordre_savgol'], mode = 'nearest'), exp = False, color = 5, legend = 'Amp moy')
+    disp.figurejolie(width = 8.6 * 4/5)
+    disp.joliplot(r'$x$ (m)', r'$A$ (cm)', x, savgol_filter(Amp_t['Amp_max_x']/2*100, params['taille_savgol'],params['ordre_savgol'], mode = 'nearest'), exp = False, cm = 2, legend = r'$A_{max}$')
+    # disp.joliplot(r'$x$ (m)', r'$A$ (cm)', x_pix * params['mmparpixel'] / 1000, savgol_filter(Amp_t['Amp_moy_x']/2*100, params['taille_savgol'],params['ordre_savgol'], mode = 'nearest'), exp = False, cm = 7, legend = r'$A_{plateau}$')
     # disp.joliplot('x', 'Amp', np.mean(Amp_t['Tmax']), Amp_t['Amp_moy'], color = 8)
     # disp.joliplot('x', 'Amp', np.mean(Amp_t['Tmax']), Amp_t['Amp_max'], color = 8)
 #%% Save Amplitude
@@ -872,10 +907,10 @@ if save :
 
 #%% Demodulation et amplitude
 
-f_0 =params['fexc']
+f_0 = params['Tmot']
 u = 1
 t = np.arange(0,nt)/params['facq']
-
+display = False
 save = False
 # param_complets = param_complets.tolist()
 f_exc = f_0 * u
@@ -894,7 +929,7 @@ for i in range (nx):
     a = data[i,:]
     amp_demod.append(np.sum(a * np.exp(2*np.pi*1j*f_exc*t))*2/nx)
     
-if False : #display : 
+if display : 
     disp.figurejolie()
     disp.joliplot("temps(s)", "Amplitude (m)", t,a, exp = False)
  
@@ -902,7 +937,7 @@ if False : #display :
 amp_demod = np.asarray(amp_demod)
 I = (np.abs(amp_demod))**2 #tableau intensite (avec amp en m)
  
-if True : #display :
+if display :
     disp.figurejolie()
     disp.joliplot(r"x (cm)",r"amplitude (m)", X, np.abs(amp_demod), exp = False, log = False, legend = r"f = " + str(int(f_exc) ) + " Hz")
 
@@ -930,7 +965,7 @@ else :
     
 y_new_moinsx[ax:bx] = Y_FFT[ax:bx]
 
-if True :
+if display :
     disp.figurejolie()
     plt.plot(np.abs(y_new_x))
     disp.figurejolie()
@@ -941,7 +976,7 @@ if True :
 demod_stat_x = fft.ifft(y_new_x)
 demod_stat_moinsx = fft.ifft(y_new_moinsx)
 
-if True :
+if display :
     disp.figurejolie()
     plt.plot(X, np.abs(demod_stat_x))
     plt.title("FFT inverse sens de propagation")
@@ -990,15 +1025,16 @@ if save :
 #%% Longueur d'onde
 
 save = False
+display = True
 
 padding = 12
 
 ampfoispente = np.append( amp_demod * np.exp(attenuationA[0][1] * X), np.zeros(2**padding - nx))
 ampfoispente_0 = np.append( (amp_demod) , np.zeros(2**padding - nx))
 
-disp.figurejolie()
-disp.joliplot("X (cm)", "Signal", X, np.real(ampfoispente[:nx]),color =2, legend = r'Signal démodulé * atténuation (m)', exp = False)
-disp.joliplot("X (cm)", "Signal", X, np.real(ampfoispente_0[:nx]),color = 10, legend = r'Signal démodulé', exp = False)
+disp.figurejolie(width = 8.6 * 4 / 5)
+# disp.joliplot("X (cm)", "Signal", X, np.real(ampfoispente[:nx]), cm = 5, legend = r'Signal démodulé * atténuation (m)', exp = False)
+disp.joliplot("X (cm)", "$\eta_{demod}$ (mm)", X, savgol_filter(np.real(ampfoispente_0[:nx]) * 1000, 71,2, mode = 'nearest'), cm = 5, legend = r'Signal démodulé', exp = True, marker_cm= 'x', width = 2)
 if save :
     plt.savefig(params['path_images'][:-15] + "resultats" + "/" + "Partie réelle_Signal_démodulé_" + str(round(f_exc)) + "Hz" + ".pdf", dpi = 1)
     
@@ -1008,14 +1044,18 @@ FFT_demod_padding = fft.fft((ampfoispente)-np.mean((ampfoispente)))
 FFT_demod_padding_0 = fft.fft((ampfoispente_0)-np.mean((ampfoispente_0)))
 FFT_demod = fft.fft((ampfoispente_0[:nx])-np.mean((ampfoispente_0[:nx])))
 
+# FFT_demod = savgol_filter(np.real(ampfoispente_0[:nx]) * 1000, 71,2, mode = 'nearest')
+
 # P2 = abs(FFT_demod/nt)
 # P1 = P2[1:int(nt/2+1)]
 # P1[2:-1] = 2*P1[2:-1]
-k_padding = np.linspace(0, nx ,2**padding) 
+k_padding = np.linspace(0, 2 * np.pi / params['mmparpixel']*1000 ,2**padding)#  / (nx * params['mmparpixel']/1000)
 k = np.linspace(0,nx,nx)
 
-disp.figurejolie()
-disp.joliplot(r'k ($mm^{-1}$)', r'|P1(k)|',k, np.abs(FFT_demod), exp = False, title = "FFT")
+disp.figurejolie(width = 8.6 * 4 / 5)
+disp.joliplot(r'k ($m^{-1}$)', r'$|P1(k)|$',k_padding, np.abs(FFT_demod_padding_0), exp = False, cm = 5)
+plt.xlim(0,600)
+# plt.ylim(0,0.04)
 
 disp.figurejolie()
 disp.joliplot(r'k ($mm^{-1}$)', r'|P1(k)|',k_padding, np.abs(FFT_demod_padding),color = 5, exp = False, legend = "FFT zero padding 2**" + str(padding))
@@ -1026,10 +1066,10 @@ if save :
 
 #%%find_peaks
 
-D_environ = 0.05E-5
+D_environ = 3E-5
 tension_surface = 0.05
 g = 9.81
-rho = 900
+rho = 680
 dsurrho = D_environ / rho
 padding_0 = True
 
@@ -1097,13 +1137,13 @@ if f_0*u >250:
     qtt_pics = 50
 
 
-peaks1, _ = find_peaks(abs(mean_fft), prominence = [prominence/qtt_pics,None], distance = 1, width=(2,50))
+peaks1, _ = find_peaks(abs(mean_fft), prominence = [prominence/qtt_pics,None], distance = 10, width=(2,50))
 
 
 
 pics_lala = []
         
-tolerance_k = 1/2
+tolerance_k = 1
 # if f_0*u > 80 :
 #     tolerance_k = 1/7
 # if f_0*u >140:
@@ -1139,15 +1179,15 @@ seuil_arbitraire = 1.2 #ATTENTION, ici on fixe un seuil arbitraire qui peut êtr
                         #alors il correspond à la longueure d'onde du signal
 moymoy = False
 for uuu in pics_lala :
-    if max(np.abs(mean_fft[pics_lala])) != np.abs(mean_fft[uuu]):
-        if max(np.abs(mean_fft[pics_lala])) > np.abs(mean_fft[uuu]) * seuil_arbitraire :
-            peaks = np.where(max(np.abs(mean_fft[pics_lala])) == np.abs(mean_fft))[0]
+    if np.max(np.abs(mean_fft[pics_lala])) != np.abs(mean_fft[uuu]):
+        if np.max(np.abs(mean_fft[pics_lala])) > np.abs(mean_fft[uuu]) * seuil_arbitraire :
+            peaks = np.where(np.max(np.abs(mean_fft[pics_lala])) == np.abs(mean_fft))[0]
         else :
             moymoy = True
     else :
         peaks = [uuu]
-    # if max(np.abs(mean_fft)) == np.abs(mean_fft[uuu]) :
-    #     pics_lala = np.where(max(np.abs(mean_fft)) == np.abs(mean_fft))[0]
+    # if np.max(np.abs(mean_fft)) == np.abs(mean_fft[uuu]) :
+    #     pics_lala = np.where(np.max(np.abs(mean_fft)) == np.abs(mean_fft))[0]
 if moymoy :
     peaks = pics_lala
     if len(peaks) > 2 :
@@ -1224,12 +1264,12 @@ if save :
 
 #%%PLOT longueure d'onde avec le signal
 
-indice = 16 # int(np.round(indice))
+indice = indice_tot # int(np.round(indice))
 ecart_indice = 2
 
 save = False
 # param_complets = param_complets.tolist()
-f_exc = params['fexc']
+f_exc = params['Tmot']
 amp_demod = []
 cut_las = 0
 

@@ -133,8 +133,8 @@ t = np.linspace(0, nt /params['facq'], nt)
 # data = imp.substract_mean(data, space = True, temp = False)
 
 #%%
-champ_u = data_brut_u["u_original"]
-champ_v = data_brut_v["v_original"]
+# champ_u = data_brut_u["u_original"]
+# champ_v = data_brut_v["v_original"]
 
 data_u = np.zeros( (np.shape(champ_u)[0],champ_u[0][0].shape[0],champ_u[0][0].shape[1])  )
 data_v = 0
@@ -255,7 +255,7 @@ demod = ft.demodulation(t,data,params["f_exc"])
 
 if display :
     params = disp.figurejolie(params, nom_fig = 'champ_demodule_' + str(params["f_exc"]) + "Hz") 
-    params[str(params['num_fig'][-1])] = disp.joliplot("X (m)","Y (m)",x,y,table = (np.real(demod)), tcbar = 'Champ u démodulé à ' + str(params["f_exc"]) + "Hz")  
+    params[str(params['num_fig'][-1])] = disp.joliplot("X (m)","Y (m)",x,y,table = (np.real(demod)), tcbar = 'Champ u démodulé à ' + str(params["f_exc"]) + "Hz", div = True)  
     plt.clim(0, np.quantile(data[:,:,0],0.50))
     if save :
         sv.save_graph (path, 'FFT_2D', params = params, num_fig = False, nc = False, pkl = True)
@@ -275,10 +275,11 @@ else :
 
     
 params = disp.figurejolie(params) 
-ft.plot_fft(YY, f1 = kkx, f2 = kky, f3 = ff, log = True)
+ft.plot_fft(YY, f1 = kkx, f2 = kky, f3 = ff, log = False)
+
 
 params[str(params['num_fig'][-1])] = sv.data_to_dict(['kx','ky', 'f'], [kkx,kky,ff], data = YY)
-sv.save_graph (path, 'FFT_2D', params = params, num_fig = False, nc = False, pkl = True)
+# sv.save_graph (path, 'FFT_2D', params = params, num_fig = False, nc = False, pkl = True)
 
 #%% omega(k) avec fft MARCHE PAS
 

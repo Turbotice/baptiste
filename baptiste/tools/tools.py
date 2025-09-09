@@ -10,6 +10,9 @@ import numpy as np
 from datetime import datetime
 
 
+def normalize(x) :
+    return (x - np.min(x)) / (np.max(x) - np.min(x)) 
+
 def max_fit2(x, xmax, a = 5):
     
     nx = len(x)

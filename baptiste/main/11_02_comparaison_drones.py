@@ -25,6 +25,7 @@ import h5py
 import cv2
 from scipy import interpolate
 from scipy.signal import savgol_filter
+from scipy.interpolate import RegularGridInterpolator
 
 import baptiste.display.display_lib as disp
 import baptiste.experiments.import_params as ip
@@ -33,23 +34,39 @@ import baptiste.image_processing.image_processing as imp
 import baptiste.math.fits as fits
 import baptiste.math.RDD as rdd
 import baptiste.files.save as sv
+import baptiste.files.dictionaries as dic
 
 
 import icewave.tools.matlab2python as m2p
 import icewave.baptiste.Fct_drone_1102 as fd
+import icewave.drone.drone_projection as dp
 
 
 #%% Import transformation
 
-path = "W:\SagWin2024\\Data\\0211\\Drones\\transformations\\"
+path = "W:\SagWin2024\\Data\\0211\\Drones\\"
 
-#Mesange
-file = "mesange_structure.mat"
-params_mesange = fd.open_mat(path, file)
 
-#Bernache
-file = "bernache_structure.mat"
-params_bernache = fd.open_mat(path, file)
+file1 = "procruste_operation_i0_520_Nbframes_4000_any_drones.pkl"
+
+transform = dic.open_dico(path + file1)
+
+file2 = "parameters_3drones.pkl"
+
+param = dic.open_dico(path + file2)
+
+file3 = "synchro_3drones.pkl"
+
+synchro_drones = dic.open_dico(path + file3)
+
+file4 = 'structure_buoys_tracking_3drones.pkl'
+
+buoys = dic.open_dico(path + file4)
+
+file5 = 'K:\Share_hublot\\Data\\0211\\Summary\\records_0211.pkl'
+
+phones = dic.open_dico(file5)
+
 
 
 #%% IMPORT DATA
@@ -58,77 +75,253 @@ params_bernache = fd.open_mat(path, file)
 path = "Y:\Banquise\\Baptiste\\Resultats\\Analyse_1102\\Data\\"
 
 
-filename = "PIV_processed_i011500_N15500_Dt4_b1_W32_xROI1_width3839_yROI1_height2159_scaled_bernache.mat"
-filename = 'PIV_processed_i011496_N15496_Dt4_b1_W32_xROI1_width3839_yROI1_height2159_scaled_mesange.mat'
+filename_bernache = "PIV_processed_i011500_N15500_Dt4_b1_W32_xROI1_width3839_yROI1_height2159_scaled_bernache.mat"
+filename_mesange = 'PIV_processed_i011496_N15496_Dt4_b1_W32_xROI1_width3839_yROI1_height2159_scaled_mesange.mat'
 
 save_path = 'Y:\Banquise\\Baptiste\\Resultats\\Analyse_1102\\Mesange'
 
-f = h5py.File(path + filename,'r') 
+data_mesange = fd.open_mat(path, filename_mesange)
 
-matdata = open(path + filename, 'r')
+data_bernache = fd.open_mat(path, filename_bernache)
 
-data = m2p.mat_to_dict(f, f )
+#%% Synchronize data
+video = False
+display = True
 
-Vz = data['m']['Vz'] #t,y,x en s, m, m
-Vz_og = data['m']['Vz']
+ref_drone_1 = 'mesange'
+
+X_mes = data_mesange['m']['X']
+Y_mes = data_mesange['m']['Y']
+T_mes = data_mesange['m']['t']
+Vz_mes = data_mesange['m']['Vz'] #t,y,x en s, m, m
+
+
+ref_drone_2 = 'bernache'
+
+X_ber = data_bernache['m']['X']
+Y_ber = data_bernache['m']['Y']
+T_ber = data_bernache['m']['t']
+Vz_ber = data_bernache['m']['Vz'] #t,y,x en s, m, m
+
+
+#va de 1 vers 2
+
+
+# transform['mesange_2_bernache']['rot'][:,:,0]
+# transform['mesange_2_bernache']['scaling'][0]
+# transform['mesange_2_bernache']['translat'][:,0]
+
+
+X_mes_2, Y_mes_2 = dp.change_XY_reference_system(X_mes,Y_mes,param[ref_drone_1],param[ref_drone_2],transform['mesange_2_bernache']['rot'][:,:,0],transform['mesange_2_bernache']['translat'][:,0],transform['mesange_2_bernache']['scaling'][0])
+
+if display :
+    plt.figure()
+    plt.pcolormesh(X_ber,Y_ber, Vz_ber[0,:,:], alpha=0.5, shading = 'auto')
+    plt.pcolormesh(X_mes_2,Y_mes_2, Vz_mes[0,:,:], alpha=0.5, shading = 'auto')
+
+
+dist2drone = param[ref_drone_2]['h']/np.tan(param[ref_drone_2]['alpha_0'])
+Lat0,Long0 = dp.LatLong_coords_from_referencepoint(param[ref_drone_2]['latitude'],param[ref_drone_2]['longitude'], param[ref_drone_2]['azimuth'],dist2drone)
+Lat_ber,Long_ber = dp.XY2GPS(X_ber,Y_ber,Lat0,Long0,param[ref_drone_2]['azimuth'])
+Lat_mes,Long_mes = dp.XY2GPS(X_mes_2,Y_mes_2,Lat0,Long0,param[ref_drone_2]['azimuth'])
+
+if display :
+    plt.figure()
+    plt.pcolormesh(Lat_ber,Long_ber, Vz_ber[0,:,:], alpha=0.5, shading = 'auto')
+    plt.pcolormesh(Lat_mes,Long_mes, Vz_mes[0,:,:], alpha=0.5, shading = 'auto')
+
 
 # Vz = np.transpose(Vz, (2,1,0)) #Pour passer de s(t,y,x) à s(x,y,t)
 # Vz = np.flip(Vz, 1)
 
-X = data['m']['X'] #m ATTONTION y,x
+if video :
+    disp.figurejolie()
+    for i in range (0,3000,30) :
+        X_mes_2, Y_mes_2 = dp.change_XY_reference_system(X_mes,Y_mes,param[ref_drone_1],param[ref_drone_2],transform['mesange_2_bernache']['rot'][:,:,i],transform['mesange_2_bernache']['translat'][:,i],transform['mesange_2_bernache']['scaling'][i])
+        plt.pcolormesh(X_ber,Y_ber, Vz_ber[i,:,:], alpha=0.5, shading = 'auto')
+        plt.clim(-1, 1)
+        plt.pcolormesh(X_mes_2,Y_mes_2, Vz_mes[i,:,:], alpha=0.5, shading = 'auto')
+        plt.clim(-1, 1)
+        plt.pause(0.1)
 
-
-
-Y = data['m']['Y'] #m ATTONTION y,x
-
-
-
-T = data['m']["t"] #s 
 
 facq = 29.97
 
-#%% Conversion en coordonnées globales
+X_mes_t = np.zeros((X_mes_2.shape[0], X_mes_2.shape[1],Vz_mes.shape[0] ))
+Y_mes_t = np.zeros((X_mes_2.shape[0], X_mes_2.shape[1],Vz_mes.shape[0] ))
 
-path = "W:\SagWin2024\\Data\\0211\\Drones\\transformations\\"
-
-
-filename = "mesange_structure.mat"
-
-f = h5py.File(path + filename,'r') 
-f = m2p.mat_to_dict(f, f )
-param = f['param_struct']
-
-xxxxxxx = np.array([10,11,12])
-
-fd.drone_pix2real(xxxxxxx,xxxxxxx,xxxxxxx,param)
-
-# fd.drone_real2pix(0,0,0,param)
+for i in range(Vz_mes.shape[0]) :
+    X_mes_3, Y_mes_3 = dp.change_XY_reference_system(X_mes,Y_mes,param[ref_drone_1],param[ref_drone_2],transform['mesange_2_bernache']['rot'][:,:,i],transform['mesange_2_bernache']['translat'][:,i],transform['mesange_2_bernache']['scaling'][i])
+    X_mes_t[:,:,i] = X_mes_3
+    Y_mes_t[:,:,i] = Y_mes_3
 
     
-#%% Vz en zeta  filtre
+#%% Filtrage en espace et temps
 from scipy import signal
 facq = 29.97
 dT = 1 / facq
 
 
-Vz = data['m']['Vz'] #t,y,x en s, m, m
+Vz_mes = np.transpose(Vz_mes, (2,1,0)) #Pour passer de s(t,y,x) à s(x,y,t)  
+Vz_mes = np.flip(Vz_mes, 1)
 
-Vz = np.transpose(Vz, (2,1,0)) #Pour passer de s(t,y,x) à s(x,y,t)  
-Vz = np.flip(Vz, 1)
+Vz_ber = np.transpose(Vz_ber, (2,1,0)) #Pour passer de s(t,y,x) à s(x,y,t)  
+Vz_ber = np.flip(Vz_ber, 1)
 
 
-f_cut = [0.1,2]
+f_cut = [0.05,0.5]
 
 [b,a] = signal.butter(3, f_cut, fs = facq, btype = "bandpass")
-Vz_filt = signal.filtfilt(b, a, Vz, axis = 2)
+Vz_mes = signal.filtfilt(b, a, Vz_mes, axis = 2)
+Vz_ber = signal.filtfilt(b, a, Vz_ber, axis = 2)
 
 
-# Vz_filt = Vz.butter(2, 5, btype = "low")
-eta = np.cumsum(Vz_filt, axis = 2) * dT
-# zeta = np.cumsum(Vz, axis = 2) * dT
+# for i in range (Vz_ber.shape[2]): 
+#     Vz_ber[:,:,i] = cv2.blur(Vz_ber[:,:,i], (5,5))
+#     Vz_mes[:,:,i] = cv2.blur(Vz_mes[:,:,i], (5,5))
+    
+#%% Plot pos phones and buoys
 
-fexc = 0.2
-V_demod = ft.demodulation(T, Vz, fexc)
+long_T = []
+lat_T = []
+X_T = []
+Y_T = []
+name_T = []
+
+for i in phones['phones'].keys() :
+    long_T.append(phones['phones'][i]['Sag24_S105_2024_0211']['longitude'][0])
+    lat_T.append(phones['phones'][i]['Sag24_S105_2024_0211']['latitude'][0])
+    X_T8, Y_T8 = dp.GPS2XY(lat_T[-1],long_T[-1],Lat0,Long0,param[ref_drone_2]['azimuth'])
+    X_T.append(X_T8)
+    Y_T.append(Y_T8)
+    name_T.append(i)
+
+long_T = np.asarray(long_T)
+lat_T = np.asarray(lat_T)
+X_T = np.asarray(X_T)
+Y_T = np.asarray(Y_T)
+name_T = np.asarray(name_T)  
+
+display = True
+
+if display :
+    disp.figurejolie()
+    disp.joliplot('Latitude', 'Longitude',Lat_ber,Long_ber, table = Vz_ber[:,:,0], alpha=0.5)
+    disp.joliplot('Latitude', 'Longitude',Lat_mes,Long_mes, table = Vz_mes[:,:,0], alpha=0.5)
+    disp.joliplot('Latitude', 'Longitude', lat_T, long_T, color = 2, legend = name_T)
+    for j in  range(6) :
+        disp.joliplot('Latitude', 'Longitude', buoys['bernache']['GPS'][:,:,0][j][0],buoys['bernache']['GPS'][:,:,0][j][1],color = 8)
+    
+if display :
+    disp.figurejolie()
+    disp.joliplot('X(m)', 'Y(m)', X_ber, Y_ber, table = Vz_ber[:,:,0], alpha=0.5)
+    disp.joliplot('X(m)', 'Y(m)', X_mes_2, Y_mes_2, table = Vz_mes[:,:,0], alpha=0.5)
+    disp.joliplot('X(m)', 'Y(m)', X_T, Y_T, color = 2, legend = name_T)
+    for j in  range(6) :
+        disp.joliplot('X(m)', 'Y(m)', buoys['bernache']['real'][:,:,0][j][0],buoys['bernache']['real'][:,:,0][j][1],color = 8)
+    
+video = False
+if video :
+    disp.figurejolie()
+    for i in range (0,3000,30) :
+        disp.joliplot('X(m)', 'Y(m)',X_ber, Y_ber, Vz_ber[:,:,i], alpha=0.5)
+        plt.clim(-1, 1)
+        disp.joliplot('X(m)', 'Y(m)', Y_mes_t[:,:,i], X_mes_t[:,:,i], tabel = Vz_mes[:,:,i], alpha=0.5)
+        plt.clim(-1, 1)
+        for j in  range(6) :
+            disp.joliplot('X(m)', 'Y(m)', buoys['bernache']['real'][:,:,0][j][0],buoys['bernache']['real'][:,:,0][j][1],color = 8)
+        plt.pause(0.1)
+#%% Vz (t) en un point 2 drones
+X0 = 0
+Y0 = 0
+t0 = np.asarray(np.linspace(1000,2000,101), dtype = int)
+
+x0_ber, y0_ber = fd.real_to_px(data_bernache, X0, Y0)
+Vz_t_ber = Vz_ber[x0_ber[0], y0_ber[0], t0]
+
+X0_mes, Y0_mes = X_mes_t[y0_ber, x0_ber, t0], Y_mes_t[y0_ber, x0_ber, t0]
+
+
+x0_mes, y0_mes = fd.real_to_px(data_mesange, X0_mes, Y0_mes)
+
+Vz_t_mes = Vz_mes[x0_mes, y0_mes, t0]
+
+plt.figure()
+disp.joliplot('t','Vz', t0, Vz_t_mes, color = 2, exp = False)
+disp.joliplot('t','Vz', t0, Vz_t_ber, color = 8, exp = False)
+
+#%% Vz moyen 1 ligne :
+    
+X0 = 0
+Y0 = 0
+dd = 10 #m
+theta = 0
+t0 = 1174
+
+
+# x0_ber, y0_ber = fd.real_to_px(data_bernache, X0, Y0)
+# xline_ber, yline_ber, dist_p0 = fd.px_to_real_line(data_bernache, x0_ber, y0_ber, dd, theta)
+
+# Xline_mes, Yline_mes = dp.change_XY_reference_system(fd.px_to_real(X_ber,Y_ber,xline_ber,yline_ber)[0], fd.px_to_real(X_ber,Y_ber,xline_ber,yline_ber)[1], param[ref_drone_2], param[ref_drone_1], transform['bernache_2_mesange']['rot'][:,:,t0], transform['bernache_2_mesange']['translat'][:,t0], transform['bernache_2_mesange']['scaling'][t0])
+# xline_mes, yline_mes = fd.real_to_px(data_mesange, Xline_mes, Yline_mes)
+
+# Vz_mes_line = fd.extract_line_Vz(data_mesange, Vz_mes, xline_mes, yline_mes, t0)
+# Vz_ber_line = fd.extract_line_Vz(data_bernache, Vz_ber, xline_ber, yline_ber, t0)
+t = np.asarray(np.linspace(1000,2000,101), dtype = int)
+
+# Xline_ber, Yline_ber = dp.change_XY_reference_system(Xline_mes, Yline_mes, param[ref_drone_1], param[ref_drone_2], transform['mesange_2_bernache']['rot'][:,:,t0], transform['mesange_2_bernache']['translat'][:,t0], transform['mesange_2_bernache']['scaling'][t0])
+
+disp.figurejolie()
+for t0 in t :
+    x0_ber, y0_ber = fd.real_to_px(data_bernache, X0, Y0)
+    xline_ber, yline_ber, dist_p0 = fd.px_to_real_line(data_bernache, x0_ber, y0_ber, dd, theta)
+    Vz_ber_line = fd.extract_line_Vz(data_bernache, Vz_ber, xline_ber, yline_ber, t0)
+    # Xline_ber, Yline_ber = fd.px_to_real(X_ber,Y_ber,xline_ber,yline_ber)
+    
+    
+    Xline_mes, Yline_mes = fd.px_to_real(X_mes_t[:,:,t0],Y_mes_t[:,:,t0],xline_ber,yline_ber) 
+    # dp.change_XY_reference_system(Xline_ber, Yline_ber, param[ref_drone_2], param[ref_drone_1], transform['bernache_2_mesange']['rot'][:,:,t0], transform['bernache_2_mesange']['translat'][:,t0], transform['bernache_2_mesange']['scaling'][t0])
+    xline_mes, yline_mes = fd.real_to_px(data_mesange, Xline_mes, Yline_mes)
+    Vz_mes_line = fd.extract_line_Vz(data_mesange, Vz_mes, xline_mes, yline_mes, t0)
+    
+    
+    # disp.figurejolie()
+    
+    # plt.plot(Vz_mes_line,'b-')
+    # plt.plot(Vz_ber_line,'r-')
+    disp.joliplot('x (m)', 'y (m)', X_mes_t[:,:,t0] , Y_mes_t[:,:,t0], table = Vz_mes[:,:,t0], alpha = 0.5)
+    plt.pause(0.1)
+
+# x_mes, y_mes = fd.real_to_px(data_mesange, X0, Y0)
+# xline_mes, yline_mes, dist_p0 = fd.px_to_real_line(data_mesange, x_mes, y_mes, dd, theta)
+# Vz_mes_line = fd.extract_line_Vz(data_mesange, Vz_mes, xline_mes, yline_mes, t0)
+# Xline_mes, Yline_mes = fd.px_to_real(X_mes,Y_mes,xline_mes,yline_mes)
+# Xline_ber, Yline_ber = dp.change_XY_reference_system(Xline_mes, Yline_mes, param[ref_drone_1], param[ref_drone_2], transform['mesange_2_bernache']['rot'][:,:,t0], transform['mesange_2_bernache']['translat'][:,t0], transform['mesange_2_bernache']['scaling'][t0])
+
+# # Vz_mes_line, Vz_ber_line, dist_p0, Xline_ber, Yline_ber = fd.line_both_drones(X0, Y0, dd, theta, t0, param, transform, data_bernache, data_mesange, X_ber, Y_ber, Vz_ber, Vz_mes)
+
+# disp.figurejolie()
+
+# plt.plot(Vz_mes_line,'b-')
+# plt.plot(Vz_ber_line,'r-')
+
+
+# # disp.figurejolie()
+# # # disp.joliplot('x (m)', 'y (m)', X_ber , Y_ber, table = Vz_ber[:,:,t0], alpha = 0.5)
+# # disp.joliplot('x (m)', 'y (m)', X_mes_t[:,:,t0] , Y_mes_t[:,:,t0], table = Vz_mes[:,:,t0], alpha = 0.5)
+# # plt.plot(Xline_ber, Yline_ber, 'b-')
+
+# disp.figurejolie()
+# disp.joliplot('x (m)', 'y (m)', X_ber , Y_ber, table = Vz_ber[:,:,t0], alpha = 0.5)
+# disp.joliplot('x (m)', 'y (m)', X_mes , Y_mes, table = Vz_mes[:,:,t0], alpha = 0.5)
+# plt.plot(Xline_mes, Yline_mes, 'b-')
+
+
+
+# plt.plot(xpix_ber,ypix_ber )
+
+
+
 
 #%% V demod
 save = False

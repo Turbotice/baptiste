@@ -52,6 +52,7 @@ nb_exp = 10
 exps = ['ECTD', 'EDTH', 'NPDP', 'RLPY', 'MLO', 'EJCJ', 'DML', 'QSC0', 'TNB0', 'CCMO']
 # exps = ['ECTD', 'EDTH', 'NPDP', 'RLPY', 'DML', 'QSC0', 'TNB0', 'CCMO']
 
+nom_exps = ['ECTD9', 'EDTH8', 'NPDP2', 'RLPY3', 'EJCJ6', 'MLO23', 'DMLO1', 'QSC07', 'TNB03', 'CCM03']
 
 date_min = 231115
 date_max = 240117
@@ -82,6 +83,20 @@ if best_a :
             'E:\\Baptiste\\Resultats_exp\\Courbure\\240109_QSC_a50\\' + '20240422_171834_params_courbure.pkl',
             'E:\\Baptiste\\Resultats_exp\\Courbure\\240115_TNB_a30\\' + '20240424_123149_params_courbure.pkl',
             'E:\\Baptiste\\Resultats_exp\\Courbure\\240116_CCM_ttpts\\' + 'CCM_nomexp_A_kappamax_kappath_a30.txt']
+# a_lk = True
+# if a_lk : 
+#     path = ['E:\Baptiste\\Resultats_exp\\Courbure\\Mesure_250106\\240109_QSC_Lkappa\\' + '20250106_163255_params_courbure.pkl',
+#             'E:\Baptiste\\Resultats_exp\\Courbure\\Mesure_250106\\231120_ECT_Lkappa\\' +'20250106_173652_params_courbure.pkl',
+#             'E:\Baptiste\\Resultats_exp\\Courbure\\Mesure_250106\\231122_NPDP_Lkappa\\' +'20250108_121511_params_courbure.pkl',
+#             'E:\Baptiste\\Resultats_exp\\Courbure\\Mesure_250106\\231124_RLPY_Lkappa\\' +'20250108_114514_params_courbure.pkl',
+#             'E:\Baptiste\\Resultats_exp\\Courbure\\Mesure_250106\\231129_EJCJ_Lkappa\\' +'20250106_153447_params_courbure.pkl', 
+#             'E:\Baptiste\\Resultats_exp\\Courbure\\Mesure_250106\\231129_MLO_Lkappa\\' +'20250106_160210_params_courbure.pkl', 
+#             'E:\Baptiste\\Resultats_exp\\Courbure\\Mesure_250106\\231130_DMLO_Lkappa\\' +'20250106_161646_params_courbure.pkl',
+#             'E:\Baptiste\\Resultats_exp\\Courbure\\Mesure_250106\\240115_TNB_Lkappa\\' +'20250106_172827_params_courbure.pkl',
+#             'E:\Baptiste\\Resultats_exp\\Courbure\\Mesure_250106\\231121_EDTH_Lkappa\\' +'20250106_174954_params_courbure.pkl',
+#             'E:\\Baptiste\\Resultats_exp\\Courbure\\Mesure_250106\\240116_CCM_Lkappa\\' + '20250107_183751_params_courbure.pkl'
+#             ]
+
 
 u = 0
 for date in dico.keys() :
@@ -96,6 +111,50 @@ for date in dico.keys() :
 
 mmparpixel = []
 gr = []
+hhh = []
+DDD = []
+
+
+# for i in range (len(path)) :
+#     nom_expp = tableau_1[index[i],0]
+#     print(nom_expp)
+#     print(index[i])
+    
+#     if a_2lk or a_lk :
+#         params = dic.open_dico(path[i])
+#         kmin_QSC = params['courbure']['k_maxmax']
+#         hmin_QSC = params['courbure']['amplitude_exp']
+        
+#         if nom_expp == "QSC0R" :
+#             uu = kmin_QSC
+#             uuu = hmin_QSC
+        
+            
+#     elif index[i] == 9 :        
+#         params_k = pandas.read_csv(path[i], header = None, sep = '\t')
+#         params_k = np.asarray(params_k)
+        
+#         kmin_QSC = params_k[:,2]
+#         hmin_QSC = params_k[:,1]
+        
+#         params = {}
+#         params ['nom_exp'] = 'CCM'
+#         params['date'] = '240116'
+    
+        
+       
+#     elif index[i] == 1 or index[i] == 8 :
+#         params = dic.open_dico(path[i])
+#         date = path[i][35:41]
+#         kmin_QSC = params['courbure']['k_maxmax']
+#         hmin_QSC = params['courbure']['h_maxmax']
+        
+        
+#     else :
+#         params = dic.open_dico(path[i])
+#         kmin_QSC = params['courbure']['k_minmin']
+#         hmin_QSC = params['courbure']['h_mimmin']
+
 
 aa = 0
 for date in dico.keys() :
@@ -112,6 +171,8 @@ for date in dico.keys() :
                         indice = np.where(nom_exp == liste_top[0,:])[0][0]
                         mmparpixel.append(dico[date][nom_exp]['mmparpixel'])
                         gr.append(dico[date][nom_exp]['grossissement'])
+                        hhh.append(dico[date][nom_exp]['h'])
+                        DDD.append(dico[date][nom_exp[:3] + 'DR']['D'])
                         
                         if 'lambda' in dico[date][nom_exp].keys() :
                             liste_top[1,indice] = float(dico[date][nom_exp]['lambda'])
@@ -284,6 +345,7 @@ for date in dico.keys() :
                   
                             liste_top[5,indice] = k_max
 
+
 mmparpixel = np.array([mmparpixel])
 gr = np.array([gr])                       
 # df = pandas.DataFrame(liste_top)
@@ -341,9 +403,15 @@ ampp = [np.array([]) for i in range (nb_exp)]
 ampp_lc0 = [np.array([]) for i in range (nb_exp)]
 long_onde_lc0 = [np.array([]) for i in range (nb_exp)]
 
+
+
+aaaa= np.zeros(len(hhh))
+as_tot = np.zeros(len(hhh))
+
 u = 0
 for i in exps :
     for j in liste_top[0,:] :
+        
         if i[:3] == j[:3] :
             indice = np.where(j == liste_top[0,:])[0][0]
             if liste_top[3, indice] != 0.0 :
@@ -370,7 +438,9 @@ for i in exps :
                         ampp_lc0[u] = np.append(ampp_lc0[u], liste_top[3, indice])
                         lcrack_lc0[u] = np.append(lcrack_lc0[u], liste_top[4, indice])
                         long_onde_lc0[u] = liste_top[1,indice]
-                        
+        # aaaa[indice] = aiai[u]
+        # as_tot[indice] = amp_s_tot[u]
+
     x_amp = np.linspace(np.min(ampp[u]), np.max(ampp[u]) , 100)
     # plt.plot(x_amp, lambdasur2)
     
@@ -382,8 +452,8 @@ for i in exps :
             lcrack_lc0[u] = lcrack_lc0[u][:-1]
     
     if display :
-        disp.figurejolie()
-        disp.joliplot(r"Amp (cm)", r"$L_{crack}$ (cm)", ampp_lc0[u] , lcrack_lc0[u] , color = 8, zeros = True)
+        disp.figurejolie(width = 8.6*4/6.5)
+        disp.joliplot(r"Amp (cm)", r"$L_{crack}$ (cm)", ampp_lc0[u]*100 , lcrack_lc0[u]*100 , color = 20, zeros = True, width= 5.7)
     
     # popt = np.polyfit(ampp[u], lcracktot[u], 1, full = True)
     def fit_1(x, a, b) :
@@ -404,28 +474,47 @@ for i in exps :
 
     x_amp = np.linspace(-200, 200, 1000)
     if display :
-        disp.joliplot(r"Amplitude (m)", r"$L_{crack}$ (m)", x_amp, x_amp * a[u] + b[u] , color = 5, exp = False, width = 8.6/2)
+        disp.joliplot(r"Amplitude (m)", r"$L_{crack}$ (m)", x_amp*100, (x_amp * a[u] + b[u])*100 , color = 2, exp = False, width = 8.6/1.5)
         
-    zeroo = np.linspace(0, 0, 1000)
-    plt.plot(x_amp, zeroo)
-    disp.joliplot(r"Amplitude (cm)", r"$L_{crack}$ (cm)", x_amp, zeroo, color = 5, exp = False)
+        zeroo = np.linspace(0, 0, 1000)
+
+        disp.joliplot(r"$A$ (cm)", r"$L_{crack}$ (cm)", x_amp*100, zeroo, color = 20, exp = False)
+        # plt.errorbar(ampp_lc0[u]*100, lcrack_lc0[u]*100, yerr = err_Lcrack[u]*100, xerr = err_A[u]*100, fmt = 'None', ecolor = 'k', linewidth = 1.1)
     # plt.ticklabel_format(axis="y", style="sci", scilimits=(0,0))
     # plt.ticklabel_format(axis="x", style="sci", scilimits=(0,0))
     
-    plt.xlim([0, np.max(ampp_lc0[u]) * 1.05  ])
-    plt.ylim([-np.max(lcrack_lc0[u]) / 10 , np.max(lcrack_lc0[u]) * 1.1  ]) 
+    plt.xlim([0, np.max(ampp_lc0[u]*100) * 1.05  ])
+    plt.ylim([-np.max(lcrack_lc0[u]*100) / 10 , np.max(lcrack_lc0[u]*100) * 1.1  ]) 
     
     if i == 'QSC0' :
         print(ampp)
+        print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+        print(lcrack_lc0[u])
     
     if save :
         plt.savefig(path_save + "l_crack_amplitude+fit_" + i + '_' + str(tools.datetimenow()) + '_' + i  + '.png', dpi = 200)
         plt.savefig(path_save + "l_crack_amplitude+fit_" + i + '_pdf' + str(tools.datetimenow()) + '_' + i  + '.pdf')
     
+
     
 
     u += 1
+
+erreur_Ac = np.zeros(10)
+
+for i in range(10):
+    erreur_proche = np.min(np.abs(amp_s[i] - ampp_lc0[i]))
+    erreur_fit_Ac = np.sqrt( (np.sqrt(np.diag(erreur[i]))[0] / a[i])**2 + (np.sqrt(np.diag(erreur[i]))[1] / b[i])**2)
+    erreur_Ac[i] = np.min((erreur_proche, erreur_fit_Ac))
     
+disp.figurejolie(width = 8.6*1.1)
+# disp.joliplot('$\lambda$', "$Ac$", long_onde, amp_s, color = 19)
+fits.fit_powerlaw(long_onde, amp_s , display = True, xlabel = '$\lambda$ (m)', ylabel = '$A_c$ (m)', legend = '', new_fig = False, fit = 'poly', color = 18, width = 8.6)
+plt.errorbar(long_onde, amp_s, yerr = erreur_Ac, fmt = 'None', ecolor = disp.vcolors(4), linewidth = 1.1)
+plt.xlim(0.04, 1)
+plt.ylim(0.001, 0.025)
+
+
 #%% Plot Lcracktot (kappa) + fit
 
 display = True
@@ -537,11 +626,45 @@ popt = np.polyfit(long_onde_filt, a_filt, 1)
 
 disp.joliplot( r"$\lambda$ (m)", "a", long_onde_filt, long_onde_filt * popt[0] + popt[1], color = 2, zeros=True, exp = False)
 
+# amp_s_tot = amp_s
+# aiai = a
 
 disp.figurejolie()
-disp.joliplot( r"$\lambda$ (m)", "a", long_onde, a, color = 5, zeros=False)
+disp.joliplot( r"$\lambda$ (m)", "Pente $a$", long_onde, a, cm = 4, zeros=False)
 for i in range (nb_exp):
     plt.annotate(exps[i], (long_onde[i], a[i]))
+
+long_onde_tot = np.append(liste_top[1][:8], liste_top[1][14:])
+AAA = np.append(liste_top[3][:8], liste_top[3][14:])
+LL_cc = np.append(liste_top[4][:8], liste_top[4][14:])
+hhh_tot = np.append(hhh[:8], hhh[14:])
+as_totale = np.append(as_tot[:8], as_tot[14:])
+kappa_mesure =  np.append(liste_top[5][:8], liste_top[5][14:])
+
+pente_a = np.append(aaaa[:8], aaaa[14:])
+
+disp.figurejolie(width = 8.6 * 4 / 5.2)
+disp.joliplot(r'$A/h$',r'$L_{crack}$', AAA - as_totale, LL_cc/pente_a, cm = 6)
+
+plt.xlim(0, 0.008)
+plt.ylim(0,0.008)
+# plt.axis('equal')
+
+x_lin = np.linspace(0,0.008,100)
+y_lin = np.linspace(0,0.008,100)
+
+disp.joliplot(r'$A - A_c$',r'$L_{crack} / a$', x_lin, y_lin, color = 8, exp = False, linewidth = 2)
+
+disp.figurejolie(width = 8.6)
+
+Gc = kappa_mesure**2 * long_onde_tot / 0.08 * 1e-5 / 2 / hhh_tot
+
+disp.joliplot(r'$A/h$',r'$L_{crack}$', LL_cc, Gc, cm = 6)
+
+
+# disp.figurejolie()
+# disp.joliplot( r"$\lambda$ (m)", "a", hhh_tot, pente_a, color = 5, zeros=False)
+
 
 #%% b (lambda)
 
@@ -550,16 +673,16 @@ disp.joliplot( r"$\lambda$ (m)", "b", long_onde, b, color = 5, zeros=False)
 # plt.savefig('E:\\Baptiste\\Resultats_exp\\Amp seuil en fonction de lambda\\Test_fit_2024_04_16\\' + "b_lambda" + str(tools.datetimenow()) + '.pdf', dpi = 1)
 
 
-#%%Fit : scaling Amplitude
-
+#%%Fit : scaling Amplitude + iso courbure et stress
+save = False
 
 # fits.fit_powerlaw(long_onde, amp_s, display = True, xlabel =r"$\lambda$ (m)", ylabel = r"A$_c$ (m)" )
-disp.figurejolie()
-disp.joliplot(r"$\lambda$ (m)", r"A$_c$ (m)", long_onde, amp_s, color = 2, log = True)#, legend = 'Threshold'  )
+disp.figurejolie(width = 8.6/1.7)
+disp.joliplot(r"$\lambda$ (m)", r"A$_c$ (m)", long_onde, amp_s, color = 19, log = True)#, legend = 'Threshold'  )
 
 plt.xlim(0.04, 1)
 plt.ylim(0.001, 0.025)
-
+plt.errorbar(long_onde, amp_s, yerr = erreur_Ac, fmt = 'None', ecolor = '#990000')
 pente = amp_s/long_onde * 2 * np.pi
 lambda_sort, pente_sort = tools.sort_listes(long_onde,pente)
 H = 0.11
@@ -571,8 +694,8 @@ if save :
 
 
 """ISO COURBURE"""
-lamlam = np.linspace(0.04, 1, 500)
-AA = np.linspace(0.001, 0.025, 500)
+lamlam = np.linspace(0.03, 1.5, 500)
+AA = np.linspace(0.0005, 0.03, 500)
 
 # kappa_th = np.zeros((500,500))
 
@@ -587,7 +710,7 @@ AA = np.linspace(0.001, 0.025, 500)
 
 """VISCOUS STRESS"""
 
-
+# disp.figurejolie(width = 8.6/5*4)
 visc = 10**-3
 g = 9.81
 omega = np.sqrt(g * 2 * np.pi / lamlam)
@@ -595,19 +718,40 @@ h = 1e-4
 rho = 680
 stress = np.zeros((500,500))
 
+def viscous_stress(visc, omega, h, rho, g, AA):
+    return np.sqrt(visc / omega)/ h * rho * g * AA
+
 for i in  range (len (AA)) :
     for j in range (len(omega)) :
-        stress[i,j] = np.sqrt(visc / omega[j])/ h * rho * g * AA[i]
+        # stress[i,j] = np.sqrt(visc / omega[j])/ h * rho * g * AA[i]
+        stress[i,j] = viscous_stress(visc, omega[j], h, rho, g, AA[i])
         
-blbl = np.logspace( np.log10(np.min(stress)), np.log10(np.max(stress)), 10)        
-plt.contour(lamlam, AA, np.flip(np.rot90(stress),0), blbl, linestyles = 'dashed', linewidths = 0.5)
+blbl = np.logspace( np.log10(np.min(stress*1.4)), np.log10(np.max(stress/1.4)), 12)      
+plt.pcolormesh(lamlam, AA, stress, alpha = 1, cmap = 'YlGnBu')  
+
+plt.contour(lamlam, AA, stress, blbl, linestyles = 'dashed', linewidths = 0.5, cmap = 'ma_cm')
 plt.colorbar()
+# plt.contour(lamlam, AA, stress, blbl, linestyles = 'dashed', linewidths = 0.5)
+# disp.joliplot(r"$\lambda$ (m)", r"A$_c$ (m)", long_onde, amp_s, color = 18, log = True)
+
+plt.xscale('log')
+plt.yscale('log')
+# plt.errorbar(long_onde, amp_s, yerr = erreur_Ac, fmt = 'None', ecolor = disp.vcolors(4), linewidth = 1.1)
+# fits.fit_powerlaw(long_onde, amp_s, display = True, xlabel = r'$\lambda$ (m)', ylabel = r'$A_c$ (m)', legend = '', new_fig = False, fit = 'poly', color = 18, width = 8.6/ 5 *4)
+
+# path_save = 'Y:\Banquise\\Baptiste\\Articles\\Interaction ondes banquise laboratoire\\answer_to_referee\\'
+# plt.savefig(path_save + "viscous_stress_colormap" + str(tools.datetimenow()) + '.png', dpi = 3000)
 
 
+plt.xlim(0.04, 1)
+plt.ylim(0.001, 0.025)
+# plt.ylim(0.1, 2.5)
 
+u = np.zeros((2,10))
+u[1,:] = blbl
 
-
-
+disp.figurejolie(width = 8.6)
+plt.pcolormesh( u, cmap = 'ma_cm') 
 
 #%%Fit : scaling courbure
 
@@ -776,12 +920,12 @@ ldk = []
 
 for date in dico :
     if date.isdigit() : 
-        if float(date) > date_min and float(date) < date_max :
+        if float(date) > date_min and float(date) <= date_max :
             print(date)
     
             for nom_exp in dico[str(date)] :
     
-                if 'amp_fracs_fft' in dico[date][nom_exp] and nom_exp != 'MPPF2' and nom_exp != 'MPPF3' :
+                if 'amp_fracs_fft' in dico[date][nom_exp] and nom_exp != 'MPPF2' and nom_exp != 'MPPF3' and nom_exp != 'MPVB5' and nom_exp != 'MPVB6' :
                     # if "non" in dico[date][nom_exp]['casse'] :
                     print(nom_exp)
                     for j in range (dico[date][nom_exp]['amp_fracs_fft'].shape[0]):
@@ -795,34 +939,44 @@ for date in dico :
                                 casse.append(True)
                             else :
                                 casse.append(False)
-                            
+                     
                        
                         amplitude.append(dico[date][nom_exp]['amp_fracs_fft'][j,4] * np.sqrt(2))# * np.pi /dico[date][nom_exp]['lambda'] )
                         exp.append(nom_exp)
                         l_d.append(dico[date][nom_exp]['Ld'])
                         ldk.append(2 * np.pi * dico[date][nom_exp]['Ld'] /dico[date][nom_exp]['lambda'])
                         l_onde.append(dico[date][nom_exp]['lambda'])
-  
-    
+                elif  nom_exp == 'MPVB5' : #mesure image J, l'autre technique pue sur ce point (pas les autres de cette exp j'ai verifé)
+                    casse.append(True)
+                    amplitude.append(0.02097)
+                    exp.append(nom_exp)
+                    l_d.append(dico[date][nom_exp]['Ld'])
+                    ldk.append(2 * np.pi * dico[date][nom_exp]['Ld'] /dico[date][nom_exp]['lambda'])
+                    l_onde.append(dico[date][nom_exp]['lambda'])
+                    
+"""EN CM"""
+# amplitude = np.asarray(amplitude) * 100   
+
+
 #%% Graph
 annotated_name = False
 annotated_ld = False
 
-# figurejolie()
+disp.figurejolie(width = 8.6)
 for i in range (len(amplitude)) :
     if casse[i] :
-        disp.joliplot(r"$\lambda$ (m)", r"Amplitude (m)", l_onde[i], amplitude[i], color = 8)
+        disp.joliplot(r"$\lambda$ (m)", r"Amplitude (cm)", l_onde[i], amplitude[i],cm = 2)
         if annotated_name :
             plt.annotate (exp[i],(l_onde[i], amplitude[i]))
         if annotated_ld :
             plt.annotate (round(l_d[i], 4),(l_onde[i], amplitude[i]))
     else :
-        disp.joliplot(r"$\lambda$ (m)", r"Amplitude (m)", l_onde[i], amplitude[i], color = 7)
+        disp.joliplot(r"$\lambda$ (m)", r"Amplitude (m)", l_onde[i], amplitude[i], cm = 9)
         if annotated_name :
             plt.annotate (exp[i],(l_onde[i], amplitude[i]))
         if annotated_ld :
             plt.annotate (round(l_d[i], 4),(l_onde[i], amplitude[i]))
-
+plt.plot(0,0)
 # plt.xlim(0,0.45)
 # plt.ylim(0,0.016)
 # disp.joliplot(r"$\lambda$ (m)", r"Amplitude (m)", 0, 0, color = 7, legend = r'Intact')
@@ -903,9 +1057,13 @@ for i in range( len(omega)):
     #         data_traitées2[i,4] = ( (Eyoung * data_traitées2[i,3]**3) / (12 * (1 - nu**2) * rho * g) )**(1/4)
     #         data_traitées2[i,5] = data_traitées2[i,4] / data_traitées2[i,1] # Ld/lambda
     #         data_traitées2[i,6] = data_traitées2[i,2] / data_traitées2[i,1] # pente
-            
         
-       
+"""EN CM"""    
+# data_traitées1[:,2] = data_traitées1[:,2] * 100
+# data_traitées0[:,2] = data_traitées0[:,2] * 100
+
+
+
 #ajoute les points de MPBV6 et MPPF3-4
 # lambda_cassepas = np.append(data_traitées0[:,1], 0.38)
 # amp_cassepas = np.append(data_traitées0[:,2], 0.0103)
@@ -924,10 +1082,11 @@ for i in range( len(omega)):
 
 
 # figurejolie()
-disp.joliplot(r'$\lambda$ (m)', r'Amplitude (m)', data_traitées0[:,1], data_traitées0[:,2], color = 7, title = False, legend = r'Unbroken', exp = True)
-disp.joliplot(r'$\lambda$ (m)', r'Amplitude (m)', data_traitées1[:,1], data_traitées1[:,2], color = 8, title = False, legend = r'Fractured', exp = True)
+disp.joliplot(r'$\lambda$ (m)', r'Amplitude (m)', data_traitées0[:,1], data_traitées0[:,2], color = 7, title = False, legend = r'Intact', exp = True, cm = 9)
+disp.joliplot(r'$\lambda$ (m)', r'A (cm)', data_traitées1[:,1], data_traitées1[:,2], color = 8, title = False, legend = r'Fracture apparente', exp = True, log = False, cm = 2)
 # joliplot(r'$\lambda$ (m)', r'Amplitude (m)', data_traitées2[:,1], data_traitées2[:,2], color = 2, title = r'Recherche de seuil, $\lambda$(amp)', legend = r'Casse', exp = True)
 #%% find scaling
+
 x = np.linspace(0.0068,0.55,100)
 y = 0.006/0.25 * x 
 y_2 = x**(1.5) * 0.05
@@ -950,4 +1109,39 @@ plt.ylabel('Amplitude (m)')
 plt.xscale('log')
 plt.yscale('log')
 plt.axis('equal')
+
+#%% DDP + AC
+
+
+disp.figurejolie(width = 8.6/6*5.2)
+disp.figurejolie(width = 8.6/5*4)
+# disp.joliplot('$\lambda$', "$Ac$", long_onde, amp_s, color = 19)
+# fits.fit_powerlaw(long_onde, amp_s , display = True, xlabel = '$\lambda$ (m)', ylabel = '$A_c$ (m)', legend = '', new_fig = False, fit = 'poly', color = 19, width = 8.6/1.1)
+# plt.errorbar(long_onde, amp_s, yerr = erreur_Ac, fmt = 'None', ecolor = disp.vcolors(4), linewidth = 1.1)
+
+
+
+for i in range (len(amplitude)) :
+    if casse[i] :
+        disp.joliplot(r"$\lambda$ (m)", r"Amplitude (cm)", l_onde[i], amplitude[i],cm = 3 , width = 8.6/1.6)
+        if annotated_name :
+            plt.annotate (exp[i],(l_onde[i], amplitude[i]))
+        if annotated_ld :
+            plt.annotate (round(l_d[i], 4),(l_onde[i], amplitude[i]))
+    else :
+        disp.joliplot(r"$\lambda$ (m)", r"Amplitude (m)", l_onde[i], amplitude[i], cm = 7 , width = 8.6/1.6)
+        if annotated_name :
+            plt.annotate (exp[i],(l_onde[i], amplitude[i]))
+        if annotated_ld :
+            plt.annotate (round(l_d[i], 4),(l_onde[i], amplitude[i]))
+            
+disp.joliplot(r'$\lambda$ (m)', r'Amplitude (m)', data_traitées0[:,1], data_traitées0[:,2], color = 7, title = False, legend = r'Intact', exp = True, cm = 7 , width = 8.6/1.6)
+disp.joliplot(r'$\lambda$ (m)', r'A (m)', data_traitées1[:,1], data_traitées1[:,2], color = 8, title = False, legend = r'Fracture apparente', exp = True, log = True, cm = 3 , width = 8.6/1.6)
+            
+        
+plt.xlim(0.04, 1)
+plt.ylim(0.001, 0.025)
+
+
+
 

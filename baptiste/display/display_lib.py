@@ -6,9 +6,92 @@ import numpy as np
 import baptiste.files.save as sv
 import baptiste.tools.tools as tools
 
+
+## Ma colormap
+
+
+
+from matplotlib.colors import ListedColormap
+from colorspacious import cspace_convert
+import colorsys
+
+def rgb_to_jch(rgb):
+    cam = cspace_convert(rgb, "sRGB1", "CAM02-UCS")
+    J = cam[:, 0]
+    a = cam[:, 1]
+    b = cam[:, 2]
+    C = np.sqrt(a**2 + b**2)
+    h = np.arctan2(b, a) * 180 / np.pi
+    h %= 360
+    return np.stack([J, C, h], axis=1)
+
+def jch_to_rgb(jch):
+    J, C, h = jch[:,0], jch[:,1], jch[:,2]
+    h_rad = np.deg2rad(h)
+    a = C * np.cos(h_rad)
+    b = C * np.sin(h_rad)
+    cam = np.stack([J, a, b], axis=1)
+    rgb = cspace_convert(cam, "CAM02-UCS", "sRGB1")
+    return np.clip(rgb, 0, 1)
+
+def create_macolormap():
+    # Couleur personnalisée HSV T187 L58 S35
+    h = 187 / 360
+    s = 0.35
+    l = 0.58
+    custom_rgb = colorsys.hls_to_rgb(h, l, s)
+    
+    # Points clés : départ, bleu foncé, couleur custom, bleu clair
+    key_rgb = np.array([
+        [0.0, 0.0, 0.1],           # Presque noir bleu
+        [0.05, 0.1, 0.3],          # Bleu foncé
+        custom_rgb,               # Couleur HSV donnée
+        [0.7, 0.85, 1.0]           # Bleu très clair
+    ])
+    
+    # Convertir en JCh
+    key_jch = rgb_to_jch(key_rgb)
+    
+    # Paramètres
+    n = 256
+    J_start = key_jch[0,0] + 7 # noir plus lumineux
+    J_end = key_jch[-1,0] + 7  # fin un peu plus lumineuse
+    J = np.linspace(J_start, J_end, n)
+    
+    # Interpolation C et h sur J
+    from scipy.interpolate import interp1d
+    
+    J_key = key_jch[:,0]
+    C_key = key_jch[:,1]
+    h_key = key_jch[:,2]
+    
+    interp_C = interp1d(J_key, C_key, kind='linear', fill_value="extrapolate")
+    interp_h = interp1d(J_key, h_key, kind='linear', fill_value="extrapolate")
+    
+    C = interp_C(J)
+    h = interp_h(J)
+    
+    # Construit la table JCh → RGB
+    jch = np.stack([J, C, h], axis=1)
+    rgb_interp = jch_to_rgb(jch)
+    
+    
+    # Créer colormap
+    ma_cm = ListedColormap(rgb_interp, name="ma_cm")
+    import matplotlib.cm as cm
+    
+    # # # Ajoute ta colormap à l'objet cm (fonctionne comme un dictionnaire)
+    cm.register_cmap(name="ma_cm", cmap=ma_cm)
+    setattr(cm, "ma_cm", ma_cm)
+
+
+
+
 ## TAILLE DES FIGURES
 
-def set_size(width = 8.6, fraction=1, subplots=(1, 1)):
+
+
+def set_size(width = 8.6, fraction=1, subplots=(1, 1), height = False):
     """Set figure dimensions to avoid scaling in LaTeX.
 
     Parameters
@@ -50,6 +133,10 @@ def set_size(width = 8.6, fraction=1, subplots=(1, 1)):
     # # Figure height in inches
     fig_height_in = fig_width_in * golden_ratio * (subplots[0] / subplots[1])
     # #fig_height_in = fig_width_in * .9 * (subplots[0] / subplots[1])
+    
+    if type(height) != bool  :
+        fig_height_pt = int(height * fraction * cm_to_pt)
+        fig_height_in = fig_height_pt  * inches_per_pt
 
     return (fig_width_in, fig_height_in)
 
@@ -82,13 +169,38 @@ def set_size(width = 8.6, fraction=1, subplots=(1, 1)):
 # plt.rcParams["svg.fonttype"] = 'none'
 # mpl.rc('text', usetex=True)
 
+def mm_to_pt(mm):
+    return mm / 0.3528
+
+# plt.tick_params(
+#     direction='in',
+#     length= cm_to_pt(0.5),
+#     width= cm_to_pt(0.2),
+#     top=True,
+#     right=True
+# )
+
+
+
+
+
 params = {"ytick.color" : "black",
           "xtick.color" : "black",
           "axes.labelcolor" : "black",
           "axes.edgecolor" : "black",
           "text.usetex" : True,
           "font.family" : "serif",
-          "font.serif" : ["Computer Modern Serif"]}
+          "font.serif" : ["Computer Modern Serif"],
+          'xtick.direction': 'in',
+          'ytick.direction': 'in',
+          'xtick.major.size': mm_to_pt(1),
+          'ytick.major.size': mm_to_pt(1),
+          'xtick.major.width': mm_to_pt(0.2),
+          'ytick.major.width': mm_to_pt(0.2),
+          'xtick.top': True,
+          'ytick.right': True,
+          
+          }
 plt.rcParams.update(params)
 
 plt.rc('font', family='serif',size=10)
@@ -128,9 +240,26 @@ def vcolors(n) :
     vcolor = plt.cm.viridis(np.linspace(0,1,10))
     return vcolor[n]
 
+def ccolors(n) :
+    vcolor = plt.cm.cividis(np.linspace(0,1,10))
+    return vcolor[n]
 
-    
-def figurejolie(params = False, num_fig = False, subplot = False, nom_fig = False, width = 8.6):
+def mcolors(n) :
+    vcolor = plt.cm.ma_cm(np.linspace(0,1,10))
+    return vcolor[n]
+
+def pcolors(n) :
+    vcolor = plt.cm.plasma(np.linspace(0,1,10))
+    return vcolor[n]
+
+def bcolors(n) :
+    vcolor = plt.cm.YlGnBu(np.linspace(0,1,10))
+    return vcolor[n]    
+
+  
+
+
+def figurejolie(params = False, num_fig = False, subplot = False, nom_fig = False, width = 12, height = False):
     if subplot == False :
         
         #si params renseigné
@@ -145,7 +274,7 @@ def figurejolie(params = False, num_fig = False, subplot = False, nom_fig = Fals
                 params['num_fig'].append(randnumfig)
                 num_fig = randnumfig
                 
-            plt.figure(num = num_fig, figsize = set_size(width = width, fraction = 1, subplots = (1,1)))
+            plt.figure(num = num_fig, figsize = set_size(width = width, fraction = 1, subplots = (1,1), height = height))
             
             #ajoute nom_fig dans les params
             if type(nom_fig) != bool :
@@ -156,18 +285,19 @@ def figurejolie(params = False, num_fig = False, subplot = False, nom_fig = Fals
             return params
         else :
             if type(num_fig) != bool :
-                plt.figure(num = num_fig, figsize = set_size(fraction = 1, subplots = (1,1), width = width))
+                plt.figure(num = num_fig, figsize = set_size(fraction = 1, subplots = (1,1), width = width, height = height))
             else :
-                plt.figure(figsize = set_size(fraction = 1, subplots = (1,1), width = width))
+                plt.figure(figsize = set_size(fraction = 1, subplots = (1,1), width = width, height = height))
     else :
-        fig = plt.figure(num = num_fig, figsize = set_size(fraction = 1, subplots = subplot))
+        fig = plt.figure(num = num_fig, figsize = set_size(fraction = 1, subplots = subplot, height = height))
         axes = []
                            
         return fig, axes
 
 
 def joliplot(xlabel, ylabel, xdata, ydata, color = False, fig = False, axes = [], title = False, subplot = False, legend = False, 
-             log = False, exp = True, image = False, zeros = False, params = False, table = False, tcbar = '', width = 8.6, linewidth = False):
+             log = False, exp = True, image = False, zeros = False, params = False, table = False, tcbar = '', width = 8.6, 
+             linewidth = False, alpha = 1, cm = False, marker_cm = 'd', div = False):
     """
     Plot un graph ou un subplot ou une image
 
@@ -200,12 +330,15 @@ def joliplot(xlabel, ylabel, xdata, ydata, color = False, fig = False, axes = []
     """Jolis graphs predefinis"""
     
     
-    n = 18
-    markers = ['0','x','o','v','p','X','d','s','s','h','.','.','o','o','o','v','v','o', 'd']
-    markeredgewidth = np.array([1.5,1.8,1.5, 1.5, 2.5, 1.3, 1.3, 1.6,1.6,2,1.6,1.6,2,2,2,2,2,2.5, 2.5]) * width / 11
-    ms = np.array([7,6.5,7, 7, 9.2, 8, 8, 8, 7,7, 7, 7,9,7,7,7,7,9, 9]) * width / 11
-    mfc = ['None','#91A052','#990000',vcolors(5),'None','None','None','None','k','None','None','None','None','None','None','None','None', vcolors(4), vcolors(3)]
-    colors = ['g','#91A052','#990000', vcolors(5), '#008B8B', vcolors(2), '#FF8000', vcolors(6), 'k',vcolors(1),'#01FA22',vcolors(3), vcolors(1),'#990000', vcolors(2),'#990000', vcolors(2), vcolors(4), vcolors(3) ]
+    n = 21
+    markers = ['0','x','o','v','p','X','d','s','s','h','.','.','o','o','o','v','v','o', 'd', 'd','d', marker_cm]
+    markeredgewidth = np.array([1.5,1.8,1.5, 1.5, 2.5, 1.3, 1.3, 1.6,1.6,2,1.6,1.6,2,2,2,2,2,2.5, 2.5, 2.5, 2.5,2.5]) * width / 11
+    ms = np.array([7,6.5,7, 7, 9.2, 8, 8, 8, 7,7, 7, 7,9,7,7,7,7,9, 9, 9,9,9]) * width / 11
+    mfc = ['None','#91A052','#990000',vcolors(5),'None','None','None','None','k','None','None','None','None','None','None','None','None', vcolors(4), vcolors(4),'#990000','k',mcolors(cm)]
+    colors = ['g','#91A052','#990000', vcolors(5), '#008B8B', vcolors(2), '#FF8000', vcolors(6), 'k',vcolors(1),'#01FA22',vcolors(3), vcolors(1),'#990000', vcolors(2),'#990000', vcolors(2), vcolors(4), vcolors(4),'#990000','k',mcolors(cm) ]
+    
+    if type(cm) != bool :
+        color = 21
     
     """Pour un simple plot"""
     if subplot == False:
@@ -233,16 +366,20 @@ def joliplot(xlabel, ylabel, xdata, ydata, color = False, fig = False, axes = []
                 print("tableau 1D à faire en plot pas table")
                 
             if dim == 2 :
-                plt.pcolormesh(xdata, ydata, np.flip(np.rot90(table),0), shading = 'auto')
+                if div:
+                    plt.pcolormesh(xdata, ydata, np.flip(np.rot90(table),0), shading = 'auto', alpha =alpha, cmap = 'RdBu')
+                else : 
+                    plt.pcolormesh(xdata, ydata, np.flip(np.rot90(table),0), shading = 'auto', alpha =alpha, cmap = 'ma_cm')
                 # cbar = plt.colorbar()
                 plt.xlabel(xlabel)
                 plt.ylabel(ylabel)
                 # cbar.set_label(tcbar)
                 plt.grid('off')
+
                 
             if dim == 3 :
                 print('Carefull : 3D tables are ploted 2D')
-                plt.pcolormesh(xdata, ydata, np.flip(np.rot90(table[:,:,0]),0), shading = 'auto')
+                plt.pcolormesh(xdata, ydata, np.flip(np.rot90(table[:,:,0]),0), shading = 'auto', alpha =alpha, cmap = 'ma_cm')
                 cbar = plt.colorbar()
                 plt.xlabel(xlabel)
                 plt.ylabel(ylabel)
@@ -255,6 +392,7 @@ def joliplot(xlabel, ylabel, xdata, ydata, color = False, fig = False, axes = []
         
         #pour un graph
         else :
+
             if linewidth != False:
                 linewidth = linewidth
             else :
@@ -281,10 +419,10 @@ def joliplot(xlabel, ylabel, xdata, ydata, color = False, fig = False, axes = []
                 plt.title(title)
                
             if legend != False :
-                plt.plot(xdata, ydata, marker, color = colors[color], mfc = mfc[color], markeredgewidth = markeredgewidth[color], ms = ms[color], label = legend, linewidth = linewidth)
+                plt.plot(xdata, ydata, marker, color = colors[color], mfc = mfc[color], markeredgewidth = markeredgewidth[color], ms = ms[color], label = legend, linewidth = linewidth, alpha=alpha)
                 plt.legend()
             else :
-                plt.plot(xdata, ydata, marker, color = colors[color], mfc = mfc[color], markeredgewidth = markeredgewidth[color], ms = ms[color], linewidth = linewidth)
+                plt.plot(xdata, ydata, marker, color = colors[color], mfc = mfc[color], markeredgewidth = markeredgewidth[color], ms = ms[color], linewidth = linewidth, alpha = alpha)
                 
             plt.xlabel(xlabel) 
             plt.ylabel(ylabel)
@@ -298,6 +436,22 @@ def joliplot(xlabel, ylabel, xdata, ydata, color = False, fig = False, axes = []
             if zeros :
                plt.xlim(left=0 )
                plt.ylim(bottom=0)
+            ax = plt.gca()
+            # ax.minorticks_on()
+            ax.tick_params(
+                axis='both',
+                which='minor',
+                direction='in',
+                length = mm_to_pt(0.7),
+                width=mm_to_pt(0.2),
+                top=True,
+                right=True
+            )
+            
+            # Spines → également manuels
+            spine_width_pt = mm_to_pt(0.2)
+            for spine in ax.spines.values():
+                spine.set_linewidth(spine_width_pt)
                
             if params :
                 x_range = np.linspace(np.min(xdata), np.max(xdata), len(xdata))
@@ -344,6 +498,7 @@ def joliplot(xlabel, ylabel, xdata, ydata, color = False, fig = False, axes = []
                 axes[-1].set_yscale('log')
                 axes[-1].set_xscale('log')
                 plt.tight_layout()
+                
             
         return axes
             

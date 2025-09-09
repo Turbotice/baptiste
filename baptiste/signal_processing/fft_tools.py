@@ -122,7 +122,7 @@ def plot_fft(Y1, f1, f2 = False, f3 = False, log = False, xlabel = r'kx(m$^{-1})
         disp.joliplot(r'f(Hz)', r'P1', f1, Y1, color = 4, exp = False, title = tcbar)
         plt.grid('off')
     if dim == 2 :
-        plt.pcolormesh(f1, f2, np.flip(np.rot90(fft.fftshift(Y1)),0), shading = 'auto')
+        plt.pcolormesh(f1, f2, np.flip(np.rot90(fft.fftshift(Y1)),0), shading = 'auto', cmap = 'ma_cm')
         cbar = plt.colorbar()
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
@@ -130,7 +130,7 @@ def plot_fft(Y1, f1, f2 = False, f3 = False, log = False, xlabel = r'kx(m$^{-1})
         plt.grid('off')
         
     if dim == 3 :
-        plt.pcolormesh(f1, f2, np.flip(np.rot90(fft.fftshift(Y1[:,:,0])),0), shading = 'auto')
+        plt.pcolormesh(f1, f2, np.flip(np.rot90(fft.fftshift(Y1[:,:,0])),0), shading = 'auto', cmap = 'ma_cm')
         cbar = plt.colorbar()
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)

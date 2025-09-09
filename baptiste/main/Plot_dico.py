@@ -379,42 +379,42 @@ FIN DE ATTENTION
 
 dates = np.array(tableau_2[:,1][np.where(tableau_2[:,2] != 0)], dtype = int)
 
-disp.figurejolie()
-disp.joliplot('date', 'All D', tableau_2[:,1], tableau_2[:,2])
-if save : 
-    plt.savefig(save_path + "D_date" + tools.datetimenow() + ".pdf", dpi = 1)
+# disp.figurejolie()
+# disp.joliplot('date', 'All D', tableau_2[:,1], tableau_2[:,2])
+# if save : 
+#     plt.savefig(save_path + "D_date" + tools.datetimenow() + ".pdf", dpi = 1)
 
 
-disp.figurejolie()
-disp.joliplot('date', 'All h', tableau_2[:,1], tableau_2[:,4])
-if save : 
-    plt.savefig(save_path + "h_date" + tools.datetimenow() + ".pdf", dpi = 1)
+# disp.figurejolie()
+# disp.joliplot('date', 'All h', tableau_2[:,1], tableau_2[:,4])
+# if save : 
+#     plt.savefig(save_path + "h_date" + tools.datetimenow() + ".pdf", dpi = 1)
 
 
-disp.figurejolie()
-disp.joliplot('D', 'h', D, h, log = False)
-for i in range (len(dates)): 
-    plt.annotate(dates[i], (D[i], h[i]))
-if save : 
-    plt.savefig(save_path + "h_D" + tools.datetimenow() + ".pdf", dpi = 1)
+# disp.figurejolie()
+# disp.joliplot('D', 'h', D, h, log = False)
+# for i in range (len(dates)): 
+#     plt.annotate(dates[i], (D[i], h[i]))
+# if save : 
+#     plt.savefig(save_path + "h_D" + tools.datetimenow() + ".pdf", dpi = 1)
 
 
-model_robust, inliers, outliers = fits.fit_powerlaw(D, h, xlabel = 'D (Nm)', ylabel = 'h (m)', display = True, fit = 'ransac')    
-for i in range (len(dates)): 
-    plt.annotate(dates[i], (np.log(D)[i], np.log(h)[i]))
-if save : 
-    plt.savefig(save_path + "h_D_plus_fit" + tools.datetimenow() + ".pdf", dpi = 1)
+# model_robust, inliers, outliers = fits.fit_powerlaw(D, h, xlabel = 'D (Nm)', ylabel = 'h (m)', display = True, fit = 'ransac')    
+# for i in range (len(dates)): 
+#     plt.annotate(dates[i], (np.log(D)[i], np.log(h)[i]))
+# if save : 
+#     plt.savefig(save_path + "h_D_plus_fit" + tools.datetimenow() + ".pdf", dpi = 1)
     
     
-model_robust, inliers, outliers = fits.fit_powerlaw(D, h, fit = 'ransac')    
-for i in range (len(dates)): 
-    plt.annotate(dates[i], (D[i], h[i]))
-if save : 
-    plt.savefig(save_path + "h_D_plus_fit" + tools.datetimenow() + ".pdf", dpi = 1)
+# model_robust, inliers, outliers = fits.fit_powerlaw(D, h, fit = 'ransac')    
+# for i in range (len(dates)): 
+#     plt.annotate(dates[i], (D[i], h[i]))
+# if save : 
+#     plt.savefig(save_path + "h_D_plus_fit" + tools.datetimenow() + ".pdf", dpi = 1)
 
 
 E = D / h**3 * 10
-disp.figurejolie()
+disp.figurejolie(width = 8.6*4.4/5)
 disp.joliplot('date', 'E', dates, E)
 # for i in range (len(D)): 
 #     plt.annotate(dates[i], (D[i], E[i]))
@@ -428,14 +428,22 @@ def lineaire_3(x, a):
 
 popt, pcov = fits.fit(lineaire_3, D, h, display = False)
 
-D_scale = np.linspace(np.min(D), np.max(D), 200)
+D_scale = np.linspace(5e-7, 5e-5, 200)
 
-disp.figurejolie()
-disp.joliplot('D (Nm)', 'h (m)', D_scale, lineaire_3(D_scale, popt[0]),color = 2, exp = False, log = True, legend = 'E = ' + str(round(10 / popt[0]**3 / 1e6)) + ' MPa')
-disp.joliplot('D (Nm)', 'h (m)', D, h,color = 4, exp = True, log = True)
+disp.figurejolie(width = 8.6*4.4/5)
+disp.joliplot('$D$ (J.m$^{-2}$)', '$h$ (m)', D_scale, lineaire_3(D_scale, popt[0]),color = 8, exp = False, log = True)
+disp.joliplot('$D$ (J.m$^{-2}$)', '$h$ (m)', D, h, cm = 4, exp = True, log = True)
 
+plt.xlim(5e-7, 5e-5)
+plt.ylim(4e-5, 3e-4)
 
-plt.savefig(save_path + "D_h_fit_E_hpuissance3" + tools.datetimenow() + ".pdf", dpi = 1)
+E_trouve = 10 / popt[0]**3
+
+print(E_trouve)
+
+err_E = np.sqrt(pcov) / popt * 3 * E_trouve
+
+# plt.savefig(save_path + "D_h_fit_E_hpuissance3" + tools.datetimenow() + ".pdf", dpi = 1)
 
 
 #%% D et h : tableau 1
@@ -469,25 +477,40 @@ pds_in = data_coeff[:,0]
 pds_fi = data_coeff[:,1]
 CM = data_coeff[:,2] 
 
+pds_v = (pds_in - pds_fi) / CM
+pds_b = pds_in - pds_fi
+
 pour_remp_bonbonne = (pds_in) / np.max(pds_in) * 100
 x = np.linspace(0, np.max(pour_remp_bonbonne), 100)
 
 std_cm = np.linspace(np.std(CM), np.std(CM), 100)
 mean_cm = np.linspace(np.mean(CM), np.mean(CM), 100)
 
-disp.figurejolie(width = 6)
-disp.joliplot(r'Remplissage bonbonne (\%)', r'$C_m$', pour_remp_bonbonne, CM, color = 2)
+# disp.figurejolie(width = 6)
+# disp.joliplot(r'Remplissage bonbonne (\%)', r'$C_m$', pour_remp_bonbonne, CM, color = 2)
+# plt.plot(x,mean_cm, 'k-', linewidth = 1)
+# plt.plot(x,mean_cm - std_cm, 'k--', linewidth = 1)
+# plt.plot(x,mean_cm + std_cm, 'k--', linewidth = 1)
+# plt.xlim(20,100)
+# plt.ylim(2.5,5)
+
+disp.figurejolie(width = 7)
+disp.joliplot(r'Remplissage bonbonne (\%)', r'$C_m$', pds_v, pds_b, cm = 5)
+
+def fct(a,x) :
+    return a*x
 
 
+popt, pcov = fits.fit(fct, pds_v, pds_b, display = False, err = False, nb_param = 1, p0 = [0], bounds = False, 
+        zero = False, th_params = False, xlabel = r'Masse bonbonne (g)', ylabel = r'Masse vernis$', legend_data = False, 
+        legend_fit = False, log = False)
 
 
+pds_v_lin = np.linspace(0, np.max(pds_v), 200)
+
+disp.joliplot(  r'$m_{vernis}$ (g)',r'$\Delta m_b$ (g)', pds_v_lin, pds_v_lin * popt[0], color = 8, exp = False, zeros = True)
 
 
-plt.plot(x,mean_cm, 'k-', linewidth = 1)
-plt.plot(x,mean_cm - std_cm, 'k--', linewidth = 1)
-plt.plot(x,mean_cm + std_cm, 'k--', linewidth = 1)
-plt.xlim(20,100)
-plt.ylim(2.5,5)
 
 
 
@@ -523,38 +546,49 @@ hmoy = 133 * 900 / 680
 Imoy = np.mean(im)
 alpha = 1/hmoy*np.log(Imoy/I0)
 
-im_gauss = gaussian_filter(im, 50)
+im_gauss = gaussian_filter(im, 5)
+im_gauss[111:112,1335:1336] = I0
 
 h = 1/alpha*np.log(im_gauss/I0)
 
 
-disp.figurejolie(width = 4)
+disp.figurejolie(width = 5)
 disp.joliplot('X (cm)','Y (cm)',X,Y,table = im_gauss )
 plt.grid()
 plt.axis('equal')
 
-disp.figurejolie(width = 10)
-disp.joliplot('X (cm)','Y (cm)',X,Y,table = h / 1000 )
-plt.colorbar(label = '$h$ (mm)')
-plt.grid()
+disp.figurejolie(width = 5)
+# disp.joliplot('','',[],[],table = h / 1000 )
+plt.pcolormesh(X, Y, np.rot90(np.flip(h / 1000, 1)), cmap = 'ma_cm_r')
+# plt.colorbar()#label = '$h$ (mm)')
+# plt.grid()
 plt.axis('equal')
+plt.axis('off')
 
-plt.savefig('Y:\Banquise\\Baptiste\\Manuscrit_these\\Figures\\Laboratoire\\Le vernis\\TEST.png', dpi = 500)
+# plt.savefig('Y:\Banquise\\Baptiste\\Manuscrit_these\\TEST.png', dpi = 3000)
 
+lglgl = np.zeros((2,2))
+lglgl[0,0] = np.min(h/1000)
+lglgl[1,0] = np.max(h/1000)
 
-disp.figurejolie(width = 4)
+disp.figurejolie(width = 6)
+plt.pcolormesh(lglgl, cmap = 'ma_cm_r')
+
+plt.colorbar()
+
+disp.figurejolie(width = 6)
 # plt.hist(im_gauss, range = (np.min(im_gauss), np.max(im_gauss)), bins = 10)
 
 
 from skimage import exposure
 
-hist = exposure.histogram(h, nbins=40)
+hist = exposure.histogram(h, nbins=60)
 h_x = np.linspace(np.min(h), np.max(h), len(hist[0]))
 
 
 h_hist = hist[0] / np.size(im) * 100
 
-disp.joliplot(r'$h$ ($\mu$m)','\%',h_x, h_hist , exp = False, color = 5)
+disp.joliplot(r'$h$ ($\mu$m)','Fraction (\%)',h_x, h_hist , exp = False, color = 5)
 
 def gauss_function(x, a, x0, sigma):
     return a*np.exp(-(x-x0)**2/(2*sigma**2))
@@ -562,7 +596,7 @@ def gauss_function(x, a, x0, sigma):
 
 popt, pcov = curve_fit(gauss_function, h_x, h_hist, p0 = [np.max(h_hist), np.mean(h), np.std(h)])
 
-disp.joliplot(r'$h$ ($\mu$m)','\%',h_x, gauss_function(h_x, popt[0], popt[1], popt[2]), exp = False, color = 8, linewidth= 0.7)
+# disp.joliplot(r'$h$ ($\mu$m)','\%',h_x, gauss_function(h_x, popt[0], popt[1], popt[2]), exp = False, color = 8, linewidth= 0.7)
 
 # plt.plot(h_x, gauss_function(h_x, popt[0], popt[1], popt[2]))
 def LMH(x,y) :
@@ -574,10 +608,150 @@ def LMH(x,y) :
 
 u = LMH(h_x, gauss_function(h_x, popt[0], popt[1], popt[2]))
 
-plt.vlines(x=popt[1] - np.std(h),ymin = 0,ymax = 1.67, color = 'k', ls = '--', linewidth = 0.4)
-plt.vlines(x=popt[1],ymin = 0, ymax = 12.8, color = 'k', ls = '-', linewidth = 0.6)
-plt.vlines(x=popt[1] + np.std(h),ymin = 0,ymax = 1.67, ls = '--', color = 'k', linewidth = 0.4)
+plt.vlines(x=popt[1] - np.std(h),ymin = 0,ymax = gauss_function(popt[1] - np.std(h), popt[0], popt[1], popt[2]), color = 'k', ls = '--', linewidth = 0.4)
+# plt.vlines(x=popt[1],ymin = 0, ymax = np.max(gauss_function(h_x, popt[0], popt[1], popt[2])), color = 'k', ls = '-', linewidth = 0.6)
+plt.vlines(x=popt[1] + np.std(h),ymin = 0,ymax = gauss_function(popt[1] + np.std(h), popt[0], popt[1], popt[2]), ls = '--', color = 'k', linewidth = 0.4)
 
+plt.xlim(0, 350)
+
+
+#%% Echelle d'heterogeneite 
+
+# Y1, f1, f2 = ft.fft_bapt(h, 1/mmparpixel, 1/mmparpixel)
+
+# plt.figure()
+# plt.pcolormesh(X, Y, np.rot90(np.flip(h / 1000, 1)), cmap = 'ma_cm_r')
+
+# plt.figure()
+# plt.pcolormesh(f1, f2, np.rot90(np.flip(np.abs(Y1), 1)))
+# plt.colorbar()
+# plt.clim(np.quantile(np.abs(Y1), 0.1), np.quantile(np.abs(Y1), 0.98))
+
+def autocorrelation_length(image):
+    # Convertir en float et normaliser
+    img = image.astype(float)
+    img -= np.mean(img)
+
+    # Transformée de Fourier
+    F = np.fft.fft2(img)
+    power_spectrum = np.abs(F)**2
+
+    # Autocorrélation = FFT inverse du spectre de puissance
+    autocorr = np.fft.ifft2(power_spectrum).real
+
+    # Remettre l'origine au centre
+    autocorr = np.fft.fftshift(autocorr)
+
+    # Normalisation
+    autocorr /= autocorr[autocorr.shape[0]//2, autocorr.shape[1]//2]
+
+    # Profil radial moyen
+    y, x = np.indices(autocorr.shape)
+    center = np.array(autocorr.shape) // 2
+    r = np.sqrt((x - center[1])**2 + (y - center[0])**2)
+    r = r.astype(int)
+
+    tbin = np.bincount(r.ravel(), autocorr.ravel())
+    nr = np.bincount(r.ravel())
+    radial_profile = tbin / nr
+
+    # Trouver la longueur de corrélation (ex: où C(r) = 1/e)
+    target_value = 1/np.e
+    idx = np.argmin(np.abs(radial_profile - target_value))
+    return idx, radial_profile
+
+
+index, radiale_profile = autocorrelation_length(h)
+
+
+def autocorr_2d(image, pad=True, window=True):
+    """Carte 2D d'autocorrélation normalisée avec FFT."""
+    img = image.astype(float)
+    img -= np.mean(img)
+    F = np.fft.fft2(img)
+    power = np.abs(F)**2
+    ac = np.fft.ifft2(power).real
+    ac = np.fft.fftshift(ac)
+    center_val = ac[ac.shape[0]//2, ac.shape[1]//2]
+    ac /= (center_val + 1e-12)
+    return ac
+
+ac = autocorr_2d(h)
+
+
+def LMH(x,y) :
+    half_max = np.nanmax(y) * 1/ 2
+    d = np.sign(half_max - y)
+    k = np.array(np.where(d == -1))
+    return x[k[0,-1]] - x[k[0,0]]
+    
+
+disp.figurejolie(width = 8.6 * 4 / 5)
+disp.joliplot('$X$ (cm)','$Y$ (cm)', X, Y, table = ac)
+plt.colorbar()
+plt.axis('equal')
+plt.grid()
+plt.savefig('Y:\Banquise\\Baptiste\\Manuscrit_these\\Figures\\Caractérisation au labo\\Caractérisation\\autocorr_top.png', dpi = 3000)
+
+blb = np.zeros((2,2))
+
+blb [0,0] = 0
+blb[0,1] = 1
+xxx = np.array([0,1])
+yyy = np.array([0,1])
+disp.figurejolie(width = 8.6 * 4 / 5)
+disp.joliplot('$X$ (cm)','$Y$ (cm)', xxx, yyy, table = blb)
+plt.colorbar()
+plt.axis('equal')
+plt.grid()
+
+
+
+disp.figurejolie()
+disp.joliplot('$y$ (cm)', 'Moyenne auto-corr',Y, tools.normalize(np.mean(ac, axis = 0)), cm = 3, exp = False)
+
+print(LMH(Y, np.mean(ac, axis = 0)))
+
+disp.figurejolie()
+disp.joliplot('$x$ (cm)', 'Moyenne auto-corr',X, tools.normalize(np.mean(ac, axis = 1)), cm = 3, exp = False)
+
+print(LMH(X, np.mean(ac, axis = 1)))
+
+def radial_profile(image, center=None):
+    """
+    Calcule la moyenne radiale d'une image en partant du centre donné.
+    - image : 2D numpy array
+    - center : tuple (x, y) en pixels. Si None, prend le centre de l'image.
+    Retourne :
+        r_values : rayon (px)
+        mean_values : valeur moyenne à ce rayon
+    """
+    y, x = np.indices(image.shape)
+    if center is None:
+        center = (image.shape[1]//2, image.shape[0]//2)  # (x, y)
+    r = np.sqrt((x - center[0])**2 + (y - center[1])**2)
+
+    # Rayon arrondi à l'entier le plus proche
+    r_int = r.astype(int)
+
+    # Somme et nombre de pixels par rayon
+    tbin = np.bincount(r_int.ravel(), image.ravel())
+    nr = np.bincount(r_int.ravel())
+
+    # Moyenne radiale
+    radial_mean = tbin / (nr + 1e-12)
+
+    return np.arange(len(radial_mean)), radial_mean
+
+rrr, radial_mean = radial_profile(ac)
+
+r_tot = np.append(-1 * np.flip(rrr), rrr) * mmparpixel / 10
+radial_mean_tot = tools.normalize(np.append(np.flip(radial_mean), radial_mean))
+
+disp.figurejolie(width = 8.6 * 4 / 5)
+disp.joliplot(r'$r$ (cm)', 'Corrélation normalisée (UA)', r_tot, radial_mean_tot, exp = False, cm = 3 )
+
+print(LMH(r_tot, radial_mean_tot))
 
 
 #%% Taille de grain
@@ -594,8 +768,16 @@ if loop < 5 :
     display = True
 d_grain_mean = np.zeros(loop)
 
+mmparpixel = 0.19434
+
+nx,ny = im1.shape
+
+Xx = np.linspace(0,nx-1,nx) * mmparpixel
+Yy = np.linspace(0,ny-1,ny) * mmparpixel
+
+
 for i in range (loop):
-    tr[i] = 10000 + i * 10000
+    tr[i] = 17000
     im_b = np.array(binarize(im1, threshold=tr[i]), dtype = bool)
     # plt.figure()
     # plt.pcolormesh(im_b)
@@ -603,18 +785,23 @@ for i in range (loop):
     im_top = np.zeros(im1.shape)
     im_top[np.where(im_b == True)[0],np.where(im_b == True)[1] ] = im1[np.where(im_b == True)[0],np.where(im_b == True)[1] ]
     
-    mmparpixel = 0.19434
+    
     
     i_zero_pad = np.zeros((4096,4096))
     
-    i_zero_pad[:im1.shape[0], :im1.shape[1]] = im1
-    # i_zero_pad[:im_top.shape[0], :im_top.shape[1]] = im_top
+    # i_zero_pad[:im1.shape[0], :im1.shape[1]] = im1
+    i_zero_pad[:im_top.shape[0], :im_top.shape[1]] = im_top
     
     Y = fft.fft2(i_zero_pad - np.mean(i_zero_pad))
+
     # Y = fft.fft2(im1 - np.mean(im1))
     if display :
         disp.figurejolie(width = 12)
-        plt.pcolormesh(im_top)
+        plt.pcolormesh(np.flip(im_top,1), cmap = 'ma_cm')
+        plt.axis('equal')
+        plt.axis('off')
+        plt.savefig('Y:\Banquise\\Baptiste\\Manuscrit_these\\las_grains.png', dpi = 2000)
+        # disp.joliplot('X (mm)', 'Y (mm)', Xx, Yy, table = im_top)
     
     # disp.figurejolie()
     # plt.pcolormesh(np.log(np.abs(Y)))
@@ -630,8 +817,12 @@ for i in range (loop):
     # Y_y = np.sum(np.abs(Y[:dy,10:d_max]), axis = 0)
     
     if display :
-        disp.figurejolie(width = 12)
-        disp.joliplot('$k_x$ (m$^{-1}$)', 'A(FFT)', kx, Y_x, exp = False, color = 5)
+        disp.figurejolie(width = 6)
+        disp.joliplot('$k_x$ (m$^{-1}$)', '$Y$ (UA)', kx, tools.normalize(Y_x), exp = False, cm = 5)
+        plt.xlim(0, 150000)
+        # plt.ylim()
+        
+        plt.vlines(kx[np.argmax(Y_x[:1000])], 0 , 1, color = disp.mcolors(2))
         
     # if display :
     #     disp.figurejolie(width = 12)
@@ -646,8 +837,8 @@ for i in range (loop):
     if np.mod(i,7)==0:
         print(str(int(i / loop * 100)) + ' %')
 
-disp.figurejolie(width = 12)
-disp.joliplot('Threshold', r'$d_{grain}$ (mm)', tr[20:], d_grain_mean[20:] * 1000, color = 5, exp = False)
+disp.figurejolie(width = 6)
+disp.joliplot('Threshold', r'$d_{grain}$ (mm)', tr, d_grain_mean * 1000, color = 5, exp = False)
 
 
 # from skimage import exposure

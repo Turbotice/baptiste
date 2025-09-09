@@ -32,8 +32,11 @@ def RDD_pesante_flexion_depth(k,drhoh, Dsurrho):
 # def RDD_hfit_depth(k, h):
 #     return np.sqrt(np.tanh( 2.6 * k) * (9.81 * k + (6.07e9 * h**3 * k**5) / (12 * (1 - 0.37**2) * 1000) ) / (1 + (900 * h * k)/1000 ) )
 
+# def RDD_hfit_depth(k, h):
+#     return np.sqrt( (9.81 * k + (6.07e9 * h**3 * k**5) / (12 * (1 - 0.37**2) * 1000) ) / (np.tanh(k*(10 - 0.9))**-1 + (0.9 * h * k) ) )
+
 def RDD_hfit_depth(k, h):
-    return np.sqrt( (9.81 * k + (6.07e9 * h**3 * k**5) / (12 * (1 - 0.37**2) * 1000) ) / (np.tanh(k*(10 - 0.9))**-1 + (0.9 * h * k) ) )
+    return np.sqrt( (9.81 * k + (6.07e9 * h**3 * k**5) / (12 * (1 - 0.37**2) * 1000) ) / (np.tanh(k*(10))**-1 + (0.9 * h * k) ) )
 
 
 def RDD_hfit_depth_E(k, h, E):
