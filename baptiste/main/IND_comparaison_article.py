@@ -27,13 +27,33 @@ import scipy.fft as fft
 from scipy.interpolate import interp1d
 import os
 from PIL import Image
-%run Functions_FSD.py
-%run parametres_FSD.py
-%run display_lib_gld.py
+# %run Functions_FSD.py
+# %run parametres_FSD.py
+# %run display_lib_gld.py
+
+
+
+import baptiste.display.display_lib as disp
+import baptiste.experiments.import_params as ip
+import baptiste.files.file_management as fm
+import baptiste.image_processing.image_processing
+import baptiste.files.dictionaries as dic
+import baptiste.tools.tools as tools
+
+
+date = '220708'
+nom_exp = 'IJSP2'
+exp = True
+exp_type = 'IND'
+
+
+dico, params, loc = ip.initialisation(date, nom_exp, exp = True, display = False, exp_type = 'IND')
+
 
 exp_type = "IND"
+date = '221005'
 loc = "D:\Banquise\Baptiste\Mesures_autres\d" + date + "\\" #+ "d" + date + "_" + nom_exp
-path_mesures, liste_mesures, titre_exp = import_images(loc, nom_exp, exp_type, nom_fich = '\mesure\\')
+path_mesures, liste_mesures, titre_exp = ip.import_images(loc, nom_exp, exp_type, nom_fich = '\mesure\\')
 
 
 #%% load data
