@@ -78,7 +78,7 @@ def fit_ransac (x, y, thresh = 0.5, display = True, xlabel = '', ylabel = '', ne
 
 
 def fit(fct, x, y, display = True, err = False, nb_param = 1, p0 = [0], bounds = False, 
-        zero = False, th_params = False, xlabel = r'k (m$^{-1}$)', ylabel = r'$\omega$', legend_data = r'Experimental Data', 
+        zero = False, th_params = False, xlabel = r'k (m$^{-1}$)', ylabel = r'$\omega$ (s$^{-1}$)', legend_data = r'Experimental Data', 
         legend_fit = 'h = ', log = False, cm = 4):
     
     if bounds is not False :
@@ -90,20 +90,17 @@ def fit(fct, x, y, display = True, err = False, nb_param = 1, p0 = [0], bounds =
         x_range = np.linspace(0, np.max(x), len(x))
     if display :
         if nb_param == 1 :
-            disp.joliplot(xlabel, ylabel, x, y, cm = cm, exp = True, legend = legend_data)
-            disp.joliplot(xlabel, ylabel, x_range, fct(x_range, popt[0]), exp = False, legend = legend_fit + str(popt) + ' (fit)', color = 8) #round(popt[0],2)) + ' (fit)')
+            disp.joliplot(xlabel, ylabel, x, y, cm = cm, exp = True, log = log)
+            disp.joliplot(xlabel, ylabel, x_range, fct(x_range, popt[0]), exp = False, color = 8, log = log) #round(popt[0],2)) + ' (fit)')
             if th_params is not False :
-                disp.joliplot(xlabel, ylabel, x_range, fct(x_range, th_params), exp = False, legend = r'Theoretical curve', cm= cm, zeros = True)
+                disp.joliplot(xlabel, ylabel, x_range, fct(x_range, th_params), exp = False, cm= cm, zeros = True, log=log)
             if err :
                 plt.fill_between(x_range, fct(x_range, popt[0] + np.sqrt(pcov[0])), fct(x_range, popt[0] - np.sqrt(pcov[0])), color = disp.vcolors(2))
-            if log :
-                plt.xscale('log')
-                plt.yscale('log')
         if nb_param == 2 :
-            disp.joliplot(xlabel, ylabel, x, y, cm= cm, exp = True, legend = legend_data)
-            disp.joliplot(xlabel, ylabel, x_range, fct(x_range, popt[0], popt[1]), color = 8, exp = False, legend = r'fit : param 1 = ' + str(round(popt[0],4)) + ' param 2 = ' + str(round(popt[1],4)))
+            disp.joliplot(xlabel, ylabel, x, y, cm= cm, exp = True)
+            disp.joliplot(xlabel, ylabel, x_range, fct(x_range, popt[0], popt[1]), color = 8, exp = False)
             if th_params is not False :
-                disp.joliplot(xlabel, ylabel, x_range, fct(x_range, th_params[0], th_params[1]), exp = False, legend = r'Theoretical curve', cm = cm, zeros = True)
+                disp.joliplot(xlabel, ylabel, x_range, fct(x_range, th_params[0], th_params[1]), exp = False, cm = cm, zeros = True)
             if err :
                 plt.fill_between(x_range, fct(x_range, popt[0] + np.sqrt(np.diag(pcov))[0], popt[1] + np.sqrt(np.diag(pcov))[1]),
                                  fct(x_range, popt[0] - np.sqrt(np.diag(pcov))[0], popt[1] - np.sqrt(np.diag(pcov))[1]), color = disp.vcolors(2))

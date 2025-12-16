@@ -37,7 +37,7 @@ def RemoveNodes(img):
                         [1, 1, 1]])
     
     convolve = cv2.filter2D(src=img2, ddepth=-1, kernel=kernel1)
-    nodes = np.where(convolve >= 3)
+    nodes = np.where(convolve >= 2)
     output[nodes] = 0
     
     return(output)

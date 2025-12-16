@@ -54,7 +54,7 @@ def min_fit2(x, xmin, a = 5):
     return val_min, pos_min
 
 
-def sort_listes(a,b, reverse=False) :
+def sort_listes(a,b, c= None, reverse=False, nb_list = 2) :
     """
     Trie deux listes dans l'ordre en fonction de la première'
 
@@ -79,6 +79,15 @@ def sort_listes(a,b, reverse=False) :
     
     a_sort = np.asarray(sorted(np.rot90(np.asarray(list_tot)).tolist(), key=lambda student: student[0], reverse = reverse))[:,0]
     b_sort = np.asarray(sorted(np.rot90(np.asarray(list_tot)).tolist(), key=lambda student: student[0], reverse = reverse))[:,1]
+    
+    if nb_list == 3 :
+        list_tot = [a,b,c]
+        a_sort = np.asarray(sorted(np.rot90(np.asarray(list_tot)).tolist(), key=lambda student: student[0], reverse = reverse))[:,0]
+        b_sort = np.asarray(sorted(np.rot90(np.asarray(list_tot)).tolist(), key=lambda student: student[0], reverse = reverse))[:,1]
+        c_sort = np.asarray(sorted(np.rot90(np.asarray(list_tot)).tolist(), key=lambda student: student[0], reverse = reverse))[:,2]
+        
+        return a_sort, b_sort, c_sort
+        
 
     return a_sort, b_sort
 

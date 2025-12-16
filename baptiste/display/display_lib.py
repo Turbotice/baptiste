@@ -248,6 +248,10 @@ def mcolors(n) :
     vcolor = plt.cm.ma_cm(np.linspace(0,1,10))
     return vcolor[n]
 
+def mcolors_full(n) :
+    vcolor = plt.cm.ma_cm(np.linspace(0,1,1000))
+    return vcolor[n]
+
 def pcolors(n) :
     vcolor = plt.cm.plasma(np.linspace(0,1,10))
     return vcolor[n]
@@ -287,7 +291,8 @@ def figurejolie(params = False, num_fig = False, subplot = False, nom_fig = Fals
             if type(num_fig) != bool :
                 plt.figure(num = num_fig, figsize = set_size(fraction = 1, subplots = (1,1), width = width, height = height))
             else :
-                plt.figure(figsize = set_size(fraction = 1, subplots = (1,1), width = width, height = height))
+                return plt.figure(figsize = set_size(fraction = 1, subplots = (1,1), width = width, height = height))
+                
     else :
         fig = plt.figure(num = num_fig, figsize = set_size(fraction = 1, subplots = subplot, height = height))
         axes = []
